@@ -1,0 +1,26 @@
+---
+- name: Configurer le DNS forwarder dans Samba
+  ansible.builtin.command:
+    cmd: >
+      samba-tool dns serverinfo {{ inventory_hostname }}
+  register: dns_check
+  changed_when: false
+  failed_when: false
+
+- name: Ajouter les enregistrements DNS des serveurs
+  ansible.builtin.command:
+    cmd: >
+      samba-tool dns add {{ inventory_hostname }} {{ nova_domain }}
+      {{ item.name }} A {{ item.ip }}
+      -U Administrator --password="{{ vault_samba_admin_password }}"
+  loop:
+    - { name: "dc01",      ip: "{{ nova_ip_dc01 }}" }
+    - { name: "fs01",      ip: "{{ nova_ip_fs01 }}" }
+    - { name: "db01",      ip: "{{ nova_ip_db01 }}" }
+    - { name: "app01",     ip: "{{ nova_ip_app01 }}" }
+    - { name: "bastion01", ip: "{{ nova_ip_bastion01 }}" }
+    - { name: "backup01",  ip: "{{ nova_ip_backup01 }}" }
+  register: dns_add_result
+  changed_when: "'added' in dns_add_result.stdout | default('')"
+  failed_when: false
+  no_log: true

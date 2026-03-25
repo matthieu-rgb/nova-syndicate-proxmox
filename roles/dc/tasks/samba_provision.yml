@@ -1,0 +1,79 @@
+---
+- name: Installer les paquets Samba AD
+  ansible.builtin.apt:
+    name: "{{ samba_packages }}"
+    state: present
+
+- name: Arreter les services Samba existants
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: stopped
+    enabled: false
+  loop:
+    - smbd
+    - nmbd
+    - winbind
+  failed_when: false
+
+- name: Verifier si le domaine est deja provisionne
+  ansible.builtin.stat:
+    path: /etc/samba/smb.conf
+  register: samba_conf
+
+- name: Sauvegarder smb.conf existant avant provisionnement
+  ansible.builtin.copy:
+    src: /etc/samba/smb.conf
+    dest: /etc/samba/smb.conf.bak
+    remote_src: true
+  when: samba_conf.stat.exists
+
+- name: Verifier si le domaine est deja provisionne (marker)
+  ansible.builtin.stat:
+    path: /var/lib/samba/private/sam.ldb
+  register: samba_provisioned
+
+- name: Provisionner le domaine Samba AD
+  ansible.builtin.command:
+    cmd: >
+      samba-tool domain provision
+      --server-role="{{ samba_server_role }}"
+      --dns-backend="{{ samba_dns_backend }}"
+      --realm="{{ nova_realm }}"
+      --domain="{{ nova_netbios }}"
+      --adminpass="{{ vault_samba_admin_password }}"
+      --use-rfc2307
+  when: not samba_provisioned.stat.exists
+  no_log: true
+
+- name: Deployer krb5.conf
+  ansible.builtin.template:
+    src: krb5.conf.j2
+    dest: /etc/krb5.conf
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Deployer smb.conf
+  ansible.builtin.template:
+    src: smb.conf.j2
+    dest: /etc/samba/smb.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart samba-ad
+
+- name: Desactiver les services autonomes (le DC utilise samba-ad-dc)
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: false
+    masked: true
+  loop:
+    - smbd
+    - nmbd
+    - winbind
+
+- name: Activer et demarrer samba-ad-dc
+  ansible.builtin.systemd:
+    name: samba-ad-dc
+    enabled: true
+    state: started

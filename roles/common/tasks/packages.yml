@@ -1,0 +1,38 @@
+---
+- name: Mettre a jour le cache APT
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Mettre a jour tous les paquets installes
+  ansible.builtin.apt:
+    upgrade: safe
+
+- name: Installer les paquets de base
+  ansible.builtin.apt:
+    name:
+      - curl
+      - vim
+      - rsync
+      - net-tools
+      - ca-certificates
+      - git
+      - python3
+      - python3-pip
+      - sudo
+      - dnsutils
+      - gnupg
+      - apt-transport-https
+    state: present
+
+- name: Installer les paquets supplementaires du role
+  ansible.builtin.apt:
+    name: "{{ common_extra_packages }}"
+    state: present
+  when: common_extra_packages | length > 0
+
+- name: Supprimer les paquets inutiles
+  ansible.builtin.apt:
+    name: "{{ common_remove_packages }}"
+    state: absent
+    purge: true

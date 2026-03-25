@@ -1,0 +1,57 @@
+---
+- name: Installer auditd
+  ansible.builtin.apt:
+    name:
+      - auditd
+      - audispd-plugins
+    state: present
+
+- name: Configurer la taille des logs auditd
+  ansible.builtin.lineinfile:
+    path: /etc/audit/auditd.conf
+    regexp: "^max_log_file ="
+    line: "max_log_file = {{ hardening_auditd_log_size }}"
+  notify: restart auditd
+
+- name: Configurer la rotation des logs auditd
+  ansible.builtin.lineinfile:
+    path: /etc/audit/auditd.conf
+    regexp: "^num_logs ="
+    line: "num_logs = {{ hardening_auditd_num_logs }}"
+  notify: restart auditd
+
+- name: Deployer les regles d'audit NIS2
+  ansible.builtin.copy:
+    dest: /etc/audit/rules.d/nova-audit.rules
+    content: |
+      # Nova Syndicate — Regles d'audit NIS2
+      # Surveillance des fichiers critiques
+      -w /etc/passwd -p wa -k identity
+      -w /etc/shadow -p wa -k identity
+      -w /etc/group -p wa -k identity
+      -w /etc/sudoers -p wa -k sudoers
+      -w /etc/sudoers.d/ -p wa -k sudoers
+
+      # Surveillance des commandes d'administration
+      -a always,exit -F path=/usr/bin/sudo -F perm=x -k privileged
+      -a always,exit -F path=/usr/bin/su -F perm=x -k privileged
+      -a always,exit -F path=/usr/sbin/useradd -F perm=x -k user_mgmt
+      -a always,exit -F path=/usr/sbin/userdel -F perm=x -k user_mgmt
+      -a always,exit -F path=/usr/sbin/usermod -F perm=x -k user_mgmt
+      -a always,exit -F path=/usr/sbin/groupadd -F perm=x -k group_mgmt
+
+      # Surveillance des logs d'authentification
+      -w /var/log/auth.log -p wa -k auth_log
+
+      # Verrouiller les regles (aucune modification a chaud)
+      -e 2
+    owner: root
+    group: root
+    mode: "0640"
+  notify: restart auditd
+
+- name: Activer et demarrer auditd
+  ansible.builtin.systemd:
+    name: auditd
+    enabled: true
+    state: started

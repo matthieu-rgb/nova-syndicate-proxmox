@@ -1,0 +1,40 @@
+---
+nova_ad_groups:
+  - name: "IT_Admins"
+    description: "Administrateurs infrastructure"
+    ou: "OU=IT,DC=nova-syndicate,DC=local"
+  - name: "Direction"
+    description: "Comite de direction"
+    ou: "OU=Direction,DC=nova-syndicate,DC=local"
+  - name: "Commerciaux"
+    description: "Equipe commerciale et agents distants"
+    ou: "OU=Commerciaux,DC=nova-syndicate,DC=local"
+  - name: "Logistique"
+    description: "Equipe logistique"
+    ou: "OU=Logistique,DC=nova-syndicate,DC=local"
+  - name: "RH"
+    description: "Ressources Humaines"
+    ou: "OU=RH,DC=nova-syndicate,DC=local"
+
+# AD Tiering
+nova_ad_tiering_accounts:
+  - name: "admin-t0"
+    description: "Admin Tier 0 -- DC uniquement"
+    groups: ["IT_Admins"]
+  - name: "admin-t1"
+    description: "Admin Tier 1 -- Serveurs applicatifs"
+    groups: ["IT_Admins"]
+  - name: "admin-t2"
+    description: "Admin Tier 2 -- Postes de travail"
+    groups: ["IT_Admins"]
+
+# OUs pour le tiering
+nova_ad_ous:
+  - "OU=IT,DC=nova-syndicate,DC=local"
+  - "OU=Direction,DC=nova-syndicate,DC=local"
+  - "OU=Commerciaux,DC=nova-syndicate,DC=local"
+  - "OU=Logistique,DC=nova-syndicate,DC=local"
+  - "OU=RH,DC=nova-syndicate,DC=local"
+  - "OU=Tier0_Admins,DC=nova-syndicate,DC=local"
+  - "OU=Tier1_Admins,DC=nova-syndicate,DC=local"
+  - "OU=Tier2_Admins,DC=nova-syndicate,DC=local"

@@ -1,0 +1,16 @@
+# Nova Syndicate — krb5.conf membre du domaine (Ansible managed)
+[libdefaults]
+    default_realm = {{ nova_realm }}
+    dns_lookup_realm = false
+    dns_lookup_kdc = true
+
+[realms]
+    {{ nova_realm }} = {
+        kdc = dc01.{{ nova_domain }}
+        admin_server = dc01.{{ nova_domain }}
+        default_domain = {{ nova_domain }}
+    }
+
+[domain_realm]
+    .{{ nova_domain }} = {{ nova_realm }}
+    {{ nova_domain }} = {{ nova_realm }}

@@ -1,0 +1,7 @@
+.vault_pass
+*.retry
+inventory/group_vars/all/vault.yml.bak
+.env
+*.pyc
+__pycache__/
+.vagrant/

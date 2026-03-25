@@ -1,0 +1,24 @@
+---
+- name: Installer chrony
+  ansible.builtin.apt:
+    name: chrony
+    state: present
+
+- name: Deployer la configuration chrony
+  ansible.builtin.template:
+    src: chrony.conf.j2
+    dest: /etc/chrony/chrony.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart chrony
+
+- name: Configurer le fuseau horaire
+  ansible.builtin.timezone:
+    name: "{{ nova_timezone }}"
+
+- name: Activer et demarrer chrony
+  ansible.builtin.systemd:
+    name: chrony
+    enabled: true
+    state: started

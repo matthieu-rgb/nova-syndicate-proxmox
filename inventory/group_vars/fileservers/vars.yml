@@ -1,0 +1,39 @@
+---
+fs_shares_base_path:      "/srv/shares"
+fs_backup_schedule:       "0 23 * * *"
+fs_vss_snapshots:         true
+
+hardening_extra_nft_rules:
+  - "tcp dport { 139, 445 } accept"
+
+nova_shares:
+  - name:      "commun"
+    path:      "/srv/shares/commun"
+    groups_rw: ["IT_Admins", "Direction", "Logistique", "Commerciaux", "RH"]
+    groups_ro: []
+    quota_gb:  20
+
+  - name:      "direction"
+    path:      "/srv/shares/direction"
+    groups_rw: ["IT_Admins", "Direction"]
+    groups_ro: []
+    quota_gb:  50
+
+  - name:      "commercial"
+    path:      "/srv/shares/commercial"
+    groups_rw: ["IT_Admins", "Commerciaux"]
+    groups_ro: ["Direction"]
+    quota_gb:  100
+
+  - name:      "logistique"
+    path:      "/srv/shares/logistique"
+    groups_rw: ["IT_Admins", "Logistique"]
+    groups_ro: ["Direction"]
+    quota_gb:  200
+
+  - name:      "rh"
+    path:      "/srv/shares/rh"
+    groups_rw: ["IT_Admins", "RH"]
+    groups_ro: []
+    quota_gb:  30
+    sensitive: true

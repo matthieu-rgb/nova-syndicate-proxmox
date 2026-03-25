@@ -1,0 +1,24 @@
+---
+- name: Inclure le durcissement SSH
+  ansible.builtin.include_tasks: ssh.yml
+  tags: [role:hardening, hardening:ssh]
+
+- name: Inclure le pare-feu nftables
+  ansible.builtin.include_tasks: firewall.yml
+  tags: [role:hardening, hardening:firewall]
+
+- name: Inclure fail2ban
+  ansible.builtin.include_tasks: fail2ban.yml
+  tags: [role:hardening, hardening:fail2ban]
+
+- name: Inclure auditd
+  ansible.builtin.include_tasks: auditd.yml
+  tags: [role:hardening, hardening:auditd]
+
+- name: Inclure les mises a jour automatiques
+  ansible.builtin.include_tasks: updates.yml
+  tags: [role:hardening, hardening:updates]
+
+- name: Inclure le durcissement sysctl
+  ansible.builtin.include_tasks: sysctl.yml
+  tags: [role:hardening, hardening:sysctl]

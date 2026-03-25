@@ -1,0 +1,10 @@
+---
+fs_packages:
+  - samba
+  - smbclient
+  - acl
+  - rsync
+  - winbind
+  - libnss-winbind
+  - libpam-winbind
+  - krb5-user

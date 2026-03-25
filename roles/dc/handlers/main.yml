@@ -1,0 +1,10 @@
+---
+- name: restart samba-ad
+  ansible.builtin.systemd:
+    name: samba-ad-dc
+    state: restarted
+
+- name: restart dhcpd
+  ansible.builtin.systemd:
+    name: isc-dhcp-server
+    state: restarted

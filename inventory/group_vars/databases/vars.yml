@@ -1,0 +1,36 @@
+---
+mariadb_bind_address:     "192.168.20.12"
+mariadb_port:             3306
+mariadb_max_connections:  150
+mariadb_innodb_buffer:    "8G"
+
+# PITR — binlog
+mariadb_log_bin:          true
+mariadb_binlog_format:    "ROW"
+mariadb_expire_logs_days: 7
+mariadb_sync_binlog:      1
+
+# Audit plugin (NIS2)
+mariadb_audit_enable:     true
+mariadb_audit_events:     "CONNECT,QUERY_DDL,QUERY_DML_NO_SELECT"
+mariadb_audit_log_rotate: true
+
+# Sauvegarde
+db_dump_schedule:         "*/15 * * * *"
+db_dump_path:             "/var/backups/mariadb"
+db_dump_retention:        2
+db_binlog_path:           "/var/log/mysql"
+
+hardening_extra_nft_rules:
+  - "tcp dport 3306 accept"
+
+nova_databases:
+  - name:     "nova_logistique"
+    user:     "app_logistique"
+    password: "{{ vault_mariadb_app_password }}"
+    privs:    "nova_logistique.*:SELECT,INSERT,UPDATE,DELETE"
+
+  - name:     "nova_rh"
+    user:     "app_rh"
+    password: "{{ vault_mariadb_app_password }}"
+    privs:    "nova_rh.*:SELECT,INSERT,UPDATE,DELETE"

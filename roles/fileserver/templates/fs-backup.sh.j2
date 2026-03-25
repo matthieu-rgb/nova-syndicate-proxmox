@@ -1,0 +1,12 @@
+#!/bin/bash
+# Nova Syndicate — Backup partages FS01 vers BACKUP01 (Ansible managed)
+set -euo pipefail
+
+SRC="{{ fs_shares_base_path }}/"
+DEST="{{ backup_rsync_user }}@{{ backup_nas_ip }}:/srv/backups/fs01/"
+
+rsync -az --delete \
+  --log-file=/var/log/fs-backup.log \
+  "${SRC}" "${DEST}"
+
+logger -t fs-backup "Backup FS01 termine vers {{ backup_nas_ip }}"

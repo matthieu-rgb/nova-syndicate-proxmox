@@ -1,0 +1,10 @@
+---
+- name: Desactiver les services inutiles
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: false
+    state: stopped
+  loop:
+    - avahi-daemon
+    - cups
+  failed_when: false

@@ -1,0 +1,75 @@
+---
+# =============================================================
+# Nova Syndicate — Variables globales
+# =============================================================
+
+# --- Organisation ---
+nova_domain:          "nova-syndicate.local"
+nova_domain_fqdn:     "nova-syndicate.local"
+nova_realm:           "NOVA-SYNDICATE.LOCAL"
+nova_netbios:         "NOVA-SYNDICATE"
+nova_admin_email:     "j.thalor@nova-syndicate.fr"
+
+# --- Reseau ---
+nova_dns_primary:     "192.168.20.10"
+nova_dns_secondary:   "1.1.1.1"
+nova_ntp_server:      "fr.pool.ntp.org"
+nova_timezone:        "Europe/Paris"
+
+# --- VLANs ---
+nova_vlan_management: 10
+nova_vlan_bastion:    15
+nova_vlan_servers:    20
+nova_vlan_users:      30
+nova_vlan_dmz:        40
+nova_vlan_backup:     50
+
+# --- Sous-reseaux ---
+nova_subnet_mgmt:     "192.168.10.0/24"
+nova_subnet_bastion:  "192.168.15.0/24"
+nova_subnet_servers:  "192.168.20.0/24"
+nova_subnet_users:    "192.168.30.0/24"
+nova_subnet_dmz:      "192.168.40.0/24"
+nova_subnet_backup:   "192.168.50.0/24"
+nova_subnet_mrs:      "192.168.31.0/24"
+
+# --- IPs des VMs ---
+nova_ip_dc01:         "192.168.20.10"
+nova_ip_fs01:         "192.168.20.11"
+nova_ip_db01:         "192.168.20.12"
+nova_ip_bastion01:    "192.168.15.10"
+nova_ip_app01:        "192.168.20.13"
+nova_ip_backup01:     "192.168.50.10"
+
+# --- Utilisateur Ansible ---
+ansible_service_user: "ansible"
+ansible_ssh_key_path: "~/.ssh/nova_ansible_ed25519"
+
+# --- SSH ---
+ssh_port:             22
+ssh_permit_root:      "no"
+ssh_password_auth:    "no"
+ssh_max_auth_tries:   3
+ssh_idle_timeout:     600
+
+# --- fail2ban ---
+fail2ban_maxretry:    5
+fail2ban_bantime:     3600
+fail2ban_findtime:    600
+
+# --- Backup ---
+backup_nas_ip:        "192.168.50.10"
+backup_rsync_user:    "rsync_nova"
+backup_retention_days:    7
+backup_retention_weeks:   4
+backup_retention_months:  3
+backup_offsite_bucket:    "nova-syndicate-backup"
+backup_worm_retention_years: 10
+
+# --- Logging (NIS2 — 12 mois minimum) ---
+log_retention_days:   365
+syslog_server:        "192.168.10.5"
+
+# --- Proxmox ---
+proxmox_host:         "192.168.10.1"
+proxmox_snapshot_schedule: "0 * * * *"

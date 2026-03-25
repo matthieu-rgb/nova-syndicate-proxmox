@@ -1,0 +1,12 @@
+---
+samba_packages:
+  - samba
+  - smbclient
+  - winbind
+  - krb5-user
+  - krb5-config
+  - libnss-winbind
+  - libpam-winbind
+  - isc-dhcp-server
+  - dnsutils
+  - acl

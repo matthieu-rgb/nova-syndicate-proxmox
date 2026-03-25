@@ -1,0 +1,18 @@
+---
+- name: "Maintenance -- Mise a jour Debian sur toutes les VMs"
+  hosts: nova_all
+  serial: 1
+  tasks:
+    - name: Mettre a jour le cache APT
+      ansible.builtin.apt:
+        update_cache: true
+
+    - name: Appliquer les mises a jour de securite
+      ansible.builtin.apt:
+        upgrade: safe
+      register: upgrade_result
+
+    - name: Afficher les paquets mis a jour
+      ansible.builtin.debug:
+        var: upgrade_result.stdout_lines
+      when: upgrade_result.changed

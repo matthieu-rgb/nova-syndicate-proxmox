@@ -1,0 +1,16 @@
+// Nova Syndicate — unattended-upgrades (Ansible managed)
+// Uniquement les mises a jour de securite Debian
+
+Unattended-Upgrade::Allowed-Origins {
+    "${distro_id}:${distro_codename}-security";
+};
+
+Unattended-Upgrade::Package-Blacklist {
+};
+
+Unattended-Upgrade::AutoFixInterruptedDpkg "true";
+Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
+Unattended-Upgrade::Remove-Unused-Dependencies "true";
+Unattended-Upgrade::Automatic-Reboot "false";
+Unattended-Upgrade::Mail "{{ nova_admin_email }}";
+Unattended-Upgrade::MailReport "on-change";

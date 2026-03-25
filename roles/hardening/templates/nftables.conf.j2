@@ -1,0 +1,43 @@
+#!/usr/sbin/nft -f
+# Nova Syndicate — nftables (Ansible managed)
+# Pare-feu local en complement de pfSense perimetrique
+
+flush ruleset
+
+table inet filter {
+    chain input {
+        type filter hook input priority 0; policy drop;
+
+        # Loopback
+        iif "lo" accept
+
+        # Connexions etablies et associees
+        ct state established,related accept
+        ct state invalid drop
+
+        # ICMP
+        ip protocol icmp accept
+        ip6 nexthdr icmpv6 accept
+
+        # SSH uniquement depuis VLAN Management et Bastion
+{% for net in hardening_allowed_ssh_nets %}
+        ip saddr {{ net }} tcp dport {{ ssh_port }} ct state new accept
+{% endfor %}
+
+        # Regles specifiques au role (injectees via hardening_extra_nft_rules)
+{% for rule in hardening_extra_nft_rules %}
+        {{ rule }}
+{% endfor %}
+
+        # Log et drop tout le reste
+        log prefix "[NFT-DROP] " flags all counter drop
+    }
+
+    chain forward {
+        type filter hook forward priority 0; policy drop;
+    }
+
+    chain output {
+        type filter hook output priority 0; policy accept;
+    }
+}

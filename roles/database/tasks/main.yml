@@ -1,0 +1,134 @@
+---
+- name: Installer MariaDB
+  ansible.builtin.apt:
+    name: "{{ db_packages }}"
+    state: present
+  tags: [role:database, db:install]
+
+- name: Deployer la configuration MariaDB
+  ansible.builtin.template:
+    src: 50-nova-server.cnf.j2
+    dest: /etc/mysql/mariadb.conf.d/50-nova-server.cnf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart mariadb
+  tags: [role:database, db:config]
+
+- name: Activer et demarrer MariaDB
+  ansible.builtin.systemd:
+    name: mariadb
+    enabled: true
+    state: started
+  tags: [role:database, db:service]
+
+# --- Securisation ---
+- name: Definir le mot de passe root MariaDB
+  community.mysql.mysql_user:
+    name: root
+    host: localhost
+    password: "{{ vault_mariadb_root_password }}"
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    state: present
+  no_log: true
+  tags: [role:database, db:secure]
+
+- name: Supprimer les utilisateurs anonymes
+  community.mysql.mysql_user:
+    name: ""
+    host_all: true
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    state: absent
+  tags: [role:database, db:secure]
+
+- name: Supprimer la base de test
+  community.mysql.mysql_db:
+    name: test
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    state: absent
+  tags: [role:database, db:secure]
+
+- name: Interdire le login root a distance
+  community.mysql.mysql_user:
+    name: root
+    host: "%"
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    state: absent
+  tags: [role:database, db:secure]
+
+# --- Bases et utilisateurs applicatifs ---
+- name: Creer les bases de donnees
+  community.mysql.mysql_db:
+    name: "{{ item.name }}"
+    encoding: utf8mb4
+    collation: utf8mb4_unicode_ci
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    state: present
+  loop: "{{ nova_databases }}"
+  tags: [role:database, db:databases]
+
+- name: Creer les utilisateurs applicatifs
+  community.mysql.mysql_user:
+    name: "{{ item.user }}"
+    host: "192.168.20.%"
+    password: "{{ item.password }}"
+    priv: "{{ item.privs }}"
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    state: present
+  loop: "{{ nova_databases }}"
+  no_log: true
+  tags: [role:database, db:databases]
+
+# --- Compte de backup ---
+- name: Creer le compte de backup MariaDB
+  community.mysql.mysql_user:
+    name: "backup_nova"
+    host: "localhost"
+    password: "{{ vault_mariadb_backup_password }}"
+    priv: "*.*:SELECT,LOCK TABLES,SHOW VIEW,RELOAD,REPLICATION CLIENT,EVENT,TRIGGER"
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    state: present
+  no_log: true
+  tags: [role:database, db:backup]
+
+# --- Audit plugin NIS2 ---
+- name: Activer le plugin d'audit MariaDB
+  community.mysql.mysql_query:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    query: "INSTALL SONAME 'server_audit'"
+  register: audit_install
+  changed_when: audit_install.rowcount | default([]) | length > 0
+  failed_when: false
+  when: mariadb_audit_enable
+  tags: [role:database, db:audit]
+
+# --- Backup cron ---
+- name: Creer le repertoire de dump
+  ansible.builtin.file:
+    path: "{{ db_dump_path }}"
+    state: directory
+    owner: mysql
+    group: mysql
+    mode: "0700"
+  tags: [role:database, db:backup]
+
+- name: Deployer le script de dump MariaDB
+  ansible.builtin.template:
+    src: mariadb-backup.sh.j2
+    dest: /usr/local/bin/mariadb-backup.sh
+    owner: root
+    group: root
+    mode: "0700"
+  tags: [role:database, db:backup]
+
+- name: Planifier le dump toutes les 15 minutes
+  ansible.builtin.cron:
+    name: "MariaDB dump 15min"
+    minute: "{{ db_dump_schedule.split(' ')[0] }}"
+    hour: "{{ db_dump_schedule.split(' ')[1] }}"
+    day: "{{ db_dump_schedule.split(' ')[2] }}"
+    month: "{{ db_dump_schedule.split(' ')[3] }}"
+    weekday: "{{ db_dump_schedule.split(' ')[4] }}"
+    job: "/usr/local/bin/mariadb-backup.sh"
+    user: root
+  tags: [role:database, db:backup]

@@ -1,0 +1,5 @@
+---
+- name: "Deploiement VPN -- WireGuard + config IPsec"
+  hosts: domain_controllers
+  roles:
+    - vpn

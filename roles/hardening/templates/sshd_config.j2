@@ -1,0 +1,37 @@
+# Nova Syndicate — sshd_config durci (Ansible managed)
+Port {{ ssh_port }}
+AddressFamily inet
+ListenAddress 0.0.0.0
+
+# Authentification
+PermitRootLogin {{ ssh_permit_root }}
+PasswordAuthentication {{ ssh_password_auth }}
+PubkeyAuthentication yes
+MaxAuthTries {{ ssh_max_auth_tries }}
+AllowUsers {{ ansible_service_user }}
+
+# Session
+ClientAliveInterval {{ ssh_idle_timeout }}
+ClientAliveCountMax 2
+LoginGraceTime 30
+MaxSessions 3
+
+# Securite
+X11Forwarding no
+AllowAgentForwarding no
+PermitEmptyPasswords no
+
+# Algorithmes durcis
+KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org
+Ciphers aes256-gcm@openssh.com,chacha20-poly1305@openssh.com
+MACs hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com
+HostKeyAlgorithms ssh-ed25519
+
+# Logging
+SyslogFacility AUTH
+LogLevel VERBOSE
+
+UsePAM yes
+PrintMotd no
+AcceptEnv LANG LC_*
+Subsystem sftp /usr/lib/openssh/sftp-server

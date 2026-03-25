@@ -1,0 +1,36 @@
+---
+- name: "Maintenance -- Test de restauration MariaDB"
+  hosts: databases
+  tasks:
+    - name: Verifier que le dernier dump existe
+      ansible.builtin.find:
+        paths: "{{ db_dump_path }}"
+        patterns: "all-databases-*.sql.gz"
+        age: "-1h"
+      register: recent_dumps
+
+    - name: Echouer si aucun dump recent
+      ansible.builtin.fail:
+        msg: "ALERTE : Aucun dump MariaDB de moins d'une heure dans {{ db_dump_path }}"
+      when: recent_dumps.matched == 0
+
+    - name: Afficher le dump le plus recent
+      ansible.builtin.debug:
+        msg: "Dernier dump : {{ recent_dumps.files | sort(attribute='mtime') | last }}"
+      when: recent_dumps.matched > 0
+
+- name: "Maintenance -- Test de restauration Samba AD"
+  hosts: domain_controllers
+  tasks:
+    - name: Verifier que le backup Samba existe
+      ansible.builtin.find:
+        paths: /var/backups/samba
+        file_type: directory
+        patterns: "samba-backup-*"
+        age: "-25h"
+      register: samba_backups
+
+    - name: Echouer si aucun backup Samba recent
+      ansible.builtin.fail:
+        msg: "ALERTE : Aucun backup Samba AD de moins de 25h"
+      when: samba_backups.matched == 0

@@ -1,0 +1,27 @@
+---
+# WireGuard pour les agents distants — deploye sur le firewall pfSense
+# Ce role genere les configurations, le deploiement pfSense se fait via API ou manuellement
+
+- name: Installer WireGuard (sur le node de gestion)
+  ansible.builtin.apt:
+    name: wireguard-tools
+    state: present
+  tags: [role:vpn, vpn:wireguard]
+
+- name: Generer la configuration serveur WireGuard
+  ansible.builtin.template:
+    src: wg0.conf.j2
+    dest: /etc/wireguard/wg0.conf
+    owner: root
+    group: root
+    mode: "0600"
+  tags: [role:vpn, vpn:wireguard]
+
+- name: Generer la documentation IPsec pour pfSense
+  ansible.builtin.template:
+    src: ipsec-pfsense.conf.j2
+    dest: /root/ipsec-pfsense-config.txt
+    owner: root
+    group: root
+    mode: "0600"
+  tags: [role:vpn, vpn:ipsec]

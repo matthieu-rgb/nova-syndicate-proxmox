@@ -1,0 +1,7 @@
+---
+- name: "Deploiement FS01 -- common + hardening + Samba partages"
+  hosts: fileservers
+  roles:
+    - common
+    - hardening
+    - fileserver

@@ -1,0 +1,8 @@
+---
+common_extra_packages:    []
+common_remove_packages:   ["telnet", "ftp", "rsh-client", "rpcbind"]
+common_sysctl:
+  net.ipv4.ip_forward:           0
+  net.ipv4.conf.all.rp_filter:   1
+  net.ipv4.tcp_syncookies:       1
+  kernel.dmesg_restrict:         1

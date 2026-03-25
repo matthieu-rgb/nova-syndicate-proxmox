@@ -1,0 +1,30 @@
+# Nova Syndicate — smb.conf DC (Ansible managed)
+[global]
+    netbios name = DC01
+    realm = {{ nova_realm }}
+    workgroup = {{ nova_netbios }}
+    server role = {{ samba_server_role }}
+
+    dns forwarder = {{ nova_dns_secondary }}
+    allow dns updates = nonsecure and secure
+
+    log level = {{ samba_log_level }}
+    log file = /var/log/samba/samba.log
+    max log size = 10000
+
+    # Securite
+    server signing = mandatory
+    server schannel = yes
+    ntlm auth = mschapv2-and-ntlmv2-only
+
+    # Idmap
+    idmap_ldb:use rfc2307 = yes
+
+{% if samba_audit_enable %}
+    # Audit NIS2
+    full_audit:prefix = %u|%I|%m|%S
+    full_audit:success = connect disconnect mkdir rmdir open rename unlink
+    full_audit:failure = connect
+    full_audit:facility = local5
+    full_audit:priority = NOTICE
+{% endif %}

@@ -1,0 +1,14 @@
+# Nova Syndicate — DHCP VLAN 30 Users (Ansible managed)
+authoritative;
+
+default-lease-time {{ dhcp_lease_time }};
+max-lease-time {{ dhcp_lease_time * 2 }};
+
+option domain-name "{{ nova_domain }}";
+option domain-name-servers {{ nova_ip_dc01 }};
+
+subnet {{ dhcp_subnet }} netmask {{ dhcp_netmask }} {
+    range {{ dhcp_range_start }} {{ dhcp_range_end }};
+    option routers 192.168.30.1;
+    option broadcast-address 192.168.30.255;
+}

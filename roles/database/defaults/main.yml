@@ -1,0 +1,6 @@
+---
+db_packages:
+  - mariadb-server
+  - mariadb-client
+  - mariadb-plugin-audit
+  - python3-mysqldb

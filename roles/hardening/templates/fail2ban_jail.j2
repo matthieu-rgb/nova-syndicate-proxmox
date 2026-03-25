@@ -1,0 +1,13 @@
+# Nova Syndicate — fail2ban (Ansible managed)
+[DEFAULT]
+bantime  = {{ fail2ban_bantime }}
+findtime = {{ fail2ban_findtime }}
+maxretry = {{ fail2ban_maxretry }}
+backend  = systemd
+banaction = nftables
+
+[sshd]
+enabled  = true
+port     = {{ ssh_port }}
+filter   = sshd
+logpath  = /var/log/auth.log

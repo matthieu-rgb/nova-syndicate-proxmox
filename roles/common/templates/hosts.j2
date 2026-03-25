@@ -1,0 +1,14 @@
+127.0.0.1       localhost
+127.0.1.1       {{ inventory_hostname }}.{{ nova_domain }} {{ inventory_hostname }}
+
+# Nova Syndicate — VLAN 20 Servers
+{{ nova_ip_dc01 }}       dc01.{{ nova_domain }} dc01
+{{ nova_ip_fs01 }}       fs01.{{ nova_domain }} fs01
+{{ nova_ip_db01 }}       db01.{{ nova_domain }} db01
+{{ nova_ip_app01 }}      app01.{{ nova_domain }} app01
+
+# VLAN 15 Bastion
+{{ nova_ip_bastion01 }}  bastion01.{{ nova_domain }} bastion01
+
+# VLAN 50 Backup
+{{ nova_ip_backup01 }}   backup01.{{ nova_domain }} backup01

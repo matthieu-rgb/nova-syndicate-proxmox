@@ -1,0 +1,37 @@
+---
+- name: Creer le repertoire de backup Samba
+  ansible.builtin.file:
+    path: /var/backups/samba
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Deployer le script de backup Samba AD
+  ansible.builtin.copy:
+    dest: /usr/local/bin/samba-backup.sh
+    content: |
+      #!/bin/bash
+      # Nova Syndicate — Backup Samba AD
+      set -euo pipefail
+      BACKUP_DIR="/var/backups/samba"
+      DATE=$(date +%Y%m%d-%H%M)
+      DEST="${BACKUP_DIR}/samba-backup-${DATE}"
+
+      samba-tool domain backup offline --targetdir="${DEST}" 2>/dev/null
+
+      # Rotation : garder 7 jours
+      find "${BACKUP_DIR}" -maxdepth 1 -type d -name "samba-backup-*" -mtime +7 -exec rm -rf {} \;
+
+      logger -t samba-backup "Backup Samba AD termine : ${DEST}"
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Planifier le backup Samba AD (cron quotidien 2h00)
+  ansible.builtin.cron:
+    name: "Samba AD backup"
+    minute: "0"
+    hour: "2"
+    job: "/usr/local/bin/samba-backup.sh"
+    user: root

@@ -1,0 +1,9 @@
+---
+- name: Appliquer les parametres sysctl de securite
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    sysctl_file: /etc/sysctl.d/99-nova-hardening.conf
+    reload: true
+    state: present
+  loop: "{{ common_sysctl | dict2items }}"

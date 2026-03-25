@@ -1,0 +1,48 @@
+# Nova Syndicate — smb.conf FS01 (Ansible managed)
+[global]
+    workgroup = {{ nova_netbios }}
+    realm = {{ nova_realm }}
+    security = ADS
+    encrypt passwords = yes
+
+    idmap config * : backend = tdb
+    idmap config * : range = 10000-20000
+    idmap config {{ nova_netbios }} : backend = rid
+    idmap config {{ nova_netbios }} : range = 20001-30000
+
+    winbind use default domain = yes
+    winbind enum users = yes
+    winbind enum groups = yes
+
+    vfs objects = acl_xattr full_audit
+    map acl inherit = yes
+    store dos attributes = yes
+
+    # Audit NIS2
+    full_audit:prefix = %u|%I|%m|%S
+    full_audit:success = connect disconnect open mkdir rmdir rename unlink
+    full_audit:failure = connect open
+    full_audit:facility = local5
+    full_audit:priority = NOTICE
+
+    log file = /var/log/samba/samba.log
+    max log size = 10000
+
+{% for share in nova_shares %}
+[{{ share.name }}]
+    path = {{ share.path }}
+    browseable = yes
+    read only = no
+{% if share.groups_rw | length > 0 %}
+    write list = {{ share.groups_rw | map('regex_replace', '^(.*)$', '@\\1') | join(', ') }}
+{% endif %}
+{% if share.groups_ro | length > 0 %}
+    read list = {{ share.groups_ro | map('regex_replace', '^(.*)$', '@\\1') | join(', ') }}
+{% endif %}
+    valid users = {{ (share.groups_rw + share.groups_ro) | map('regex_replace', '^(.*)$', '@\\1') | join(', ') }}
+    create mask = 0660
+    directory mask = 0770
+    inherit acls = yes
+    inherit permissions = yes
+
+{% endfor %}

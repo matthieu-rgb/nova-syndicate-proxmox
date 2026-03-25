@@ -1,0 +1,15 @@
+# Nova Syndicate — WireGuard agents distants (Ansible managed)
+[Interface]
+Address = {{ wireguard_server_ip }}
+ListenPort = {{ wireguard_port }}
+PrivateKey = {{ vault_wireguard_server_privkey }}
+DNS = {{ wireguard_dns }}
+
+{% for peer in wireguard_peers %}
+# {{ peer.name }}
+[Peer]
+PublicKey = {{ peer.pubkey }}
+PresharedKey = {{ peer.psk }}
+AllowedIPs = {{ peer.allowed_ips }}
+
+{% endfor %}

@@ -1,0 +1,20 @@
+---
+- name: Inclure le provisionnement Samba AD
+  ansible.builtin.include_tasks: samba_provision.yml
+  tags: [role:dc, dc:samba]
+
+- name: Inclure la configuration DNS
+  ansible.builtin.include_tasks: dns.yml
+  tags: [role:dc, dc:dns]
+
+- name: Inclure la configuration DHCP
+  ansible.builtin.include_tasks: dhcp.yml
+  tags: [role:dc, dc:dhcp]
+
+- name: Inclure la creation des utilisateurs et groupes
+  ansible.builtin.include_tasks: users_groups.yml
+  tags: [role:dc, dc:users]
+
+- name: Inclure la sauvegarde du DC
+  ansible.builtin.include_tasks: backup.yml
+  tags: [role:dc, dc:backup]

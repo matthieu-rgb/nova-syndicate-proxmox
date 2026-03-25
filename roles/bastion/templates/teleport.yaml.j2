@@ -1,0 +1,29 @@
+# Nova Syndicate — Teleport bastion (Ansible managed)
+version: v3
+teleport:
+  nodename: bastion01
+  data_dir: /var/lib/teleport
+  log:
+    output: syslog
+    severity: INFO
+
+auth_service:
+  enabled: true
+  cluster_name: {{ teleport_cluster_name }}
+  authentication:
+    type: {{ teleport_auth_type }}
+    second_factor: "otp"
+  session_recording: {{ teleport_session_record }}
+
+ssh_service:
+  enabled: true
+  labels:
+    env: production
+    role: bastion
+    vlan: "15"
+
+proxy_service:
+  enabled: true
+  public_addr: {{ teleport_public_addr }}
+  web_listen_addr: 0.0.0.0:443
+  tunnel_listen_addr: 0.0.0.0:3024

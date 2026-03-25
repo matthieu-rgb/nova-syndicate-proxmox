@@ -1,0 +1,34 @@
+---
+teleport_version:         "14.x"
+teleport_cluster_name:    "nova-syndicate"
+teleport_public_addr:     "bastion.nova-syndicate.local:443"
+teleport_auth_type:       "local"
+teleport_session_record:  "node"
+teleport_cert_ttl:        "8h"
+teleport_max_sessions:    5
+
+teleport_allowed_users:
+  - login: "admin-t0"
+    roles: ["tier0-access"]
+  - login: "admin-t1"
+    roles: ["tier1-access"]
+
+teleport_nodes:
+  - hostname: "dc01"
+    ip:       "192.168.20.10"
+    labels:   {tier: "0", role: "dc"}
+  - hostname: "fs01"
+    ip:       "192.168.20.11"
+    labels:   {tier: "1", role: "fileserver"}
+  - hostname: "db01"
+    ip:       "192.168.20.12"
+    labels:   {tier: "1", role: "database"}
+  - hostname: "app01"
+    ip:       "192.168.20.13"
+    labels:   {tier: "1", role: "app"}
+
+hardening_extra_nft_rules:
+  - "tcp dport 443 accept"
+  - "tcp dport 3023 accept"
+  - "tcp dport 3024 accept"
+  - "tcp dport 3025 accept"

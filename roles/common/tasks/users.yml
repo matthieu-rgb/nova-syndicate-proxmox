@@ -1,0 +1,30 @@
+---
+- name: Creer le compte de service ansible
+  ansible.builtin.user:
+    name: "{{ ansible_service_user }}"
+    shell: /bin/bash
+    create_home: true
+    state: present
+
+- name: Deployer la cle SSH publique ansible
+  ansible.builtin.authorized_key:
+    user: "{{ ansible_service_user }}"
+    key: "{{ lookup('file', ansible_ssh_key_path + '.pub') }}"
+    state: present
+
+- name: Configurer sudo NOPASSWD pour ansible
+  ansible.builtin.copy:
+    dest: "/etc/sudoers.d/{{ ansible_service_user }}"
+    content: "{{ ansible_service_user }} ALL=(ALL) NOPASSWD: ALL\n"
+    owner: root
+    group: root
+    mode: "0440"
+    validate: "visudo -cf %s"
+
+- name: Desactiver le login SSH root
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^#?PermitRootLogin"
+    line: "PermitRootLogin no"
+    state: present
+  notify: restart sshd

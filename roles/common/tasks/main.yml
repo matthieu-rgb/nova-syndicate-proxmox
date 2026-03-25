@@ -1,0 +1,21 @@
+---
+# Ordre d'execution : packages -> users -> network -> ntp -> sysctl
+- name: Inclure les taches packages
+  ansible.builtin.include_tasks: packages.yml
+  tags: [role:common, common:packages]
+
+- name: Inclure les taches utilisateurs
+  ansible.builtin.include_tasks: users.yml
+  tags: [role:common, common:users]
+
+- name: Inclure les taches reseau
+  ansible.builtin.include_tasks: network.yml
+  tags: [role:common, common:network]
+
+- name: Inclure les taches NTP
+  ansible.builtin.include_tasks: ntp.yml
+  tags: [role:common, common:ntp]
+
+- name: Inclure les taches sysctl
+  ansible.builtin.include_tasks: sysctl.yml
+  tags: [role:common, common:sysctl]

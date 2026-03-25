@@ -1,0 +1,25 @@
+# Nova Syndicate — Configuration IPsec pour pfSense (reference)
+# A appliquer manuellement sur pfSense ou via API XML-RPC
+# ========================================================
+
+# Phase 1 (IKE)
+# Description:     {{ ipsec_phase1.description }}
+# Interface:       {{ ipsec_phase1.interface }}
+# Protocol:        {{ ipsec_phase1.protocol }}
+# Encryption:      {{ ipsec_phase1.encryption }}
+# Hash:            {{ ipsec_phase1.hash }}
+# DH Group:        {{ ipsec_phase1.dh_group }}
+# Lifetime:        {{ ipsec_phase1.lifetime }}s
+# DPD Delay:       {{ ipsec_phase1.dpd_delay }}s
+# DPD Max Fail:    {{ ipsec_phase1.dpd_maxfail }}
+# PSK:             {{ vault_ipsec_psk_lyon_mrs }}
+
+# Phase 2 (ESP)
+# Description:     {{ ipsec_phase2.description }}
+# Mode:            {{ ipsec_phase2.mode }}
+# Local Subnet:    {{ ipsec_phase2.local_subnet }}
+# Remote Subnet:   {{ ipsec_phase2.remote_subnet }}
+# Encryption:      {{ ipsec_phase2.encryption }}
+# Hash:            {{ ipsec_phase2.hash }}
+# PFS Group:       {{ ipsec_phase2.pfs_group }}
+# Lifetime:        {{ ipsec_phase2.lifetime }}s

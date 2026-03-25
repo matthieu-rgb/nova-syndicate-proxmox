@@ -1,0 +1,21 @@
+---
+ipsec_phase1:
+  description:      "Lyon-Marseille"
+  interface:        "wan"
+  protocol:         "inet"
+  encryption:       "aes256gcm16"
+  hash:             "sha256"
+  dh_group:         14
+  lifetime:         28800
+  dpd_delay:        30
+  dpd_maxfail:      5
+
+ipsec_phase2:
+  description:      "Nova-LAN-Lyon-to-MRS"
+  mode:             "tunnel"
+  local_subnet:     "192.168.20.0/24"
+  remote_subnet:    "192.168.31.0/24"
+  encryption:       "aes256gcm16"
+  hash:             "sha256"
+  pfs_group:        14
+  lifetime:         3600
