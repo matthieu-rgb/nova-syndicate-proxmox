@@ -1,0 +1,96 @@
+---
+# Nova Syndicate - Playbook principal
+# Ordre d execution : common -> hardening -> role metier
+#
+# Usage :
+#   ansible-playbook site.yml                    # tout
+#   ansible-playbook site.yml --limit DC01       # un seul hote
+#   ansible-playbook site.yml --tags hardening   # un tag specifique
+
+# ----------------------------------------------------------
+# 1. BASTION01 - Noeud de controle SSH + MFA
+# ----------------------------------------------------------
+- name: "BASTION01 - Bastion SSH et Ansible control node"
+  hosts: bastion
+  become: true
+  roles:
+    - common
+    - hardening
+    - bastion
+
+# ----------------------------------------------------------
+# 2. DC01 - Controleur de domaine Samba AD
+# ----------------------------------------------------------
+- name: "DC01 - Controleur de domaine Samba AD"
+  hosts: DC01
+  become: true
+  roles:
+    - common
+    - hardening
+    - dc
+
+# ----------------------------------------------------------
+# 3. FS01 - Serveur de fichiers
+# ----------------------------------------------------------
+- name: "FS01 - Serveur de fichiers Samba"
+  hosts: FS01
+  become: true
+  roles:
+    - common
+    - hardening
+    - fileserver
+
+# ----------------------------------------------------------
+# 4. DB01 - Serveur de base de donnees MariaDB
+# ----------------------------------------------------------
+- name: "DB01 - Serveur MariaDB"
+  hosts: DB01
+  become: true
+  roles:
+    - common
+    - hardening
+    - database
+
+# ----------------------------------------------------------
+# 5. APP01 - Proxy Squid + apt-cacher-ng + Vault
+# ----------------------------------------------------------
+- name: "APP01 - Serveur applicatif"
+  hosts: APP01
+  become: true
+  roles:
+    - common
+    - hardening
+    - app
+
+# ----------------------------------------------------------
+# 6. WEB01 - Serveur web DMZ
+# ----------------------------------------------------------
+- name: "WEB01 - Serveur web DMZ"
+  hosts: WEB01
+  become: true
+  roles:
+    - common
+    - hardening
+    - web
+
+# ----------------------------------------------------------
+# 7. MAIL01 - Serveur mail DMZ
+# ----------------------------------------------------------
+- name: "MAIL01 - Serveur mail DMZ"
+  hosts: MAIL01
+  become: true
+  roles:
+    - common
+    - hardening
+    - mail
+
+# ----------------------------------------------------------
+# 8. BACKUP01 - Serveur de sauvegarde
+# ----------------------------------------------------------
+- name: "BACKUP01 - Serveur de sauvegarde"
+  hosts: BACKUP01
+  become: true
+  roles:
+    - common
+    - hardening
+    - backup

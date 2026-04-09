@@ -1,0 +1,5 @@
+---
+# Role : fileserver
+# Samba partages : creation des shares, ACL par groupe AD, rsync backup
+
+# TODO : implementer les taches

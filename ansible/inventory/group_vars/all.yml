@@ -1,0 +1,41 @@
+---
+# Variables communes a tous les hotes
+
+# Timezone
+timezone: "Europe/Paris"
+
+# DNS interne (DC01)
+dns_primary:   "192.168.20.10"
+dns_secondary: "1.1.1.1"
+
+# NTP
+ntp_servers:
+  - "0.fr.pool.ntp.org"
+  - "1.fr.pool.ntp.org"
+
+# Proxy sortant (APP01 - Squid)
+http_proxy:  "http://192.168.20.13:3128"
+https_proxy: "http://192.168.20.13:3128"
+no_proxy:    "localhost,127.0.0.1,192.168.0.0/16,172.16.0.0/12,10.0.0.0/8"
+
+# apt-cacher-ng (APP01)
+apt_proxy: "http://192.168.20.13:3142"
+
+# Domaine AD
+ad_domain:   "nova.local"
+ad_realm:    "NOVA.LOCAL"
+ad_dc_ip:    "192.168.20.10"
+
+# Packages de base installes sur toutes les VMs
+common_packages:
+  - curl
+  - wget
+  - vim
+  - htop
+  - rsync
+  - net-tools
+  - tcpdump
+  - ca-certificates
+  - gnupg
+  - lsb-release
+  - python3-pip

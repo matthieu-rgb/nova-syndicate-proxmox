@@ -1,0 +1,16 @@
+# Copier ce fichier en terraform.tfvars et remplir les valeurs
+# JAMAIS committer terraform.tfvars dans Git (dans .gitignore)
+
+# IPs de gestion des firewalls (interface console OPNsense dans GNS3)
+fw_ext_ip = "192.168.1.1"
+fw_int_ip = "192.168.1.2"
+
+# Cles API OPNsense
+# A generer dans : System > Access > Users > votre user > API keys
+fw_ext_api_key    = "VOTRE_API_KEY_FW_EXT"
+fw_ext_api_secret = "VOTRE_API_SECRET_FW_EXT"
+fw_int_api_key    = "VOTRE_API_KEY_FW_INT"
+fw_int_api_secret = "VOTRE_API_SECRET_FW_INT"
+
+# Cle privee WireGuard (generer avec : wg genkey)
+wg_server_privkey = "VOTRE_CLE_PRIVEE_WG"

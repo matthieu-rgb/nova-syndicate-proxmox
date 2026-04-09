@@ -1,0 +1,5 @@
+---
+# Role : hardening
+# Durcissement OS : nftables, SSH, fail2ban, auditd, unattended-upgrades
+
+# TODO : implementer les taches

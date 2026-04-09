@@ -1,0 +1,19 @@
+# Ce fichier doit etre chiffre avec ansible-vault
+# Commande : ansible-vault encrypt ansible/inventory/group_vars/vault.yml
+#
+# Variables a definir :
+#
+# vault_samba_admin_password: "MotDePasseAdmin"
+# vault_mariadb_root_password: "MotDePasseMariaDB"
+# vault_mariadb_app_password: "MotDePasseApp"
+# vault_wireguard_server_privkey: "cle_privee_wg"
+# vault_backblaze_account_id: "id_backblaze"
+# vault_backblaze_app_key: "cle_backblaze"
+#
+# Pour chiffrer :
+#   ansible-vault encrypt ansible/inventory/group_vars/vault.yml
+#
+# Pour executer le playbook avec vault :
+#   ansible-playbook site.yml --ask-vault-pass
+#   ou avec fichier cle :
+#   ansible-playbook site.yml --vault-password-file .vault_pass

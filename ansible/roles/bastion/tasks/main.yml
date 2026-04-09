@@ -1,0 +1,5 @@
+---
+# Role : bastion
+# SSH durci, MFA TOTP libpam, auditd, Ansible control node
+
+# TODO : implementer les taches
