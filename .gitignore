@@ -5,3 +5,4 @@ inventory/group_vars/all/vault.yml.bak
 *.pyc
 __pycache__/
 .vagrant/
+terraform.tfvars
