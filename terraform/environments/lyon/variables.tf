@@ -82,3 +82,8 @@ variable "wg_listen_port" {
   type        = number
   default     = 51820
 }
+variable "wg_server_pubkey" {
+  description = "Cle publique WireGuard serveur"
+  type        = string
+  sensitive   = true
+}

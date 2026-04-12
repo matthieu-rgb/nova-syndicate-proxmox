@@ -4,7 +4,7 @@ terraform {
   required_providers {
     opnsense = {
       source  = "browningluke/opnsense"
-      version = "~> 0.10.0"
+      version = "~> 0.16.0"
     }
   }
 }
@@ -17,7 +17,7 @@ provider "opnsense" {
   uri      = "https://${var.fw_ext_ip}"
   api_key  = var.fw_ext_api_key
   api_secret = var.fw_ext_api_secret
-  allow_unverified_tls = true
+  allow_insecure = true
 }
 
 # ============================================================
@@ -28,5 +28,5 @@ provider "opnsense" {
   uri      = "https://${var.fw_int_ip}"
   api_key  = var.fw_int_api_key
   api_secret = var.fw_int_api_secret
-  allow_unverified_tls = true
+  allow_insecure = true
 }

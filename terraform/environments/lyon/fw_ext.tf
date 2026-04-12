@@ -1,99 +1,114 @@
 # ============================================================
-# FW-EXT-LYON1 - Configuration OPNsense
+# FW-EXT-LYON1 - Regles firewall
 # ============================================================
 
-# ============================================================
-# 1. VLANS SUR FW-EXT
-# ============================================================
-
-resource "opnsense_vlan" "dmz" {
-  provider    = opnsense.fw_ext
-  device      = "vtnet2"
-  tag         = 1
-  description = "DMZ - WEB01 + MAIL01"
-}
-
-# ============================================================
-# 2. REGLES PARE-FEU FW-EXT
-# ============================================================
-
-# Autoriser trafic etabli/lie
+# Regle WAN : autoriser trafic etabli entrant
 resource "opnsense_firewall_filter" "wan_established" {
   provider    = opnsense.fw_ext
-  interface   = "wan"
-  direction   = "in"
+  enabled     = true
   action      = "pass"
-  statetype   = "keep state"
-  protocol    = "any"
-  source      = "any"
-  destination = "any"
-  description = "Autoriser trafic etabli"
+  quick       = true
+  interface   = ["wan"]
+  direction   = "in"
+  protocol    = "tcp"
+  source = {
+    net = "any"
+  }
+  destination = {
+    net = "any"
+  }
+  tcp_flags_any = ["established"]
+  description = "Pass trafic etabli WAN entrant"
 }
 
-# Bloquer tout depuis WAN par defaut
+# Regle WAN : HTTP vers DMZ
+resource "opnsense_firewall_filter" "wan_to_dmz_http" {
+  provider    = opnsense.fw_ext
+  enabled     = true
+  action      = "pass"
+  quick       = true
+  interface   = ["wan"]
+  direction   = "in"
+  protocol    = "tcp"
+  source = {
+    net = "any"
+  }
+  destination = {
+    net  = "172.16.1.0/29"
+    port = "80"
+  }
+  description = "HTTP WAN vers DMZ"
+}
+
+# Regle WAN : HTTPS vers DMZ
+resource "opnsense_firewall_filter" "wan_to_dmz_https" {
+  provider    = opnsense.fw_ext
+  enabled     = true
+  action      = "pass"
+  quick       = true
+  interface   = ["wan"]
+  direction   = "in"
+  protocol    = "tcp"
+  source = {
+    net = "any"
+  }
+  destination = {
+    net  = "172.16.1.0/29"
+    port = "443"
+  }
+  description = "HTTPS WAN vers DMZ"
+}
+
+# Regle WAN : SMTP vers MAIL1
+resource "opnsense_firewall_filter" "wan_to_mail" {
+  provider    = opnsense.fw_ext
+  enabled     = true
+  action      = "pass"
+  quick       = true
+  interface   = ["wan"]
+  direction   = "in"
+  protocol    = "tcp"
+  source = {
+    net = "any"
+  }
+  destination = {
+    net  = "172.16.1.3"
+    port = "25"
+  }
+  description = "SMTP WAN vers MAIL1"
+}
+
+# Regle WAN : bloquer tout le reste
 resource "opnsense_firewall_filter" "wan_block_all" {
   provider    = opnsense.fw_ext
-  interface   = "wan"
-  direction   = "in"
+  enabled     = true
   action      = "block"
-  protocol    = "any"
-  source      = "any"
-  destination = "any"
-  description = "Bloquer tout depuis WAN"
+  quick       = true
+  interface   = ["wan"]
+  direction   = "in"
+  source = {
+    net = "any"
+  }
+  destination = {
+    net = "any"
+  }
+  log         = true
+  description = "Block tout WAN entrant non autorise"
 }
 
-# Autoriser HTTP/HTTPS vers DMZ depuis WAN
-resource "opnsense_firewall_filter" "wan_to_dmz_http" {
-  provider         = opnsense.fw_ext
-  interface        = "wan"
-  direction        = "in"
-  action           = "pass"
-  protocol         = "tcp"
-  source           = "any"
-  destination      = "172.16.1.0/29"
-  destination_port = "80"
-  description      = "HTTP vers DMZ"
-}
-
-resource "opnsense_firewall_filter" "wan_to_dmz_https" {
-  provider         = opnsense.fw_ext
-  interface        = "wan"
-  direction        = "in"
-  action           = "pass"
-  protocol         = "tcp"
-  source           = "any"
-  destination      = "172.16.1.0/29"
-  destination_port = "443"
-  description      = "HTTPS vers DMZ"
-}
-
-# Autoriser SMTP vers MAIL01
-resource "opnsense_firewall_filter" "wan_to_mail" {
-  provider         = opnsense.fw_ext
-  interface        = "wan"
-  direction        = "in"
-  action           = "pass"
-  protocol         = "tcp"
-  source           = "any"
-  destination      = "172.16.1.11"
-  destination_port = "25"
-  description      = "SMTP vers MAIL01"
-}
-
-# ============================================================
-# 3. NAT SORTANT
-# ============================================================
-
-resource "opnsense_nat_outbound" "lan_to_wan" {
+# Regle LAN : autoriser trafic sortant vers internet
+resource "opnsense_firewall_filter" "lan_to_wan" {
   provider    = opnsense.fw_ext
-  interface   = "wan"
-  source      = "192.168.0.0/16"
-  description = "NAT sortant LAN vers WAN"
-}
-
-resource "opnsense_nat_outbound" "dmz_to_wan" {
-  provider    = opnsense.fw_ext
-  interface   = "wan"
-  source      = "172.16.1.0/29"
-  description = "NAT sortant DMZ vers WAN"
+  enabled     = true
+  action      = "pass"
+  quick       = true
+  interface   = ["lan"]
+  direction   = "in"
+  source = {
+    net = "10.0.1.0/24"
+  }
+  destination = {
+    net = "any"
+  }
+  description = "LAN transit vers internet"
 }
