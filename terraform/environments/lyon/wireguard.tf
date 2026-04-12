@@ -17,7 +17,9 @@ resource "opnsense_firewall_filter" "wg_inbound" {
   provider    = opnsense.fw_ext
   enabled     = true
   description = "WireGuard agents distants"
-  interface   = "wan"
+  interface = {
+    interface = ["wan"]
+  }
   filter = {
     action    = "pass"
     direction = "in"

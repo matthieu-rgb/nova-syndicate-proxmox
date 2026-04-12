@@ -1,12 +1,14 @@
 # ============================================================
-# FW-EXT-LYON1 - Regles firewall (provider v0.16 syntaxe correcte)
+# FW-EXT-LYON1 - Regles firewall (provider v0.16 syntaxe finale)
 # ============================================================
 
 resource "opnsense_firewall_filter" "wan_to_dmz_http" {
   provider    = opnsense.fw_ext
   enabled     = true
   description = "HTTP WAN vers DMZ"
-  interface   = "wan"
+  interface = {
+    interface = ["wan"]
+  }
   filter = {
     action    = "pass"
     direction = "in"
@@ -26,7 +28,9 @@ resource "opnsense_firewall_filter" "wan_to_dmz_https" {
   provider    = opnsense.fw_ext
   enabled     = true
   description = "HTTPS WAN vers DMZ"
-  interface   = "wan"
+  interface = {
+    interface = ["wan"]
+  }
   filter = {
     action    = "pass"
     direction = "in"
@@ -46,7 +50,9 @@ resource "opnsense_firewall_filter" "wan_to_mail" {
   provider    = opnsense.fw_ext
   enabled     = true
   description = "SMTP WAN vers MAIL1"
-  interface   = "wan"
+  interface = {
+    interface = ["wan"]
+  }
   filter = {
     action    = "pass"
     direction = "in"
@@ -66,11 +72,14 @@ resource "opnsense_firewall_filter" "lan_to_wan" {
   provider    = opnsense.fw_ext
   enabled     = true
   description = "Transit LAN vers internet"
-  interface   = "lan"
+  interface = {
+    interface = ["lan"]
+  }
   filter = {
     action    = "pass"
     direction = "in"
     quick     = true
+    protocol  = "any"
     source = {
       net = "10.0.1.0/24"
     }
@@ -84,11 +93,14 @@ resource "opnsense_firewall_filter" "wan_block_all" {
   provider    = opnsense.fw_ext
   enabled     = true
   description = "Block tout WAN entrant non autorise"
-  interface   = "wan"
+  interface = {
+    interface = ["wan"]
+  }
   filter = {
     action    = "block"
     direction = "in"
     quick     = true
+    protocol  = "any"
     log       = true
     source = {
       net = "any"
