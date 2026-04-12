@@ -24,7 +24,7 @@ resource "opnsense_firewall_filter" "wg_inbound" {
     action    = "pass"
     direction = "in"
     quick     = true
-    protocol  = "udp"
+    protocol  = "UDP"
     source = {
       net = "any"
     }

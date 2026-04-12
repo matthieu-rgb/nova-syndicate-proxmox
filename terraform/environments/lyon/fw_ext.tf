@@ -13,7 +13,7 @@ resource "opnsense_firewall_filter" "wan_to_dmz_http" {
     action    = "pass"
     direction = "in"
     quick     = true
-    protocol  = "tcp"
+    protocol  = "TCP"
     source = {
       net = "any"
     }
@@ -35,7 +35,7 @@ resource "opnsense_firewall_filter" "wan_to_dmz_https" {
     action    = "pass"
     direction = "in"
     quick     = true
-    protocol  = "tcp"
+    protocol  = "TCP"
     source = {
       net = "any"
     }
@@ -57,7 +57,7 @@ resource "opnsense_firewall_filter" "wan_to_mail" {
     action    = "pass"
     direction = "in"
     quick     = true
-    protocol  = "tcp"
+    protocol  = "TCP"
     source = {
       net = "any"
     }

@@ -13,7 +13,7 @@ resource "opnsense_firewall_filter" "bastion_to_servers_ssh" {
     action    = "pass"
     direction = "in"
     quick     = true
-    protocol  = "tcp"
+    protocol  = "TCP"
     source = {
       net = "192.168.1.10/32"
     }
