@@ -6,3 +6,8 @@ inventory/group_vars/all/vault.yml.bak
 __pycache__/
 .vagrant/
 terraform.tfvars
+**/.terraform/
+**/*.tfstate
+**/*.tfstate.backup
+**/*.tfvars
+!**/example.tfvars
