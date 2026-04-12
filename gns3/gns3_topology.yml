@@ -18,11 +18,11 @@
     tpl_opnsense:    "753886e0-5c68-4bcf-88a3-272bb943e5c5"   # a remplacer apres reinstallation
     tpl_debian:      "eeca083d-3069-460f-b3b6-aef20b62456f"
     tpl_c2691:       "26b00ad3-dc66-4a6b-8492-c57ba98430e8"
-    tpl_iou_l2:      "54a678c9-e848-4b41-9b8c-7737ace0194a"
+    tpl_iou_l2:      "5e60c842-4e99-4c0d-b484-91a5669eb20e"
     tpl_vpcs:        "19021f99-e36f-394d-b4a1-8aaa902ab9cc"
     tpl_switch:      "1966b864-93e7-32d5-965f-001384eec461"
     tpl_cloud:       "39e257dc-8412-3174-b6b3-0ee3ed6a43e9"
-    tpl_webterm:     "1e8cae7d-2a79-4a6c-9303-52222da23c62"
+    tpl_webterm:     "cdbc142b-b183-4f36-9b6b-58f8f6d29e22"
 
   tasks:
 
