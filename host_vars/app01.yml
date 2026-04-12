@@ -1,0 +1,4 @@
+ansible_ip: 192.168.20.13
+ansible_netmask: 255.255.255.240
+ansible_gateway: 192.168.20.1
+ansible_dns: 192.168.20.10
