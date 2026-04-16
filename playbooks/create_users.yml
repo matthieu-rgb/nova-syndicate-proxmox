@@ -1,0 +1,32 @@
+---
+- name: Creation utilisateurs Samba AD depuis CSV
+  hosts: domain_controllers
+  become: true
+  gather_facts: false
+  vars:
+    csv_file: "{{ playbook_dir }}/../files/new_users.csv"
+    default_password: "Nova2026!"
+  tasks:
+    - name: Lire le fichier CSV
+      read_csv:
+        path: "{{ csv_file }}"
+      register: users_list
+      delegate_to: localhost
+    - name: Creer chaque utilisateur
+      shell: >
+        samba-tool user create {{ item.username }} {{ default_password }}
+        --given-name="{{ item.prenom }}"
+        --surname="{{ item.nom }}"
+        --mail-address="{{ item.email }}"
+      loop: "{{ users_list.list }}"
+      ignore_errors: true
+    - name: Ajouter au groupe
+      shell: samba-tool group addmembers {{ item.groupe }} {{ item.username }}
+      loop: "{{ users_list.list }}"
+      ignore_errors: true
+    - name: Lister les utilisateurs
+      shell: samba-tool user list
+      register: result
+    - name: Resultat
+      debug:
+        var: result.stdout_lines

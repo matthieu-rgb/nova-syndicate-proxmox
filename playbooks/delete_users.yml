@@ -1,0 +1,36 @@
+---
+- name: Suppression utilisateurs Samba AD depuis CSV
+  hosts: domain_controllers
+  become: true
+  gather_facts: false
+  vars:
+    csv_file: "{{ playbook_dir }}/../files/delete_users.csv"
+  tasks:
+    - name: Lire le fichier CSV
+      read_csv:
+        path: "{{ csv_file }}"
+      register: users_list
+      delegate_to: localhost
+
+    - name: Retirer de tous les groupes
+      shell: samba-tool group removemembers {{ item.groupe }} {{ item.username }}
+      loop: "{{ users_list.list }}"
+      ignore_errors: true
+
+    - name: Desactiver le compte
+      shell: samba-tool user disable {{ item.username }}
+      loop: "{{ users_list.list }}"
+      ignore_errors: true
+
+    - name: Supprimer le compte
+      shell: samba-tool user delete {{ item.username }}
+      loop: "{{ users_list.list }}"
+      ignore_errors: true
+
+    - name: Lister les utilisateurs restants
+      shell: samba-tool user list
+      register: result
+
+    - name: Resultat
+      debug:
+        var: result.stdout_lines

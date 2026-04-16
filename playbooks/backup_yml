@@ -1,0 +1,46 @@
+---
+- name: Verification BorgBackup Nova Syndicate
+  hosts: backups
+  become: true
+  gather_facts: true
+  vars:
+    borg_repo: "/var/backup/nova"
+    borg_passphrase: "{{ vault_borg_passphrase }}"
+    destinataire: "j.thalor@nova-syndicate.fr"
+    retention_jours: 7
+
+  tasks:
+    - name: Lister les archives Borg
+      shell: borg list {{ borg_repo }}
+      environment:
+        BORG_PASSPHRASE: "{{ borg_passphrase }}"
+      register: borg_list
+      ignore_errors: true
+
+    - name: Verifier qu'une archive recente existe
+      shell: >
+        borg list {{ borg_repo }} --last 1 --format="{time}" |
+        awk '{print $1}'
+      environment:
+        BORG_PASSPHRASE: "{{ borg_passphrase }}"
+      register: last_backup
+      ignore_errors: true
+
+    - name: Alerte si pas de backup recent
+      mail:
+        host: mail01.nova.local
+        port: 25
+        to: "{{ destinataire }}"
+        subject: "[ALERTE] Backup manquant sur {{ inventory_hostname }}"
+        body: |
+          ALERTE Nova Syndicate
+          Serveur : {{ inventory_hostname }}
+          Probleme : Aucune archive BorgBackup recente
+          Derniere archive : {{ last_backup.stdout }}
+          Date : {{ ansible_date_time.iso8601 }}
+      when: borg_list.rc != 0
+      ignore_errors: true
+
+    - name: Afficher les archives disponibles
+      debug:
+        var: borg_list.stdout_lines

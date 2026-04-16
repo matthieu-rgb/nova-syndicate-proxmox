@@ -1,0 +1,33 @@
+---
+- name: Alerte disque Nova Syndicate
+  hosts: all
+  become: true
+  gather_facts: true
+  vars:
+    seuil_alerte: 80
+    destinataire: "j.thalor@nova-syndicate.fr"
+
+  tasks:
+    - name: Verifier usage disque
+      shell: df -h / | awk 'NR==2 {print $5}' | tr -d '%'
+      register: disk_usage
+      changed_when: false
+
+    - name: Alerte si disque superieur au seuil
+      mail:
+        host: mail01.nova.local
+        port: 25
+        to: "{{ destinataire }}"
+        subject: "[ALERTE] Disque plein sur {{ inventory_hostname }}"
+        body: |
+          ALERTE Nova Syndicate
+          Serveur : {{ inventory_hostname }}
+          Usage disque : {{ disk_usage.stdout }}%
+          Seuil : {{ seuil_alerte }}%
+          Date : {{ ansible_date_time.iso8601 }}
+      when: disk_usage.stdout | int >= seuil_alerte
+      ignore_errors: true
+
+    - name: Afficher statut disque
+      debug:
+        msg: "{{ inventory_hostname }} -- Disque: {{ disk_usage.stdout }}% (seuil: {{ seuil_alerte }}%)"

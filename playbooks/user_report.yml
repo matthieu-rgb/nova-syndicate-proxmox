@@ -1,0 +1,57 @@
+---
+- name: Rapport comptes utilisateurs Samba AD
+  hosts: domain_controllers
+  become: true
+  gather_facts: true
+
+  vars:
+    destinataire: "j.thalor@nova-syndicate.fr"
+
+  tasks:
+    - name: Lister tous les utilisateurs AD
+      shell: samba-tool user list
+      register: all_users
+
+    - name: Lister les utilisateurs desactives
+      shell: samba-tool user list --filter="(userAccountControl:1.2.840.113556.1.4.803:=2)"
+      register: disabled_users
+      ignore_errors: true
+
+    - name: Lister les membres par groupe
+      shell: samba-tool group listmembers {{ item }}
+      loop:
+        - GRP_Admins
+        - GRP_IT
+        - GRP_Logistics
+        - GRP_Sales
+        - GRP_Executive
+      register: group_members
+      ignore_errors: true
+
+    - name: Generer le rapport
+      mail:
+        host: mail01.nova.local
+        port: 25
+        to: "{{ destinataire }}"
+        subject: "[RAPPORT] Comptes AD Nova Syndicate - {{ ansible_date_time.date }}"
+        body: |
+          RAPPORT MENSUEL COMPTES AD
+          Nova Syndicate -- {{ ansible_date_time.date }}
+
+          UTILISATEURS ACTIFS :
+          {{ all_users.stdout }}
+
+          UTILISATEURS DESACTIVES :
+          {{ disabled_users.stdout | default('Aucun') }}
+
+          GROUPES :
+          {% for result in group_members.results %}
+          {{ result.item }} : {{ result.stdout_lines | join(', ') }}
+          {% endfor %}
+      ignore_errors: true
+
+    - name: Afficher le rapport
+      debug:
+        msg: |
+          Utilisateurs AD : {{ all_users.stdout_lines | length }}
+          Date : {{ ansible_date_time.date }}
