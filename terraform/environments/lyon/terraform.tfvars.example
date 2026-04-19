@@ -1,16 +1,32 @@
-# Copier ce fichier en terraform.tfvars et remplir les valeurs
-# JAMAIS committer terraform.tfvars dans Git (dans .gitignore)
+# =============================================================================
+# Nova Syndicate -- terraform.tfvars
+# Copier ce fichier en terraform.tfvars et remplir les vraies valeurs.
+# Ce fichier .example est commite sur GitHub.
+# terraform.tfvars ne l'est JAMAIS (.gitignore)
+# =============================================================================
 
-# IPs de gestion des firewalls (interface console OPNsense dans GNS3)
-fw_ext_ip = "192.168.1.1"
-fw_int_ip = "192.168.1.2"
+# IPs de management des firewalls
+fw_ext_lyon_ip = "10.0.0.2"
+fw_int_lyon_ip = "10.0.1.2"
+fw_ext_mrs_ip  = "10.1.0.2"
 
-# Cles API OPNsense
-# A generer dans : System > Access > Users > votre user > API keys
-fw_ext_api_key    = "VOTRE_API_KEY_FW_EXT"
-fw_ext_api_secret = "VOTRE_API_SECRET_FW_EXT"
-fw_int_api_key    = "VOTRE_API_KEY_FW_INT"
-fw_int_api_secret = "VOTRE_API_SECRET_FW_INT"
+# Cles API FW-EXT-LYON01
+# Trouver dans : System > Access > Users > admin > API keys
+fw_ext_lyon_api_key    = "VOTRE_CLE_API_FW_EXT"
+fw_ext_lyon_api_secret = "VOTRE_SECRET_API_FW_EXT"
 
-# Cle privee WireGuard (generer avec : wg genkey)
-wg_server_privkey = "VOTRE_CLE_PRIVEE_WG"
+# Cles API FW-INT-LYON01
+fw_int_lyon_api_key    = "VOTRE_CLE_API_FW_INT"
+fw_int_lyon_api_secret = "VOTRE_SECRET_API_FW_INT"
+
+# Cles API FW-EXT-MRS01
+fw_ext_mrs_api_key    = "VOTRE_CLE_API_FW_MRS"
+fw_ext_mrs_api_secret = "VOTRE_SECRET_API_FW_MRS"
+
+# WireGuard -- cles generees avec : wg genkey | tee privkey | wg pubkey
+wireguard_server_privkey = "[REDACTED-OLD-WG-PRIVKEY]"
+wireguard_agent1_pubkey  = "BjHbniDzlFLLcRkooelL9lY8NHgRE0GNq8JTmS6/VQo="
+wireguard_agent2_pubkey  = ""  # laisser vide si pas d'agent 2
+
+# IPsec PSK
+ipsec_psk = "NovaIPsec2026"
