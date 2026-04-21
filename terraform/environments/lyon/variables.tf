@@ -87,3 +87,4 @@ variable "wg_server_pubkey" {
   type        = string
   sensitive   = true
 }
+variable "ipsec_psk" { sensitive = true }

@@ -1,0 +1,916 @@
+{
+  "version": 4,
+  "terraform_version": "1.14.8",
+  "serial": 21,
+  "lineage": "a37db848-ec1e-56bd-8907-f5bd8809c848",
+  "outputs": {
+    "fw_ext_api_url": {
+      "value": "https://10.0.0.2/api",
+      "type": "string"
+    },
+    "fw_int_api_url": {
+      "value": "https://10.0.1.2/api",
+      "type": "string"
+    },
+    "vlans_configures": {
+      "value": {
+        "backup": "VLAN 50 - 192.168.50.0/29",
+        "bastion": "VLAN 15 - 192.168.15.0/29",
+        "servers": "VLAN 20 - 192.168.20.0/28",
+        "users": "VLAN 30 - 192.168.30.0/26"
+      },
+      "type": [
+        "object",
+        {
+          "backup": "string",
+          "bastion": "string",
+          "servers": "string",
+          "users": "string"
+        }
+      ]
+    },
+    "wireguard_port": {
+      "value": 51820,
+      "type": "number"
+    }
+  },
+  "resources": [
+    {
+      "mode": "managed",
+      "type": "opnsense_firewall_filter",
+      "name": "bastion_to_servers_ssh",
+      "provider": "provider[\"registry.terraform.io/browningluke/opnsense\"].fw_int",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "categories": [],
+            "description": "BASTION1 SSH vers serveurs",
+            "enabled": true,
+            "filter": {
+              "action": "pass",
+              "allow_options": false,
+              "destination": {
+                "invert": false,
+                "net": "192.168.1.0/24",
+                "port": "22"
+              },
+              "direction": "in",
+              "icmp_type": [],
+              "ip_protocol": "inet",
+              "log": false,
+              "protocol": "TCP",
+              "quick": true,
+              "schedule": "",
+              "source": {
+                "invert": false,
+                "net": "192.168.1.10/32",
+                "port": ""
+              },
+              "tcp_flags": [],
+              "tcp_flags_out_of": []
+            },
+            "id": "635b91ca-0f08-411b-aee8-8bf5d151cdde",
+            "interface": {
+              "interface": [
+                "lan"
+              ],
+              "invert": false
+            },
+            "internal_tagging": {
+              "match_local": "",
+              "set_local": ""
+            },
+            "no_xmlrpc_sync": false,
+            "priority": {
+              "low_delay_set": -1,
+              "match": -1,
+              "match_tos": "",
+              "set": -1
+            },
+            "sequence": 1,
+            "source_routing": {
+              "disable_reply_to": false,
+              "gateway": "",
+              "reply_to": ""
+            },
+            "stateful_firewall": {
+              "adaptive_timeouts": {
+                "end": -1,
+                "start": -1
+              },
+              "max": {
+                "new_connections": {
+                  "count": -1,
+                  "seconds": -1
+                },
+                "source_connections": -1,
+                "source_nodes": -1,
+                "source_states": -1,
+                "states": -1
+              },
+              "no_pfsync": false,
+              "overload_table": "",
+              "policy": "",
+              "timeout": -1,
+              "type": "keep"
+            },
+            "traffic_shaping": {
+              "reverse_shaper": "",
+              "shaper": ""
+            }
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "opnsense_firewall_filter",
+      "name": "block_all_lan",
+      "provider": "provider[\"registry.terraform.io/browningluke/opnsense\"].fw_int",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "categories": [],
+            "description": "Block tout trafic non autorise",
+            "enabled": true,
+            "filter": {
+              "action": "block",
+              "allow_options": false,
+              "destination": {
+                "invert": false,
+                "net": "any",
+                "port": ""
+              },
+              "direction": "in",
+              "icmp_type": [],
+              "ip_protocol": "inet",
+              "log": true,
+              "protocol": "any",
+              "quick": true,
+              "schedule": "",
+              "source": {
+                "invert": false,
+                "net": "any",
+                "port": ""
+              },
+              "tcp_flags": [],
+              "tcp_flags_out_of": []
+            },
+            "id": "2422743a-b24b-4b6a-b83c-e11e2c82773d",
+            "interface": {
+              "interface": [
+                "lan"
+              ],
+              "invert": false
+            },
+            "internal_tagging": {
+              "match_local": "",
+              "set_local": ""
+            },
+            "no_xmlrpc_sync": false,
+            "priority": {
+              "low_delay_set": -1,
+              "match": -1,
+              "match_tos": "",
+              "set": -1
+            },
+            "sequence": 1,
+            "source_routing": {
+              "disable_reply_to": false,
+              "gateway": "",
+              "reply_to": ""
+            },
+            "stateful_firewall": {
+              "adaptive_timeouts": {
+                "end": -1,
+                "start": -1
+              },
+              "max": {
+                "new_connections": {
+                  "count": -1,
+                  "seconds": -1
+                },
+                "source_connections": -1,
+                "source_nodes": -1,
+                "source_states": -1,
+                "states": -1
+              },
+              "no_pfsync": false,
+              "overload_table": "",
+              "policy": "",
+              "timeout": -1,
+              "type": "keep"
+            },
+            "traffic_shaping": {
+              "reverse_shaper": "",
+              "shaper": ""
+            }
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "opnsense_firewall_filter",
+      "name": "lan_to_internet",
+      "provider": "provider[\"registry.terraform.io/browningluke/opnsense\"].fw_int",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "categories": [],
+            "description": "LAN vers internet via FW-EXT",
+            "enabled": true,
+            "filter": {
+              "action": "pass",
+              "allow_options": false,
+              "destination": {
+                "invert": false,
+                "net": "any",
+                "port": ""
+              },
+              "direction": "in",
+              "icmp_type": [],
+              "ip_protocol": "inet",
+              "log": false,
+              "protocol": "any",
+              "quick": true,
+              "schedule": "",
+              "source": {
+                "invert": false,
+                "net": "192.168.1.0/24",
+                "port": ""
+              },
+              "tcp_flags": [],
+              "tcp_flags_out_of": []
+            },
+            "id": "29f739dc-5434-4e21-847f-79e745f1e58a",
+            "interface": {
+              "interface": [
+                "lan"
+              ],
+              "invert": false
+            },
+            "internal_tagging": {
+              "match_local": "",
+              "set_local": ""
+            },
+            "no_xmlrpc_sync": false,
+            "priority": {
+              "low_delay_set": -1,
+              "match": -1,
+              "match_tos": "",
+              "set": -1
+            },
+            "sequence": 1,
+            "source_routing": {
+              "disable_reply_to": false,
+              "gateway": "",
+              "reply_to": ""
+            },
+            "stateful_firewall": {
+              "adaptive_timeouts": {
+                "end": -1,
+                "start": -1
+              },
+              "max": {
+                "new_connections": {
+                  "count": -1,
+                  "seconds": -1
+                },
+                "source_connections": -1,
+                "source_nodes": -1,
+                "source_states": -1,
+                "states": -1
+              },
+              "no_pfsync": false,
+              "overload_table": "",
+              "policy": "",
+              "timeout": -1,
+              "type": "keep"
+            },
+            "traffic_shaping": {
+              "reverse_shaper": "",
+              "shaper": ""
+            }
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "opnsense_firewall_filter",
+      "name": "lan_to_wan",
+      "provider": "provider[\"registry.terraform.io/browningluke/opnsense\"].fw_ext",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "categories": [],
+            "description": "Transit LAN vers internet",
+            "enabled": true,
+            "filter": {
+              "action": "pass",
+              "allow_options": false,
+              "destination": {
+                "invert": false,
+                "net": "any",
+                "port": ""
+              },
+              "direction": "in",
+              "icmp_type": [],
+              "ip_protocol": "inet",
+              "log": false,
+              "protocol": "any",
+              "quick": true,
+              "schedule": "",
+              "source": {
+                "invert": false,
+                "net": "10.0.1.0/24",
+                "port": ""
+              },
+              "tcp_flags": [],
+              "tcp_flags_out_of": []
+            },
+            "id": "6fd6d5e5-34af-4454-b9e8-1995a0e9129b",
+            "interface": {
+              "interface": [
+                "lan"
+              ],
+              "invert": false
+            },
+            "internal_tagging": {
+              "match_local": "",
+              "set_local": ""
+            },
+            "no_xmlrpc_sync": false,
+            "priority": {
+              "low_delay_set": -1,
+              "match": -1,
+              "match_tos": "",
+              "set": -1
+            },
+            "sequence": 1,
+            "source_routing": {
+              "disable_reply_to": false,
+              "gateway": "",
+              "reply_to": ""
+            },
+            "stateful_firewall": {
+              "adaptive_timeouts": {
+                "end": -1,
+                "start": -1
+              },
+              "max": {
+                "new_connections": {
+                  "count": -1,
+                  "seconds": -1
+                },
+                "source_connections": -1,
+                "source_nodes": -1,
+                "source_states": -1,
+                "states": -1
+              },
+              "no_pfsync": false,
+              "overload_table": "",
+              "policy": "",
+              "timeout": -1,
+              "type": "keep"
+            },
+            "traffic_shaping": {
+              "reverse_shaper": "",
+              "shaper": ""
+            }
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "opnsense_firewall_filter",
+      "name": "wan_block_all",
+      "provider": "provider[\"registry.terraform.io/browningluke/opnsense\"].fw_ext",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "categories": [],
+            "description": "Block tout WAN entrant non autorise",
+            "enabled": true,
+            "filter": {
+              "action": "block",
+              "allow_options": false,
+              "destination": {
+                "invert": false,
+                "net": "any",
+                "port": ""
+              },
+              "direction": "in",
+              "icmp_type": [],
+              "ip_protocol": "inet",
+              "log": true,
+              "protocol": "any",
+              "quick": true,
+              "schedule": "",
+              "source": {
+                "invert": false,
+                "net": "any",
+                "port": ""
+              },
+              "tcp_flags": [],
+              "tcp_flags_out_of": []
+            },
+            "id": "8e0bfc93-7b8b-45fc-9219-560806833ab0",
+            "interface": {
+              "interface": [
+                "wan"
+              ],
+              "invert": false
+            },
+            "internal_tagging": {
+              "match_local": "",
+              "set_local": ""
+            },
+            "no_xmlrpc_sync": false,
+            "priority": {
+              "low_delay_set": -1,
+              "match": -1,
+              "match_tos": "",
+              "set": -1
+            },
+            "sequence": 1,
+            "source_routing": {
+              "disable_reply_to": false,
+              "gateway": "",
+              "reply_to": ""
+            },
+            "stateful_firewall": {
+              "adaptive_timeouts": {
+                "end": -1,
+                "start": -1
+              },
+              "max": {
+                "new_connections": {
+                  "count": -1,
+                  "seconds": -1
+                },
+                "source_connections": -1,
+                "source_nodes": -1,
+                "source_states": -1,
+                "states": -1
+              },
+              "no_pfsync": false,
+              "overload_table": "",
+              "policy": "",
+              "timeout": -1,
+              "type": "keep"
+            },
+            "traffic_shaping": {
+              "reverse_shaper": "",
+              "shaper": ""
+            }
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "opnsense_firewall_filter",
+      "name": "wan_to_dmz_http",
+      "provider": "provider[\"registry.terraform.io/browningluke/opnsense\"].fw_ext",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "categories": [],
+            "description": "HTTP WAN vers DMZ",
+            "enabled": true,
+            "filter": {
+              "action": "pass",
+              "allow_options": false,
+              "destination": {
+                "invert": false,
+                "net": "172.16.1.0/29",
+                "port": "80"
+              },
+              "direction": "in",
+              "icmp_type": [],
+              "ip_protocol": "inet",
+              "log": false,
+              "protocol": "TCP",
+              "quick": true,
+              "schedule": "",
+              "source": {
+                "invert": false,
+                "net": "any",
+                "port": ""
+              },
+              "tcp_flags": [],
+              "tcp_flags_out_of": []
+            },
+            "id": "a52cf48b-9f4b-4266-a1de-627e0533a608",
+            "interface": {
+              "interface": [
+                "wan"
+              ],
+              "invert": false
+            },
+            "internal_tagging": {
+              "match_local": "",
+              "set_local": ""
+            },
+            "no_xmlrpc_sync": false,
+            "priority": {
+              "low_delay_set": -1,
+              "match": -1,
+              "match_tos": "",
+              "set": -1
+            },
+            "sequence": 1,
+            "source_routing": {
+              "disable_reply_to": false,
+              "gateway": "",
+              "reply_to": ""
+            },
+            "stateful_firewall": {
+              "adaptive_timeouts": {
+                "end": -1,
+                "start": -1
+              },
+              "max": {
+                "new_connections": {
+                  "count": -1,
+                  "seconds": -1
+                },
+                "source_connections": -1,
+                "source_nodes": -1,
+                "source_states": -1,
+                "states": -1
+              },
+              "no_pfsync": false,
+              "overload_table": "",
+              "policy": "",
+              "timeout": -1,
+              "type": "keep"
+            },
+            "traffic_shaping": {
+              "reverse_shaper": "",
+              "shaper": ""
+            }
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "opnsense_firewall_filter",
+      "name": "wan_to_dmz_https",
+      "provider": "provider[\"registry.terraform.io/browningluke/opnsense\"].fw_ext",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "categories": [],
+            "description": "HTTPS WAN vers DMZ",
+            "enabled": true,
+            "filter": {
+              "action": "pass",
+              "allow_options": false,
+              "destination": {
+                "invert": false,
+                "net": "172.16.1.0/29",
+                "port": "443"
+              },
+              "direction": "in",
+              "icmp_type": [],
+              "ip_protocol": "inet",
+              "log": false,
+              "protocol": "TCP",
+              "quick": true,
+              "schedule": "",
+              "source": {
+                "invert": false,
+                "net": "any",
+                "port": ""
+              },
+              "tcp_flags": [],
+              "tcp_flags_out_of": []
+            },
+            "id": "7376f880-6572-432b-adbb-4a21566f88cd",
+            "interface": {
+              "interface": [
+                "wan"
+              ],
+              "invert": false
+            },
+            "internal_tagging": {
+              "match_local": "",
+              "set_local": ""
+            },
+            "no_xmlrpc_sync": false,
+            "priority": {
+              "low_delay_set": -1,
+              "match": -1,
+              "match_tos": "",
+              "set": -1
+            },
+            "sequence": 1,
+            "source_routing": {
+              "disable_reply_to": false,
+              "gateway": "",
+              "reply_to": ""
+            },
+            "stateful_firewall": {
+              "adaptive_timeouts": {
+                "end": -1,
+                "start": -1
+              },
+              "max": {
+                "new_connections": {
+                  "count": -1,
+                  "seconds": -1
+                },
+                "source_connections": -1,
+                "source_nodes": -1,
+                "source_states": -1,
+                "states": -1
+              },
+              "no_pfsync": false,
+              "overload_table": "",
+              "policy": "",
+              "timeout": -1,
+              "type": "keep"
+            },
+            "traffic_shaping": {
+              "reverse_shaper": "",
+              "shaper": ""
+            }
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "opnsense_firewall_filter",
+      "name": "wan_to_mail",
+      "provider": "provider[\"registry.terraform.io/browningluke/opnsense\"].fw_ext",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "categories": [],
+            "description": "SMTP WAN vers MAIL1",
+            "enabled": true,
+            "filter": {
+              "action": "pass",
+              "allow_options": false,
+              "destination": {
+                "invert": false,
+                "net": "172.16.1.3",
+                "port": "25"
+              },
+              "direction": "in",
+              "icmp_type": [],
+              "ip_protocol": "inet",
+              "log": false,
+              "protocol": "TCP",
+              "quick": true,
+              "schedule": "",
+              "source": {
+                "invert": false,
+                "net": "any",
+                "port": ""
+              },
+              "tcp_flags": [],
+              "tcp_flags_out_of": []
+            },
+            "id": "36c4a0b0-7353-4b0a-a2e1-acd904f9177a",
+            "interface": {
+              "interface": [
+                "wan"
+              ],
+              "invert": false
+            },
+            "internal_tagging": {
+              "match_local": "",
+              "set_local": ""
+            },
+            "no_xmlrpc_sync": false,
+            "priority": {
+              "low_delay_set": -1,
+              "match": -1,
+              "match_tos": "",
+              "set": -1
+            },
+            "sequence": 1,
+            "source_routing": {
+              "disable_reply_to": false,
+              "gateway": "",
+              "reply_to": ""
+            },
+            "stateful_firewall": {
+              "adaptive_timeouts": {
+                "end": -1,
+                "start": -1
+              },
+              "max": {
+                "new_connections": {
+                  "count": -1,
+                  "seconds": -1
+                },
+                "source_connections": -1,
+                "source_nodes": -1,
+                "source_states": -1,
+                "states": -1
+              },
+              "no_pfsync": false,
+              "overload_table": "",
+              "policy": "",
+              "timeout": -1,
+              "type": "keep"
+            },
+            "traffic_shaping": {
+              "reverse_shaper": "",
+              "shaper": ""
+            }
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "opnsense_firewall_filter",
+      "name": "wg_inbound",
+      "provider": "provider[\"registry.terraform.io/browningluke/opnsense\"].fw_ext",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "categories": [],
+            "description": "WireGuard agents distants",
+            "enabled": true,
+            "filter": {
+              "action": "pass",
+              "allow_options": false,
+              "destination": {
+                "invert": false,
+                "net": "any",
+                "port": "51820"
+              },
+              "direction": "in",
+              "icmp_type": [],
+              "ip_protocol": "inet",
+              "log": false,
+              "protocol": "UDP",
+              "quick": true,
+              "schedule": "",
+              "source": {
+                "invert": false,
+                "net": "any",
+                "port": ""
+              },
+              "tcp_flags": [],
+              "tcp_flags_out_of": []
+            },
+            "id": "e425d3ec-41ef-4df0-9f35-17c1e91118ae",
+            "interface": {
+              "interface": [
+                "wan"
+              ],
+              "invert": false
+            },
+            "internal_tagging": {
+              "match_local": "",
+              "set_local": ""
+            },
+            "no_xmlrpc_sync": false,
+            "priority": {
+              "low_delay_set": -1,
+              "match": -1,
+              "match_tos": "",
+              "set": -1
+            },
+            "sequence": 1,
+            "source_routing": {
+              "disable_reply_to": false,
+              "gateway": "",
+              "reply_to": ""
+            },
+            "stateful_firewall": {
+              "adaptive_timeouts": {
+                "end": -1,
+                "start": -1
+              },
+              "max": {
+                "new_connections": {
+                  "count": -1,
+                  "seconds": -1
+                },
+                "source_connections": -1,
+                "source_nodes": -1,
+                "source_states": -1,
+                "states": -1
+              },
+              "no_pfsync": false,
+              "overload_table": "",
+              "policy": "",
+              "timeout": -1,
+              "type": "keep"
+            },
+            "traffic_shaping": {
+              "reverse_shaper": "",
+              "shaper": ""
+            }
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "opnsense_ipsec_psk",
+      "name": "lyon_marseille",
+      "provider": "provider[\"registry.terraform.io/browningluke/opnsense\"].fw_ext",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "description": "PSK tunnel Lyon-Marseille",
+            "id": "4686771c-664c-4dc0-92b0-e6b5e0da65e0",
+            "identity_local": "192.168.100.52",
+            "identity_remote": "192.168.100.53",
+            "pre_shared_key": "NovaIPsec2026",
+            "type": "PSK"
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "opnsense_wireguard_server",
+      "name": "agents",
+      "provider": "provider[\"registry.terraform.io/browningluke/opnsense\"].fw_ext",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "disable_routes": false,
+            "dns": [
+              "192.168.1.20"
+            ],
+            "enabled": true,
+            "gateway": "",
+            "id": "de1acb0c-f9e9-4e1a-bd4d-317002d7af36",
+            "instance": "0",
+            "mtu": -1,
+            "name": "nova-agents",
+            "peers": [],
+            "port": 51820,
+            "private_key": "kHr1jUZrNgtM3dKJJSsV2ncJc8ghDqoyOwYjUyIFk0U=",
+            "public_key": "KbZfqv1CCs7efc45RjQw3Dt7AkPvem7QMc2KeiWS9GM=",
+            "tunnel_address": [
+              "10.10.0.1/24"
+            ]
+          },
+          "sensitive_attributes": [
+            [
+              {
+                "type": "get_attr",
+                "value": "private_key"
+              }
+            ],
+            [
+              {
+                "type": "get_attr",
+                "value": "public_key"
+              }
+            ]
+          ],
+          "identity_schema_version": 0
+        }
+      ]
+    }
+  ],
+  "check_results": null
+}
