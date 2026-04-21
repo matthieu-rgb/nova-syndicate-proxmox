@@ -5,6 +5,7 @@ provider "registry.terraform.io/browningluke/opnsense" {
   version     = "0.16.1"
   constraints = "~> 0.16.0"
   hashes = [
+    "h1:VBRwz9kNieyVSKBZ+0zyFyfSuoidJniKNOxJ2Z8WE7E=",
     "h1:y6SN6sJimLkfH/6tou1Pg29wQmvY2sHgX4PTividGFc=",
     "zh:133c1c1e1bd2e2828f191a0524cf5ab866bed9417c0c8a854368f9ea638b246e",
     "zh:2f950a7a21131afde365b8f115dc5646c2fdc669db51c0ce260b990019ca24fc",
