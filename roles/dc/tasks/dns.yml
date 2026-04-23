@@ -1,8 +1,7 @@
 ---
 - name: Configurer le DNS forwarder dans Samba
   ansible.builtin.command:
-    cmd: >
-      samba-tool dns serverinfo {{ inventory_hostname }}
+    cmd: samba-tool dns serverinfo 127.0.0.1
   register: dns_check
   changed_when: false
   failed_when: false
@@ -10,7 +9,7 @@
 - name: Ajouter les enregistrements DNS des serveurs
   ansible.builtin.command:
     cmd: >
-      samba-tool dns add {{ inventory_hostname }} {{ nova_domain }}
+      samba-tool dns add 127.0.0.1 {{ nova_domain }}
       {{ item.name }} A {{ item.ip }}
       -U Administrator --password="{{ vault_samba_admin_password }}"
   loop:

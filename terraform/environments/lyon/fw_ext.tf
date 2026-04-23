@@ -110,3 +110,25 @@ resource "opnsense_firewall_filter" "wan_block_all" {
     }
   }
 }
+
+resource "opnsense_firewall_filter" "dmz_to_lan_ssh" {
+  provider    = opnsense.fw_ext
+  enabled     = true
+  description = "SSH depuis DMZ vers BASTION01 pour Ansible"
+  interface = {
+    interface = ["opt1"]
+  }
+  filter = {
+    action    = "pass"
+    direction = "in"
+    quick     = true
+    protocol  = "TCP"
+    source = {
+      net = "172.16.1.0/29"
+    }
+    destination = {
+      net  = "192.168.15.2"
+      port = "22"
+    }
+  }
+}
