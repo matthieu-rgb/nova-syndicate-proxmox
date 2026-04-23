@@ -1,12 +1,14 @@
 ---
+- name: Supprimer les verrous apt si presents
+  ansible.builtin.shell: |
+    systemctl stop unattended-upgrades apt-daily.timer apt-daily-upgrade.timer 2>/dev/null; true
+    rm -f /var/lib/apt/lists/lock /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock 2>/dev/null; true
+  changed_when: false
+
 - name: Mettre a jour le cache APT
   ansible.builtin.apt:
     update_cache: true
     cache_valid_time: 3600
-
-- name: Mettre a jour tous les paquets installes
-  ansible.builtin.apt:
-    upgrade: safe
 
 - name: Installer les paquets de base
   ansible.builtin.apt:
@@ -30,9 +32,3 @@
     name: "{{ common_extra_packages }}"
     state: present
   when: common_extra_packages | length > 0
-
-- name: Supprimer les paquets inutiles
-  ansible.builtin.apt:
-    name: "{{ common_remove_packages }}"
-    state: absent
-    purge: true
