@@ -1,49 +1,49 @@
 ---
-# =============================================================
-# Nova Syndicate — Deploiement complet Phase II
-# Ordre obligatoire : common -> hardening -> role metier
-# Usage : ansible-playbook site.yml
-# Dry run : ansible-playbook site.yml --check --diff
-# =============================================================
-
 - name: "ETAPE 1 -- Base commune sur toutes les VMs"
   hosts: nova_all
+  become: true
   roles:
     - common
   tags: [role:common]
 
 - name: "ETAPE 2 -- Durcissement de toutes les VMs"
   hosts: nova_all
+  become: true
   roles:
     - hardening
   tags: [role:hardening]
 
 - name: "ETAPE 3 -- Controleur de Domaine (DC01)"
   hosts: domain_controllers
+  become: true
   roles:
     - dc
   tags: [role:dc]
 
 - name: "ETAPE 4 -- Serveur de Fichiers (FS01)"
   hosts: fileservers
+  become: true
   roles:
     - fileserver
   tags: [role:fileserver]
 
 - name: "ETAPE 5 -- Base de Donnees (DB01)"
   hosts: databases
+  become: true
   roles:
     - database
   tags: [role:database]
 
 - name: "ETAPE 6 -- Bastion SSH (BASTION01)"
   hosts: bastions
+  become: true
   roles:
     - bastion
   tags: [role:bastion]
 
 - name: "ETAPE 7 -- VPN WireGuard + IPsec"
   hosts: domain_controllers
+  become: true
   roles:
     - vpn
   tags: [role:vpn]

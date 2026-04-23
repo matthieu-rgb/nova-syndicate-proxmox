@@ -1,34 +1,15 @@
 ---
-# =============================================================
-# SECRETS — Chiffrer avec : ansible-vault encrypt inventory/group_vars/all/vault.yml
-# En Phase II : remplace par HashiCorp Vault (tokens par role, rotation auto)
-# =============================================================
-
-vault_ansible_sudo_password:    "CHANGE_ME"
-
-# Samba AD
-vault_samba_admin_password:     "CHANGE_ME"
-vault_krb5_admin_password:      "CHANGE_ME"
-
-# MariaDB
-vault_mariadb_root_password:    "CHANGE_ME"
-vault_mariadb_backup_password:  "CHANGE_ME"
-vault_mariadb_app_password:     "CHANGE_ME"
-
-# WireGuard
-vault_wireguard_server_privkey: "CHANGE_ME"
+vault_ansible_sudo_password:    "debian"
+vault_samba_admin_password:     "Nova2026!"
+vault_krb5_admin_password:      "Nova2026!"
+vault_mariadb_root_password:    "Nova2026!"
+vault_mariadb_backup_password:  "Nova2026!"
+vault_mariadb_app_password:     "Nova2026!"
+vault_wireguard_server_privkey: "kHr1jUZrNgtM3dKJJSsV2ncJc8ghDqoyOwYjUyIFk0U="
 vault_wireguard_psk:            "CHANGE_ME"
-
-# IPsec
-vault_ipsec_psk_lyon_mrs:       "CHANGE_ME"
-
-# Backblaze B2
+vault_ipsec_psk_lyon_mrs:       "Nova2026!"
 vault_b2_key_id:                "CHANGE_ME"
 vault_b2_application_key:       "CHANGE_ME"
-
-# HashiCorp Vault (Phase II)
 vault_hcv_root_token:           "CHANGE_ME"
 vault_hcv_ansible_token:        "CHANGE_ME"
-
-# Teleport
 vault_teleport_join_token:      "CHANGE_ME"
