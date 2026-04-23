@@ -1,0 +1,8 @@
+---
+squid_port: 3128
+squid_allowed_networks:
+  - 192.168.20.0/28
+  - 192.168.30.0/26
+
+hardening_extra_nft_rules:
+  - "tcp dport 3128 accept"
