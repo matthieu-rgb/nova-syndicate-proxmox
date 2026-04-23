@@ -2,7 +2,7 @@
 mariadb_bind_address:     "192.168.20.12"
 mariadb_port:             3306
 mariadb_max_connections:  150
-mariadb_innodb_buffer:    "8G"
+mariadb_innodb_buffer:    "256M"
 
 # PITR — binlog
 mariadb_log_bin:          true
@@ -34,3 +34,6 @@ nova_databases:
     user:     "app_rh"
     password: "{{ vault_mariadb_app_password }}"
     privs:    "nova_rh.*:SELECT,INSERT,UPDATE,DELETE"
+
+common_extra_packages:
+  - cron
