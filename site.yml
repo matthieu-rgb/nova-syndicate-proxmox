@@ -54,3 +54,10 @@
   roles:
     - proxy
   tags: [role:proxy]
+
+- name: "ETAPE 9 -- Agents Wazuh (monitoring NIS2)"
+  hosts: nova_all
+  become: true
+  roles:
+    - wazuh
+  tags: [role:wazuh]
