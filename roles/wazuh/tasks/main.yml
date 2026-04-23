@@ -50,3 +50,30 @@
   args:
     creates: /var/ossec/etc/client.keys
   notify: restart wazuh-agent
+
+- name: Deployer les regles NIS2 custom
+  ansible.builtin.copy:
+    dest: /var/ossec/etc/rules/nova_nis2_rules.xml
+    content: |
+      <group name="nova,nis2,">
+        <rule id="100001" level="10">
+          <if_group>sshd</if_group>
+          <match>Failed password</match>
+          <description>NIS2: Tentative authentification SSH echouee</description>
+          <group>authentication_failure,nis2</group>
+        </rule>
+        <rule id="100002" level="8">
+          <if_group>sudo</if_group>
+          <match>COMMAND</match>
+          <description>NIS2: Execution commande sudo - privilege eleve</description>
+          <group>privilege_escalation,nis2</group>
+        </rule>
+        <rule id="100003" level="12">
+          <if_group>syscheck</if_group>
+          <match>/etc/passwd|/etc/shadow|/etc/sudoers</match>
+          <description>NIS2: Modification fichier systeme critique</description>
+          <group>file_integrity,nis2</group>
+        </rule>
+      </group>
+  when: inventory_hostname == groups["app"][0]
+  notify: reload wazuh-manager
