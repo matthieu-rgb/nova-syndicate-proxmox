@@ -1,0 +1,20 @@
+---
+- name: Installer Squid
+  ansible.builtin.apt:
+    name: squid
+    state: present
+
+- name: Deployer la configuration Squid
+  ansible.builtin.template:
+    src: squid.conf.j2
+    dest: /etc/squid/squid.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart squid
+
+- name: Activer et demarrer Squid
+  ansible.builtin.service:
+    name: squid
+    state: started
+    enabled: true

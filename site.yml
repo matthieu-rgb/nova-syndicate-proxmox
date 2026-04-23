@@ -47,3 +47,10 @@
   roles:
     - vpn
   tags: [role:vpn]
+
+- name: "ETAPE 8 -- Proxy Squid"
+  hosts: proxies
+  become: true
+  roles:
+    - proxy
+  tags: [role:proxy]

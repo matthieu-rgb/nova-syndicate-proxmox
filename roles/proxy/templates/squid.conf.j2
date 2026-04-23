@@ -1,0 +1,25 @@
+# Nova Syndicate - Squid Proxy
+# NIS2 art. 21.2.e - Protection couche 7
+
+http_port {{ squid_port }}
+
+# Reseaux autorises
+{% for network in squid_allowed_networks %}
+acl localnet src {{ network }}
+{% endfor %}
+
+# Securite - masquer les IPs internes (NIS2)
+forwarded_for off
+via off
+
+# Acces
+http_access allow localnet
+http_access deny all
+
+# Logs
+access_log /var/log/squid/access.log
+cache_log /var/log/squid/cache.log
+
+# Cache
+cache_dir ufs /var/spool/squid 1000 16 256
+maximum_object_size 50 MB
