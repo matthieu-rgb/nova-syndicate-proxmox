@@ -37,3 +37,6 @@ nova_shares:
     groups_ro: []
     quota_gb:  30
     sensitive: true
+
+common_extra_packages:
+  - cron
