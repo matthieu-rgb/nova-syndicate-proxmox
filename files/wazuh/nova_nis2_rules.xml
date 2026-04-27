@@ -3,28 +3,28 @@
   <rule id="100001" level="10">
     <if_group>sshd</if_group>
     <regex>Failed password|Failed keyboard-interactive|authentication failure</regex>
-    <description>NIS2: Tentative authentification SSH echouee</description>
+    <description>NIS2: Tentative authentification SSH echouee - art.21.2.b</description>
     <group>authentication_failure,nis2</group>
   </rule>
 
   <rule id="100002" level="8">
     <if_group>sudo</if_group>
     <match>COMMAND</match>
-    <description>NIS2: Execution commande sudo - privilege eleve</description>
+    <description>NIS2: Execution commande sudo - privilege eleve - art.21.2.b</description>
     <group>privilege_escalation,nis2</group>
   </rule>
 
   <rule id="100003" level="12">
     <if_group>syscheck</if_group>
     <match>/etc/passwd|/etc/shadow|/etc/sudoers</match>
-    <description>NIS2: Modification fichier systeme critique</description>
+    <description>NIS2: Modification fichier systeme critique - art.21.2.e</description>
     <group>file_integrity,nis2</group>
   </rule>
 
   <rule id="100004" level="14">
     <if_matched_sid>100001</if_matched_sid>
     <same_source_ip />
-    <description>NIS2: Brute force SSH detecte</description>
+    <description>NIS2: Brute force SSH detecte - art.21.2.b</description>
     <group>brute_force,nis2</group>
   </rule>
 
@@ -33,6 +33,43 @@
     <match>session opened for user root</match>
     <description>NIS2: Connexion directe root detectee - art.21.2.b</description>
     <group>authentication_success,nis2</group>
+  </rule>
+
+  <rule id="100006" level="12">
+    <if_group>syslog</if_group>
+    <match>samba|mariadb|wazuh|nginx|squid</match>
+    <regex>stopped|failed|killed</regex>
+    <description>NIS2: Service critique arrete - art.21.2.c</description>
+    <group>service_stop,nis2</group>
+  </rule>
+
+  <rule id="100007" level="10">
+    <if_group>syslog</if_group>
+    <match>FAILED SU|su: FAILED</match>
+    <description>NIS2: Tentative elevation de privilege echouee - art.21.2.b</description>
+    <group>privilege_escalation,nis2</group>
+  </rule>
+
+  <rule id="100008" level="8">
+    <if_group>syslog</if_group>
+    <match>useradd|userdel|usermod|groupadd|groupdel</match>
+    <description>NIS2: Modification compte utilisateur - art.21.2.i</description>
+    <group>account_management,nis2</group>
+  </rule>
+
+  <rule id="100009" level="10">
+    <if_group>syslog</if_group>
+    <match>iptables|nftables|ufw|firewall</match>
+    <regex>DROP|REJECT|blocked</regex>
+    <description>NIS2: Trafic reseau bloque - tentative acces non autorise - art.21.2.e</description>
+    <group>firewall,nis2</group>
+  </rule>
+
+  <rule id="100010" level="14">
+    <if_group>syslog</if_group>
+    <match>/etc/ssh/sshd_config|/etc/sudoers|/etc/hosts</match>
+    <description>NIS2: Modification configuration critique systeme - art.21.2.e</description>
+    <group>file_integrity,nis2</group>
   </rule>
 
 </group>
