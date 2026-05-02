@@ -1,5 +1,0 @@
----
-# Role : backup
-# rsync depuis FS01/DB01, rclone vers Backblaze B2 WORM
-
-# TODO : implementer les taches
