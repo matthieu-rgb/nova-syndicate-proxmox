@@ -56,7 +56,7 @@
   tags: [role:proxy]
 
 - name: "ETAPE 09 -- Wazuh Manager + regles NIS2 (APP01)"
-  hosts: app
+  hosts: app_servers
   become: true
   roles:
     - wazuh_manager
