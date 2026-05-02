@@ -1,3 +1,0 @@
----
-# Variables par defaut du role bastion
-# Ces valeurs peuvent etre surchargees dans group_vars ou host_vars

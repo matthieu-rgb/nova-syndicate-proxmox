@@ -1,5 +1,0 @@
----
-# Role : common
-# Installation des paquets de base, timezone, NTP, hostname, utilisateur ansible
-
-# TODO : implementer les taches

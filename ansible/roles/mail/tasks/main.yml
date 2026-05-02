@@ -1,5 +1,0 @@
----
-# Role : mail
-# Postfix + Dovecot, auth LDAP via DC01, TLS
-
-# TODO : implementer les taches
