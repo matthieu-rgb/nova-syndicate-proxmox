@@ -1,0 +1,25 @@
+---
+# =============================================================
+# Role wazuh_manager - orchestrateur
+# Ordre d'execution :
+#   1. install   -> paquet, repo apt, GPG
+#   2. config    -> ossec.conf principal
+#   3. rules     -> regles NIS2 custom (template depuis vars/)
+#   4. service   -> demarrage et verification
+# =============================================================
+
+- name: "Installation Wazuh Manager"
+  ansible.builtin.import_tasks: install.yml
+  tags: [wazuh_manager:install]
+
+- name: "Configuration Wazuh Manager"
+  ansible.builtin.import_tasks: config.yml
+  tags: [wazuh_manager:config]
+
+- name: "Deploiement des regles NIS2"
+  ansible.builtin.import_tasks: rules.yml
+  tags: [wazuh_manager:rules]
+
+- name: "Demarrage et verification du service"
+  ansible.builtin.import_tasks: service.yml
+  tags: [wazuh_manager:service]

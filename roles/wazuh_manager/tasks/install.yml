@@ -1,0 +1,34 @@
+---
+# =============================================================
+# Installation du paquet wazuh-manager
+# =============================================================
+
+- name: "[install] Installer les prerequis (gnupg, curl)"
+  ansible.builtin.apt:
+    name:
+      - gnupg
+      - curl
+    state: present
+    update_cache: true
+
+- name: "[install] Ajouter la cle GPG Wazuh"
+  ansible.builtin.shell: |
+    set -o pipefail
+    curl -s https://packages.wazuh.com/key/GPG-KEY-WAZUH \
+      | gpg --dearmor -o /usr/share/keyrings/wazuh.gpg
+  args:
+    creates: /usr/share/keyrings/wazuh.gpg
+    executable: /bin/bash
+
+- name: "[install] Ajouter le depot apt Wazuh"
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/usr/share/keyrings/wazuh.gpg] https://packages.wazuh.com/4.x/apt/ stable main"
+    state: present
+    filename: wazuh
+    update_cache: true
+
+- name: "[install] Installer wazuh-manager (version {{ wazuh_manager_version }})"
+  ansible.builtin.apt:
+    name: "wazuh-manager={{ wazuh_manager_version }}-1"
+    state: present
+  notify: restart wazuh-manager

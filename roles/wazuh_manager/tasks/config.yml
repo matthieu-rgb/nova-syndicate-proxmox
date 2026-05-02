@@ -1,0 +1,19 @@
+---
+# =============================================================
+# Configuration du Wazuh Manager
+# Pour l'instant, on utilise la configuration par defaut.
+# A enrichir si besoin :
+#   - personnalisation de ossec.conf via template
+#   - configuration de l'API REST
+#   - integration syslog forwarding (vers SIEM externe)
+# =============================================================
+
+- name: "[config] Verifier que ossec.conf existe"
+  ansible.builtin.stat:
+    path: "{{ wazuh_ossec_conf }}"
+  register: ossec_conf_stat
+
+- name: "[config] Echec explicite si ossec.conf est absent apres install"
+  ansible.builtin.fail:
+    msg: "ossec.conf introuvable - probleme d'installation Wazuh Manager"
+  when: not ossec_conf_stat.stat.exists

@@ -1,0 +1,134 @@
+---
+# =============================================================
+# Regles de detection NIS2 - Source unique de verite
+# =============================================================
+# Cette structure de donnees est consommee par :
+#   - templates/nova_nis2_rules.xml.j2  -> genere les regles Wazuh
+#   - (futur) un script de generation de matrice de conformite
+#
+# Mapping NIS2 article 21.2 :
+#   .b = Gestion des incidents (auth, brute force, privilege escalation)
+#   .c = Continuite des activites (services critiques)
+#   .e = Securite des reseaux et SI (firewall, integrite fichiers)
+#   .i = Cryptographie et controle d'acces (gestion comptes)
+# =============================================================
+
+nis2_rules:
+
+  # -----------------------------------------------------------
+  # Authentification - art. 21.2.b
+  # -----------------------------------------------------------
+  - id: 100001
+    level: 10
+    match_type: regex
+    if_group: sshd
+    pattern: "Failed password|Failed keyboard-interactive|authentication failure"
+    description: "Tentative authentification SSH echouee"
+    nis2_article: "21.2.b"
+    rule_groups: "authentication_failure,nis2"
+
+  - id: 100002
+    level: 8
+    match_type: match
+    if_group: sudo
+    pattern: "COMMAND"
+    description: "Execution commande sudo - privilege eleve"
+    nis2_article: "21.2.b"
+    rule_groups: "privilege_escalation,nis2"
+
+  # -----------------------------------------------------------
+  # Integrite fichiers systeme - art. 21.2.e
+  # -----------------------------------------------------------
+  - id: 100003
+    level: 12
+    match_type: match
+    if_group: syscheck
+    pattern: "/etc/passwd|/etc/shadow|/etc/sudoers"
+    description: "Modification fichier systeme critique"
+    nis2_article: "21.2.e"
+    rule_groups: "file_integrity,nis2"
+
+  # -----------------------------------------------------------
+  # Correlation : brute force SSH - art. 21.2.b
+  # Cette regle est SPECIALE : elle correle plusieurs occurrences
+  # de la regle 100001 depuis la meme IP source
+  # -----------------------------------------------------------
+  - id: 100004
+    level: 14
+    match_type: correlation
+    if_matched_sid: 100001
+    same_source_ip: true
+    description: "Brute force SSH detecte"
+    nis2_article: "21.2.b"
+    rule_groups: "brute_force,nis2"
+
+  # -----------------------------------------------------------
+  # Connexions privilegiees - art. 21.2.b
+  # -----------------------------------------------------------
+  - id: 100005
+    level: 12
+    match_type: match
+    if_group: sshd
+    pattern: "session opened for user root"
+    description: "Connexion directe root detectee"
+    nis2_article: "21.2.b"
+    rule_groups: "authentication_success,nis2"
+
+  # -----------------------------------------------------------
+  # Continuite de service - art. 21.2.c
+  # Pattern hybride : match ET regex (les deux conditions)
+  # -----------------------------------------------------------
+  - id: 100006
+    level: 12
+    match_type: match_and_regex
+    if_group: syslog
+    pattern: "samba|mariadb|wazuh|nginx|squid"
+    pattern_regex: "stopped|failed|killed"
+    description: "Service critique arrete"
+    nis2_article: "21.2.c"
+    rule_groups: "service_stop,nis2"
+
+  - id: 100007
+    level: 10
+    match_type: match
+    if_group: syslog
+    pattern: "FAILED SU|su: FAILED"
+    description: "Tentative elevation de privilege echouee"
+    nis2_article: "21.2.b"
+    rule_groups: "privilege_escalation,nis2"
+
+  # -----------------------------------------------------------
+  # Gestion des comptes - art. 21.2.i
+  # -----------------------------------------------------------
+  - id: 100008
+    level: 8
+    match_type: match
+    if_group: syslog
+    pattern: "useradd|userdel|usermod|groupadd|groupdel"
+    description: "Modification compte utilisateur"
+    nis2_article: "21.2.i"
+    rule_groups: "account_management,nis2"
+
+  # -----------------------------------------------------------
+  # Filtrage reseau - art. 21.2.e
+  # Pattern hybride : match (cible) ET regex (action)
+  # -----------------------------------------------------------
+  - id: 100009
+    level: 10
+    match_type: match_and_regex
+    if_group: syslog
+    pattern: "iptables|nftables|ufw|firewall"
+    pattern_regex: "DROP|REJECT|blocked"
+    description: "Trafic reseau bloque - tentative acces non autorise"
+    nis2_article: "21.2.e"
+    rule_groups: "firewall,nis2"
+
+  - id: 100010
+    level: 14
+    match_type: match
+    if_group: syslog
+    pattern: "/etc/ssh/sshd_config|/etc/sudoers|/etc/hosts"
+    description: "Modification configuration critique systeme"
+    nis2_article: "21.2.e"
+    rule_groups: "file_integrity,nis2"
+    
