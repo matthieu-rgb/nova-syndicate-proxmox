@@ -55,9 +55,17 @@
     - proxy
   tags: [role:proxy]
 
-- name: "ETAPE 9 -- Agents Wazuh (monitoring NIS2)"
+- name: "ETAPE 09 -- Wazuh Manager + regles NIS2 (APP01)"
+  hosts: app
+  become: true
+  roles:
+    - wazuh_manager
+  tags: [role:wazuh_manager]
+  
+- name: "ETAPE 10 -- Agents Wazuh (monitoring NIS2)"
   hosts: nova_all
   become: true
   roles:
-    - wazuh
-  tags: [role:wazuh]
+    - wazuh_agent
+  tags: [role:wazuh_agent]
+

@@ -4,5 +4,4 @@
     name: wazuh-agent
     state: restarted
 
-- name: reload wazuh-manager
-  ansible.builtin.shell: /var/ossec/bin/wazuh-control reload
+
