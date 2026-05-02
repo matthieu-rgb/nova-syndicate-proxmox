@@ -31,4 +31,4 @@
   ansible.builtin.apt:
     name: "wazuh-manager={{ wazuh_manager_version }}-1"
     state: present
-  notify: restart wazuh-manager
+  notify: Restart wazuh-manager

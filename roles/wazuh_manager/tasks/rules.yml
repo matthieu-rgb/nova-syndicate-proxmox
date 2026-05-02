@@ -25,7 +25,7 @@
     group: "{{ wazuh_file_group }}"
     mode: "{{ wazuh_file_mode }}"
     validate: "/usr/bin/xmllint --noout %s"
-  notify: reload wazuh-manager
+  notify: Reload wazuh-manager
 
 - name: "[rules] Verifier que le fichier contient les 10 regles"
   ansible.builtin.shell: "grep -c '<rule id=' {{ wazuh_rules_dir }}/{{ wazuh_nis2_rules_filename }}"

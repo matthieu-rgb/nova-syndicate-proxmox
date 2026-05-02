@@ -61,11 +61,10 @@
   roles:
     - wazuh_manager
   tags: [role:wazuh_manager]
-  
+
 - name: "ETAPE 10 -- Agents Wazuh (monitoring NIS2)"
   hosts: nova_all
   become: true
   roles:
     - wazuh_agent
   tags: [role:wazuh_agent]
-

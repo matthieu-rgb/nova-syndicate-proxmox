@@ -42,12 +42,12 @@
     path: /var/ossec/etc/ossec.conf
     regexp: '<address>.*</address>'
     replace: '<address>{{ wazuh_manager_ip }}</address>'
-  notify: restart wazuh-agent
+  notify: Restart wazuh-agent
 
 - name: Enregistrer l agent aupres du manager
   ansible.builtin.shell: |
     /var/ossec/bin/agent-auth -m {{ wazuh_manager_ip }} -p 1515
   args:
     creates: /var/ossec/etc/client.keys
-  notify: restart wazuh-agent
+  notify: Restart wazuh-agent
 

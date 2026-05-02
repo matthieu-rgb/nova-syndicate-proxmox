@@ -3,16 +3,16 @@
 # Handlers du role wazuh_manager
 # =============================================================
 # Notify rules :
-#   - install paquet ou modif ossec.conf -> restart wazuh-manager
-#   - modification des regles            -> reload wazuh-manager
+#   - install paquet ou modif ossec.conf -> Restart wazuh-manager
+#   - modification des regles            -> Reload wazuh-manager
 # =============================================================
 
-- name: restart wazuh-manager
+- name: Restart wazuh-manager
   ansible.builtin.service:
     name: wazuh-manager
     state: restarted
 
-- name: reload wazuh-manager
+- name: Reload wazuh-manager
   ansible.builtin.command:
     cmd: /var/ossec/bin/wazuh-control reload
   changed_when: true
