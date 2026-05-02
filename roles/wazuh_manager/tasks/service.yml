@@ -1,0 +1,22 @@
+---
+# =============================================================
+# Activation et demarrage du service wazuh-manager
+# =============================================================
+
+- name: "[service] Activer et demarrer wazuh-manager"
+  ansible.builtin.service:
+    name: wazuh-manager
+    state: started
+    enabled: true
+
+- name: "[service] Attendre que le port {{ wazuh_manager_port_remoted }} ecoute (reception agents)"
+  ansible.builtin.wait_for:
+    port: "{{ wazuh_manager_port_remoted }}"
+    host: "127.0.0.1"
+    timeout: 30
+
+- name: "[service] Attendre que le port {{ wazuh_manager_port_authd }} ecoute (enrolement agents)"
+  ansible.builtin.wait_for:
+    port: "{{ wazuh_manager_port_authd }}"
+    host: "127.0.0.1"
+    timeout: 30

@@ -1,0 +1,34 @@
+---
+# =============================================================
+# Deploiement des regles NIS2 custom
+# Source : roles/wazuh_manager/vars/nis2_rules.yml
+# Template : roles/wazuh_manager/templates/nova_nis2_rules.xml.j2
+# =============================================================
+
+- name: "[rules] S'assurer que le repertoire de regles custom existe"
+  ansible.builtin.file:
+    path: "{{ wazuh_rules_dir }}"
+    state: directory
+    owner: root
+    group: "{{ wazuh_file_group }}"
+    mode: "0750"
+
+- name: "[rules] Charger les variables de regles NIS2"
+  ansible.builtin.include_vars:
+    file: nis2_rules.yml
+
+- name: "[rules] Deployer les regles NIS2 custom (template)"
+  ansible.builtin.template:
+    src: nova_nis2_rules.xml.j2
+    dest: "{{ wazuh_rules_dir }}/{{ wazuh_nis2_rules_filename }}"
+    owner: root
+    group: "{{ wazuh_file_group }}"
+    mode: "{{ wazuh_file_mode }}"
+    validate: "/usr/bin/xmllint --noout %s"
+  notify: reload wazuh-manager
+
+- name: "[rules] Verifier que le fichier contient les 10 regles"
+  ansible.builtin.shell: "grep -c '<rule id=' {{ wazuh_rules_dir }}/{{ wazuh_nis2_rules_filename }}"
+  register: rules_count
+  changed_when: false
+  failed_when: rules_count.stdout | int != 10

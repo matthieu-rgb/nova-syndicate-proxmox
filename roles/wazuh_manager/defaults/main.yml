@@ -1,0 +1,59 @@
+---
+# =============================================================
+# Role wazuh_manager - valeurs par defaut
+# Surchargeable depuis group_vars, host_vars, ou -e
+# =============================================================
+
+# -------------------------------------------------------------
+# Versionning
+# -------------------------------------------------------------
+# Aligne sur la version des agents (4.11.2) pour eviter les warnings
+# de compatibilite agent <-> manager
+wazuh_manager_version: "4.11.2"
+
+# -------------------------------------------------------------
+# Ports d'ecoute
+# -------------------------------------------------------------
+wazuh_manager_port_remoted: 1514       # Reception des logs des agents
+wazuh_manager_port_authd:   1515       # Enrolement des agents (agent-auth)
+wazuh_manager_port_api:     55000      # API REST (utilisee par dashboard)
+
+# -------------------------------------------------------------
+# Identite API par defaut
+# Le mot de passe doit etre dans vault.yml (vault_wazuh_api_password)
+# -------------------------------------------------------------
+wazuh_api_user: "wazuh"
+
+# -------------------------------------------------------------
+# Chemins standards (constants Wazuh, ne pas modifier)
+# -------------------------------------------------------------
+wazuh_install_dir:   /var/ossec
+wazuh_rules_dir:     "{{ wazuh_install_dir }}/etc/rules"
+wazuh_decoders_dir:  "{{ wazuh_install_dir }}/etc/decoders"
+wazuh_ossec_conf:    "{{ wazuh_install_dir }}/etc/ossec.conf"
+
+# -------------------------------------------------------------
+# Fichier de regles custom NIS2
+# -------------------------------------------------------------
+wazuh_nis2_rules_filename: "nova_nis2_rules.xml"
+
+# -------------------------------------------------------------
+# Permissions standard pour les fichiers Wazuh
+# -------------------------------------------------------------
+wazuh_file_owner: "wazuh"
+wazuh_file_group: "wazuh"
+wazuh_file_mode:  "0640"
+
+# -------------------------------------------------------------
+# Comportement de rechargement apres modification de regles
+# reload = pas d'interruption de service (preferable en prod)
+# restart = redemarrage complet (plus lourd, mais sur a 100%)
+# -------------------------------------------------------------
+wazuh_use_reload_for_rules: true
+
+# -------------------------------------------------------------
+# Retention des alertes (en jours)
+# NIS2 recommande 6 mois. En lab, 90 jours suffisent pour la demo.
+# A documenter dans le rapport comme "lab only".
+# -------------------------------------------------------------
+wazuh_alerts_retention_days: 90

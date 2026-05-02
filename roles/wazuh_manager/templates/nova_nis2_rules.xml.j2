@@ -1,0 +1,47 @@
+{#
+  =============================================================
+  Template : nova_nis2_rules.xml
+  Genere par Ansible - source unique : vars/nis2_rules.yml
+  NE PAS EDITER MANUELLEMENT
+  =============================================================
+#}
+<!--
+============================================================
+  Nova Syndicate - Regles de detection NIS2 (Wazuh custom)
+  Genere par Ansible - Wazuh v{{ wazuh_manager_version }}
+  Source : roles/wazuh_manager/vars/nis2_rules.yml
+  Hote : {{ inventory_hostname }}
+  ============================================================
+  Mapping NIS2 article 21.2 :
+    .b = Gestion des incidents
+    .c = Continuite des activites
+    .e = Securite des reseaux et systemes d'information
+    .i = Cryptographie et controle d'acces
+  ============================================================
+-->
+<group name="nova,nis2,">
+
+{% for rule in nis2_rules %}
+  <rule id="{{ rule.id }}" level="{{ rule.level }}">
+{% if rule.match_type == "correlation" %}
+    <if_matched_sid>{{ rule.if_matched_sid }}</if_matched_sid>
+{% if rule.same_source_ip | default(false) %}
+    <same_source_ip />
+{% endif %}
+{% else %}
+    <if_group>{{ rule.if_group }}</if_group>
+{% if rule.match_type == "match" %}
+    <match>{{ rule.pattern }}</match>
+{% elif rule.match_type == "regex" %}
+    <regex>{{ rule.pattern }}</regex>
+{% elif rule.match_type == "match_and_regex" %}
+    <match>{{ rule.pattern }}</match>
+    <regex>{{ rule.pattern_regex }}</regex>
+{% endif %}
+{% endif %}
+    <description>NIS2 art.{{ rule.nis2_article }}: {{ rule.description }}</description>
+    <group>{{ rule.rule_groups }}</group>
+  </rule>
+
+{% endfor %}
+</group>
