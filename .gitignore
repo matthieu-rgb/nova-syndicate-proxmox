@@ -11,3 +11,9 @@ terraform.tfvars
 **/*.tfstate.backup
 **/*.tfvars
 !**/example.tfvars
+
+# Terraform Proxmox (specifique - couverts aussi par les patterns globaux ci-dessus)
+terraform/environments/proxmox/terraform.tfvars
+terraform/environments/proxmox/.terraform/
+terraform/environments/proxmox/*.tfstate*
+terraform/environments/proxmox/.terraform.lock.hcl
