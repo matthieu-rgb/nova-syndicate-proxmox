@@ -37,9 +37,9 @@ nova_subnet_mrs:      "192.168.31.0/24"
 nova_ip_dc01:         "192.168.20.10"
 nova_ip_fs01:         "192.168.20.11"
 nova_ip_db01:         "192.168.20.12"
-nova_ip_bastion01:    "192.168.15.10"
+nova_ip_bastion01:    "192.168.15.2"
 nova_ip_app01:        "192.168.20.13"
-nova_ip_backup01:     "192.168.50.10"
+nova_ip_backup01:     "192.168.50.2"
 
 # --- Utilisateur Ansible ---
 ansible_service_user: "ansible"
@@ -58,7 +58,7 @@ fail2ban_bantime:     3600
 fail2ban_findtime:    600
 
 # --- Backup ---
-backup_nas_ip:        "192.168.50.10"
+backup_nas_ip:        "192.168.50.2"
 backup_rsync_user:    "rsync_nova"
 backup_retention_days:    7
 backup_retention_weeks:   4
