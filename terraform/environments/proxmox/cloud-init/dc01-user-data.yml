@@ -1,0 +1,25 @@
+#cloud-config
+hostname: dc01
+manage_etc_hosts: true
+fqdn: dc01.nova-syndicate.local
+
+users:
+  - name: ansible
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    lock_passwd: true
+    ssh_authorized_keys:
+      - # Remplacer par la cle SSH ansible (injectee par Terraform via cloud-init)
+
+package_update: true
+package_upgrade: false
+
+packages:
+  - qemu-guest-agent
+  - python3
+  - sudo
+  - curl
+
+runcmd:
+  - systemctl enable --now qemu-guest-agent
+  # DC01 utilisera 127.0.0.1 comme DNS apres que Samba soit configure
