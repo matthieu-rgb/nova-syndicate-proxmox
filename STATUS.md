@@ -18,45 +18,59 @@ Il sert de point de reprise pour les sessions suivantes.
 
 ## Phase 1 -- Squelette Terraform Proxmox
 
-Statut : `pas commence`
+Statut : `code pret - a tester une fois Proxmox installe`
 
-- [ ] terraform/environments/proxmox/ cree
-- [ ] Provider bpg/proxmox configure
-- [ ] DC01 deploye en VM de test
-- [ ] terraform.tfvars.example documente
-- [ ] README.md du dossier proxmox cree
+- [x] terraform/environments/proxmox/ cree
+- [x] Provider bpg/proxmox v0.66.x configure
+- [x] Module proxmox-vm reutilisable cree
+- [x] Module proxmox-opnsense reutilisable cree
+- [x] 10 VMs Linux declarees (vms.tf)
+- [x] 4 firewalls OPNsense declares (firewalls.tf)
+- [x] 10 fichiers cloud-init user-data crees
+- [x] terraform.tfvars.example documente
+- [x] terraform fmt passe
+- [x] terraform validate passe (modules + environnement)
+- [ ] terraform init / plan / apply (necessite Proxmox)
 - [ ] Test SSH ansible@192.168.20.10 OK
-- [ ] Commit : feat(proxmox): squelette Terraform + VM DC01 de test
+- [x] Commit : feat(proxmox): squelette Terraform complet (a tester)
 
-## Phase 2 -- Toutes les VMs Linux
+NOTE : terraform apply n'a PAS ete lance. Proxmox VE 9.1 etait en cours
+de telechargement au moment de cette session.
 
-Statut : `pas commence`
+## Phase 2 -- Toutes les autres VMs Linux
 
-- [ ] Module reutilisable terraform/modules/proxmox-vm/ cree
-- [ ] WEB01 deployee
-- [ ] MAIL01 deployee
-- [ ] BASTION01 deployee
-- [ ] FS01 deployee
-- [ ] DB01 deployee
-- [ ] APP01 deployee
-- [ ] PROXY-LYON01 deployee
-- [ ] PROXY-MRS01 deployee
-- [ ] BACKUP01 deployee
-- [ ] Toutes les VMs joignables en SSH ansible@<ip>
-- [ ] Commit : feat(proxmox): module reutilisable + 9 VMs Linux
+Statut : `code pret dans Phase 1 (module + vms.tf contient deja les 10 VMs)`
+
+Les 10 VMs sont deja declarees dans vms.tf via le module proxmox-vm.
+La Phase 2 du plan original (sessions separees) a ete fusionnee dans la
+Phase 1 lors de la Session 1 offline.
+
+- [x] Module reutilisable terraform/modules/proxmox-vm/ cree
+- [x] WEB01 declaree
+- [x] MAIL01 declaree
+- [x] BASTION01 declaree
+- [x] FS01 declaree
+- [x] DB01 declaree
+- [x] APP01 declaree
+- [x] PROXY-LYON01 declaree
+- [x] PROXY-MRS01 declaree
+- [x] BACKUP01 declaree
+- [ ] Toutes les VMs joignables en SSH ansible@<ip> (necessite Proxmox)
+- [ ] Commit : feat(proxmox): module reutilisable + 9 VMs Linux (deja dans Phase 1)
 
 ## Phase 3 -- Firewalls OPNsense (VMs)
 
-Statut : `pas commence`
+Statut : `code pret - a tester une fois Proxmox installe`
 
-- [ ] ISO OPNsense telechargee sur l'hote Proxmox
-- [ ] Module terraform/modules/proxmox-opnsense/ cree
-- [ ] WAN-SIMULATOR deployee + configuration manuelle 1er boot
-- [ ] FW-EXT-LYON01 deployee + configuration manuelle 1er boot
-- [ ] FW-INT-LYON01 deployee + configuration manuelle 1er boot
-- [ ] FW-EXT-MRS01 deployee + configuration manuelle 1er boot
-- [ ] API REST activee + tokens generes pour chaque firewall
-- [ ] Commit : feat(proxmox): module OPNsense + 4 firewalls
+- [x] Module terraform/modules/proxmox-opnsense/ cree
+- [x] WAN-SIMULATOR declaree
+- [x] FW-EXT-LYON01 declaree
+- [x] FW-INT-LYON01 declaree
+- [x] FW-EXT-MRS01 declaree
+- [ ] ISO OPNsense telechargee sur l'hote Proxmox (manuel)
+- [ ] Configuration manuelle 1er boot pour chaque firewall
+- [ ] API REST activee + tokens generes
+- [ ] Commit : feat(proxmox): module OPNsense + 4 firewalls (deja dans Phase 1)
 
 ## Phase 4 -- Configuration des firewalls (Terraform OPNsense existant)
 
@@ -72,14 +86,15 @@ Statut : `pas commence`
 
 ## Phase 5 -- Corrections inventory + Ansible
 
-Statut : `pas commence`
+Statut : `corrections IP faites`
 
-- [ ] nova_ip_bastion01 corrige : 192.168.15.10 -> 192.168.15.2
-- [ ] nova_ip_backup01 corrige : 192.168.50.10 -> 192.168.50.2
+- [x] nova_ip_bastion01 corrige : 192.168.15.10 -> 192.168.15.2
+- [x] nova_ip_backup01 corrige : 192.168.50.10 -> 192.168.50.2
+- [x] backup_nas_ip corrige : 192.168.50.10 -> 192.168.50.2 (bonus)
 - [ ] scripts/test-ansible-connectivity.sh cree
 - [ ] ansible all -i inventory/hosts.yml -m ping : tout OK
 - [ ] ansible-playbook site.yml --syntax-check : OK
-- [ ] Commit : fix(inventory): harmonise IPs bastion01 et backup01
+- [x] Commit : fix(inventory): harmonise IPs bastion01 et backup01
 
 ## Phase 6 -- Deploiement Ansible
 
@@ -138,5 +153,58 @@ A demarrer une fois Proxmox installe sur le NVMe.
 
 ---
 
-(Les sessions suivantes seront documentees ici par automation pipeline
-en fin de session)
+### Session 1 -- Code offline pendant telechargement Proxmox VE 9.1
+
+**Date** : 2026-05-06
+**Auteur** : automation pipeline (Sonnet 4.6) + Matthieu
+**Contexte** : Proxmox VE 9.1 en cours de telechargement. Aucun apply.
+
+**Realise** :
+
+1. fix(inventory) : 3 IPs corrigees dans group_vars/all/vars.yml
+   - nova_ip_bastion01 : 15.10 -> 15.2
+   - nova_ip_backup01  : 50.10 -> 50.2
+   - backup_nas_ip     : 50.10 -> 50.2 (coherence)
+
+2. chore : dossier gns3/ supprime (2 fichiers obsoletes)
+
+3. feat(proxmox) : squelette Terraform complet
+   - Provider bpg/proxmox v0.66.x (choisi vs telmate : meilleure
+     maintenance active, cloud-init natif, mieux documente depuis 2024)
+   - Module proxmox-vm : clone du template 9000, cloud-init, agent QEMU
+   - Module proxmox-opnsense : ISO CD-ROM, interfaces multiples dynamiques
+   - 10 VMs Linux + 4 firewalls declarations completes
+   - 10 fichiers cloud-init user-data
+   - terraform fmt + terraform validate passes
+
+4. chore : .gitignore etendu pour terraform/environments/proxmox/
+
+**terraform apply non lance** : pas d'instance Proxmox disponible.
+Le code est valide syntaxiquement (terraform validate = Success).
+
+**Commits de la session** :
+- 07f41cb fix(inventory): harmonise IPs bastion01 (15.2) et backup01 (50.2)
+- b66f82e chore: supprime le dossier gns3 obsolete (migration Proxmox)
+- e538d53 feat(proxmox): squelette Terraform complet (a tester)
+- 7d4f450 chore: gitignore pour Terraform Proxmox
+
+**Questions ouvertes a resoudre en Session 2** :
+- IP reelle de l'hote Proxmox (placeholder 192.168.1.10 dans tfvars.example)
+- Nom reel du noeud Proxmox (placeholder "pve")
+- Nom du datastore Proxmox (placeholder "local-lvm")
+- Verification que le boot_order de proxmox-opnsense est correct
+  ("ide2" vs "cdrom" selon la version du provider bpg)
+- Les fichiers cloud-init user-data dans terraform/environments/proxmox/cloud-init/
+  ne sont pas utilises directement par le module proxmox-vm (qui utilise le bloc
+  initialization{} inline). Decision : les garder comme reference ou les
+  connecter via un snippet Proxmox (requiert config SSH sur l'hote).
+
+**A faire en Session 2 (apres install Proxmox)** :
+1. Remplir terraform.tfvars avec les vraies valeurs (IP hote, token API, cle SSH)
+2. terraform init (deja fait localement)
+3. terraform plan -> verifier les 14 ressources attendues
+4. terraform apply -> deployer les VMs
+5. Tester SSH ansible@ sur chaque IP
+6. Adapter terraform/environments/lyon/ aux nouvelles IPs OPNsense
+
+---
