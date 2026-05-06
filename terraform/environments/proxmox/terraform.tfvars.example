@@ -1,0 +1,26 @@
+# Copier ce fichier en terraform.tfvars et remplir les valeurs reelles.
+# terraform.tfvars est dans le .gitignore et ne sera JAMAIS commite.
+
+# --- Proxmox ---
+proxmox_host  = "192.168.1.10"    # IP de l'hote Proxmox (a adapter)
+proxmox_node  = "pve"             # Nom du noeud (visible dans l'UI)
+
+# Token API genere depuis : Datacenter > Permissions > API Tokens > Add
+# Format : USER@REALM!TOKENID=UUID
+proxmox_api_token = "root@pam!terraform=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+# Cle privee SSH pour les operations root sur Proxmox
+# Laisser vide si vous utilisez ssh-agent (recommande)
+proxmox_ssh_private_key = null
+
+# --- Stockage ---
+proxmox_datastore = "local-lvm"    # Adapter selon votre stockage Proxmox
+template_vmid     = 9000           # VMID du template Debian 12 cloud-init
+
+# --- OPNsense ---
+opnsense_iso_file      = "OPNsense-25.1-dvd-amd64.iso"
+opnsense_iso_datastore = "local"
+
+# --- SSH ---
+# Contenu de ~/.ssh/nova_ansible_ed25519.pub (ou votre cle ed25519)
+ansible_ssh_public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA... ansible@nova-syndicate"

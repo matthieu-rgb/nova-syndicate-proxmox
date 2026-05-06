@@ -1,0 +1,25 @@
+#cloud-config
+hostname: bastion01
+manage_etc_hosts: true
+fqdn: bastion01.nova-syndicate.local
+
+users:
+  - name: ansible
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    lock_passwd: true
+    ssh_authorized_keys:
+      - # Remplacer par la cle SSH ansible
+
+package_update: true
+package_upgrade: false
+
+packages:
+  - qemu-guest-agent
+  - python3
+  - sudo
+  # Prerequis MFA : libpam-google-authenticator sera installe par Ansible
+  - libpam-runtime
+
+runcmd:
+  - systemctl enable --now qemu-guest-agent
