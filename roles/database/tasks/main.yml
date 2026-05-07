@@ -5,6 +5,15 @@
     state: present
   tags: [role:database, db:install]
 
+- name: Creer le dossier de logs MariaDB (binlog PITR)
+  ansible.builtin.file:
+    path: /var/log/mysql
+    state: directory
+    owner: mysql
+    group: mysql
+    mode: "0750"
+  tags: [role:database, db:install]
+
 - name: Deployer la configuration MariaDB
   ansible.builtin.template:
     src: 50-nova-server.cnf.j2
@@ -23,14 +32,13 @@
   tags: [role:database, db:service]
 
 # --- Securisation ---
-- name: Definir le mot de passe root MariaDB
+- name: Securiser root@localhost en unix_socket (bonne pratique Debian MariaDB)
   community.mysql.mysql_user:
     name: root
     host: localhost
-    password: "{{ vault_mariadb_root_password }}"
+    plugin: unix_socket
     login_unix_socket: /var/run/mysqld/mysqld.sock
     state: present
-  no_log: true
   tags: [role:database, db:secure]
 
 - name: Supprimer les utilisateurs anonymes
