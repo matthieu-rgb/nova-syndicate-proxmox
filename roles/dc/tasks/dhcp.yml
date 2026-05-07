@@ -13,8 +13,8 @@
     mode: "0644"
   notify: restart dhcpd
 
-- name: Activer et demarrer isc-dhcp-server
+- name: Configurer le service isc-dhcp-server (activation conditionnelle)
   ansible.builtin.systemd:
     name: isc-dhcp-server
-    enabled: true
-    state: started
+    enabled: "{{ nova_dhcp_enabled | default(false) }}"
+    state: "{{ 'started' if nova_dhcp_enabled | default(false) else 'stopped' }}"

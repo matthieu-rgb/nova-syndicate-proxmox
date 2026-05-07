@@ -7,9 +7,10 @@
       -U Administrator --password="{{ vault_samba_admin_password }}"
   loop: "{{ nova_ad_ous }}"
   register: ou_result
-  changed_when: "'Created' in ou_result.stdout | default('')"
+  changed_when: "'Created' in (ou_result.stdout | default(''))"
   failed_when: >
-    ou_result.rc != 0 and 'already exists' not in ou_result.stderr | default('')
+    ou_result.rc != 0
+    and 'already' not in (ou_result.stdout | default('') ~ ou_result.stderr | default(''))
   no_log: true
 
 # --- Groupes ---
@@ -21,9 +22,10 @@
       -U Administrator --password="{{ vault_samba_admin_password }}"
   loop: "{{ nova_ad_groups }}"
   register: group_result
-  changed_when: "'Added' in group_result.stdout | default('')"
+  changed_when: "'Added' in (group_result.stdout | default(''))"
   failed_when: >
-    group_result.rc != 0 and 'already exists' not in group_result.stderr | default('')
+    group_result.rc != 0
+    and 'already' not in (group_result.stdout | default('') ~ group_result.stderr | default(''))
   no_log: true
 
 # --- Comptes tiering ---
@@ -37,9 +39,10 @@
       -U Administrator --password="{{ vault_samba_admin_password }}"
   loop: "{{ nova_ad_tiering_accounts }}"
   register: tier_user_result
-  changed_when: "'User' in tier_user_result.stdout | default('')"
+  changed_when: "'User' in (tier_user_result.stdout | default(''))"
   failed_when: >
-    tier_user_result.rc != 0 and 'already exists' not in tier_user_result.stderr | default('')
+    tier_user_result.rc != 0
+    and 'already' not in (tier_user_result.stdout | default('') ~ tier_user_result.stderr | default(''))
   no_log: true
 
 - name: Ajouter les comptes tiering a leurs groupes
@@ -49,7 +52,8 @@
       -U Administrator --password="{{ vault_samba_admin_password }}"
   loop: "{{ nova_ad_tiering_accounts | subelements('groups') }}"
   register: tier_group_result
-  changed_when: "'Added' in tier_group_result.stdout | default('')"
+  changed_when: "'Added' in (tier_group_result.stdout | default(''))"
   failed_when: >
-    tier_group_result.rc != 0 and 'already a member' not in tier_group_result.stderr | default('')
+    tier_group_result.rc != 0
+    and 'already' not in (tier_group_result.stdout | default('') ~ tier_group_result.stderr | default(''))
   no_log: true
