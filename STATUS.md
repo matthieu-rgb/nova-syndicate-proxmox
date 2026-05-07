@@ -208,3 +208,36 @@ Le code est valide syntaxiquement (terraform validate = Success).
 6. Adapter terraform/environments/lyon/ aux nouvelles IPs OPNsense
 
 ---
+
+### Session 2 -- Phase A : Deploiement 10 VMs Linux Proxmox
+
+**Date** : 2026-05-07
+**Auteur** : automation pipeline (Sonnet 4.6) autonome
+
+**Realise** :
+
+1. A0 : verification connectivite (ProxyJump root@192.168.18.50 OK, dc01 pong)
+2. A1 : destroy dc01 test (VMID 103) - detruit proprement
+3. A2 : terraform plan -target x10 -> "10 to add, 0 to change, 0 to destroy"
+4. A3 : terraform apply 10 VMs Linux (web01, mail01, bastion01, dc01, fs01,
+         db01, app01, proxy_lyon01, proxy_mrs01, backup01) -> "10 added"
+5. A5 : verification qm list -> 10 VMs running (VMIDs 100-109)
+6. A6 : ansible ping
+         - SUCCESS (7) : dc01, bastion01, db01, fs01, app01, proxy-lyon01, backup01
+         - UNREACHABLE (3) : web01, mail01, proxy_mrs01 (DMZ/LAN-MRS sans FW = attendu)
+
+**VMs deployees** :
+| VMID | Nom          | IP                | Status Ansible        |
+|------|--------------|-------------------|-----------------------|
+| 100  | web01        | 172.16.1.2/29     | UNREACHABLE (DMZ)     |
+| 101  | mail01       | 172.16.1.3/29     | UNREACHABLE (DMZ)     |
+| 102  | bastion01    | 192.168.15.2/29   | SUCCESS               |
+| 103  | dc01         | 192.168.20.10/28  | SUCCESS               |
+| 104  | fs01         | 192.168.20.11/28  | SUCCESS               |
+| 105  | db01         | 192.168.20.12/28  | SUCCESS               |
+| 106  | app01        | 192.168.20.13/28  | SUCCESS               |
+| 107  | proxy-lyon01 | 192.168.20.14/28  | SUCCESS               |
+| 108  | proxy-mrs01  | 192.168.40.11/26  | UNREACHABLE (LAN-MRS) |
+| 109  | backup01     | 192.168.50.2/29   | SUCCESS               |
+
+---
