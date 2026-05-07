@@ -4,6 +4,11 @@
 # Source : roles/wazuh_manager/vars/nis2_rules.yml
 # Template : roles/wazuh_manager/templates/nova_nis2_rules.xml.j2
 # =============================================================
+- name: "[rules] Installer xmllint (necessaire pour la validation des templates XML)"
+  ansible.builtin.apt:
+    name: libxml2-utils
+    state: present
+
 
 - name: "[rules] S'assurer que le repertoire de regles custom existe"
   ansible.builtin.file:
