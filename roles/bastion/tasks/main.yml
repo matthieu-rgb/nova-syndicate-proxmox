@@ -1,45 +1,16 @@
 ---
-- name: Installer les dependances Teleport
-  ansible.builtin.apt:
-    name:
-      - curl
-      - gnupg
-    state: present
-  tags: [role:bastion, bastion:install]
+# Role bastion - Phase II minimale
+# Le SSH hardening + fail2ban + nftables sont appliques par le role hardening
+# Phase II.5 ajoutera : MFA TOTP, rsyslog vers Wazuh, ansible/terraform installes
 
-- name: Ajouter la cle GPG Teleport
-  ansible.builtin.apt_key:
-    url: "https://apt.releases.teleport.dev/gpg"
-    state: present
-  tags: [role:bastion, bastion:install]
-
-- name: Ajouter le depot Teleport
-  ansible.builtin.apt_repository:
-    repo: "deb https://apt.releases.teleport.dev/debian bookworm stable/v{{ teleport_version }}"
-    state: present
-    filename: teleport
-  tags: [role:bastion, bastion:install]
-
-- name: Installer Teleport
-  ansible.builtin.apt:
-    name: teleport
-    state: present
-    update_cache: true
-  tags: [role:bastion, bastion:install]
-
-- name: Deployer la configuration Teleport
-  ansible.builtin.template:
-    src: teleport.yaml.j2
-    dest: /etc/teleport.yaml
-    owner: root
-    group: root
-    mode: "0600"
-  notify: restart teleport
-  tags: [role:bastion, bastion:config]
-
-- name: Activer et demarrer Teleport
-  ansible.builtin.systemd:
-    name: teleport
-    enabled: true
-    state: started
-  tags: [role:bastion, bastion:service]
+- name: Placeholder bastion - architecture finale a implementer en Phase II.5
+  ansible.builtin.debug:
+    msg: |
+      Bastion configuration minimale (common + hardening uniquement).
+      A implementer en Phase II.5 :
+      - MFA TOTP via libpam-google-authenticator
+      - rsyslog forward vers Wazuh APP01:514
+      - Installation Ansible + Terraform sur le bastion
+      - Clone du repo Git sur le bastion
+      - auditd kernel-level
+  tags: [role:bastion]
