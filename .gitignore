@@ -17,3 +17,5 @@ terraform/environments/proxmox/terraform.tfvars
 terraform/environments/proxmox/.terraform/
 terraform/environments/proxmox/*.tfstate*
 terraform/environments/proxmox/.terraform.lock.hcl
+tfplan
+tfplan-*
