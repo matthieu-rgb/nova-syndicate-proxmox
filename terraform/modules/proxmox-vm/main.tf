@@ -77,7 +77,7 @@ resource "proxmox_virtual_environment_vm" "vm" {
   # puisse recuperer l'IP. On attend 3 minutes max.
   agent {
     enabled = true
-    timeout = "3m"
+    timeout = "30s"
     trim    = true
   }
 
