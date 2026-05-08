@@ -1,0 +1,58 @@
+# ============================================================
+# Nova Syndicate -- Routes statiques
+# Necessaires pour que les firewalls connaissent les chemins
+# vers les subnets pas directement connectes
+# ============================================================
+
+# ============================================================
+# WAN-SIM -- routes vers les subnets Lyon et MRS
+# (perennise la "route statique manuelle" du STATUS.md)
+# ============================================================
+
+resource "opnsense_routes_static" "wansim_to_lyon_internal_subnets" {
+  provider    = opnsense.wansim
+  enabled     = true
+  description = "Subnets internes Lyon (VLANs) via FW-EXT-LYON"
+  network     = "192.168.0.0/16"
+  gateway     = "FW_EXT_LYON_GW" # gateway a creer/declarer cote OPNsense
+}
+
+resource "opnsense_routes_static" "wansim_to_lyon_transit" {
+  provider    = opnsense.wansim
+  enabled     = true
+  description = "Transit interne Lyon 10.0.1.0/30 via FW-EXT-LYON"
+  network     = "10.0.1.0/30"
+  gateway     = "FW_EXT_LYON_GW"
+}
+
+resource "opnsense_routes_static" "wansim_to_mrs_lan" {
+  provider    = opnsense.wansim
+  enabled     = true
+  description = "LAN Marseille via FW-EXT-MRS"
+  network     = "192.168.40.0/26"
+  gateway     = "FW_EXT_MRS_GW"
+}
+
+# ============================================================
+# FW-EXT-LYON -- route cross-site
+# ============================================================
+
+resource "opnsense_routes_static" "fwext_to_mrs_lan" {
+  provider    = opnsense.fw_ext
+  enabled     = true
+  description = "LAN Marseille via WAN-SIM"
+  network     = "192.168.40.0/26"
+  gateway     = "WAN_GW"
+}
+
+# ============================================================
+# FW-EXT-MRS -- route cross-site
+# ============================================================
+
+resource "opnsense_routes_static" "fwextmrs_to_lyon" {
+  provider    = opnsense.fw_ext_mrs
+  enabled     = true
+  description = "Subnets internes Lyon via WAN-SIM"
+  network     = "192.168.0.0/16"
+  gateway     = "WAN_GW"
+}
