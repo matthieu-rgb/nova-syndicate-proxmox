@@ -24,7 +24,7 @@ Contraintes actives:
 | PRE-FLIGHT | DONE | START | DC1 OK, DB1 OK, APP1 OK, 4 tunnels OK, TF No changes |
 | T1 AD Users | DONE | 2026-05-08 | 5 OUs, 8 groupes, 85 users. Total AD=91. Fixes: become:true + --given-name/surname + --userou relatif |
 | T2 FS1 shares | DONE | 2026-05-08 | Domain joined, 5 shares (3 browseable + 2 hidden). chgrp domaine sur dirs. full_audit VFS desactive (opnames invalides Samba 4.17) |
-| T3 MariaDB | PENDING | - | - |
+| T3 MariaDB | DONE | 2026-05-08 | 3 comptes (app_logistique_rw, app_hr_ro, backup_user), nova_audit, cron 02h00, dump+rsync OK |
 | T4 Wazuh agents | PENDING | - | - |
 | T5 Grafana+Prometheus | PENDING | - | - |
 | T6 BorgBackup | PENDING | - | - |
@@ -67,4 +67,13 @@ Dirs avec group domaine winbind (lyon-staff, marseille-staff, finance, it-admins
 full_audit VFS desactive: opnames mkdir/rename invalides Samba 4.17 -- TODO valider + re-activer.
 Test: smbclient Lyon/Finance/IT-Restricted accessibles avec Administrator (ajout aux groupes).
 
-### T3 MariaDB [IN PROGRESS]
+### T3 MariaDB [DONE]
+
+3 comptes: app_logistique_rw (rw nova_logistique), app_hr_ro (ro nova_rh), backup_user (dump privileges MariaDB).
+BACKUP_ADMIN invalide MariaDB 10.11 -> utilise SELECT,RELOAD,LOCK TABLES,PROCESS,REPLICATION CLIENT,SHOW VIEW,EVENT,TRIGGER,BINLOG MONITOR.
+nova_audit cree. Script /opt/nova-backup/backup-db.sh + cron 02h00.
+Cle SSH generee sur DB1 (/root/.ssh/id_backup) et autorisee sur BACKUP01.
+DB1 debanni de fail2ban BACKUP01 (ban apres tentatives SSH manuelles).
+Test: dump 512K OK, rsync 192.168.50.2:/var/backups/from-db1 OK.
+
+### T4 Wazuh agents [IN PROGRESS]
