@@ -1,0 +1,161 @@
+---
+- name: "T3 -- MariaDB comptes app + nova_audit + backup"
+  hosts: databases
+  gather_facts: false
+  become: true
+
+  vars:
+    backup_dir: "/var/backups/mariadb"
+    backup_host: "192.168.50.2"
+    backup_remote_dir: "/var/backups/from-db1"
+    backup_retention_days: 7
+
+  tasks:
+
+    # --- Comptes applicatifs ---
+    - name: Creer compte app_logistique_rw (rw sur nova_logistique)
+      community.mysql.mysql_user:
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        name: app_logistique_rw
+        password: "{{ vault_mariadb_app_password }}"
+        host: "192.168.20.%"
+        priv: "nova_logistique.*:SELECT,INSERT,UPDATE,DELETE"
+        state: present
+      no_log: true
+      tags: [t3, users]
+
+    - name: Creer compte app_hr_ro (ro sur nova_rh)
+      community.mysql.mysql_user:
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        name: app_hr_ro
+        password: "{{ vault_mariadb_app_password }}"
+        host: "192.168.20.%"
+        priv: "nova_rh.*:SELECT"
+        state: present
+      no_log: true
+      tags: [t3, users]
+
+    - name: Creer compte backup_user (privileges MariaDB mariabackup)
+      community.mysql.mysql_user:
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        name: backup_user
+        password: "{{ vault_mariadb_backup_password }}"
+        host: localhost
+        priv:
+          "*.*": "SELECT,RELOAD,LOCK TABLES,PROCESS,REPLICATION CLIENT,SHOW VIEW,EVENT,TRIGGER,BINLOG MONITOR"
+        state: present
+      no_log: true
+      tags: [t3, users]
+
+    # --- Base nova_audit ---
+    - name: Creer base nova_audit
+      community.mysql.mysql_db:
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        name: nova_audit
+        state: present
+        encoding: utf8mb4
+        collation: utf8mb4_unicode_ci
+      tags: [t3, databases]
+
+    # --- Script backup ---
+    - name: Creer repertoire de backup local
+      ansible.builtin.file:
+        path: "{{ backup_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0750"
+      tags: [t3, backup]
+
+    - name: Creer repertoire /opt/nova-backup
+      ansible.builtin.file:
+        path: /opt/nova-backup
+        state: directory
+        owner: root
+        group: root
+        mode: "0750"
+      tags: [t3, backup]
+
+    - name: Deployer script mariabackup (apres creation dir)
+      ansible.builtin.copy:
+        dest: /opt/nova-backup/backup-db.sh
+        mode: "0750"
+        owner: root
+        group: root
+        content: |
+          #!/usr/bin/env bash
+          set -euo pipefail
+
+          BACKUP_DIR="{{ backup_dir }}"
+          REMOTE_HOST="{{ backup_host }}"
+          REMOTE_DIR="{{ backup_remote_dir }}"
+          RETENTION_DAYS="{{ backup_retention_days }}"
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          DUMP_FILE="$BACKUP_DIR/nova_full_$TIMESTAMP.sql.gz"
+
+          log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
+
+          log "START MariaDB backup $TIMESTAMP"
+          mkdir -p "$BACKUP_DIR"
+
+          mysqldump \
+            --single-transaction \
+            --routines \
+            --triggers \
+            --events \
+            --all-databases \
+            | gzip > "$DUMP_FILE"
+
+          log "Dump OK: $DUMP_FILE ($(du -sh "$DUMP_FILE" | cut -f1))"
+
+          find "$BACKUP_DIR" -name "nova_full_*.sql.gz" -mtime +${RETENTION_DAYS} -delete
+          log "Rotation: fichiers > ${RETENTION_DAYS}j supprimes"
+
+          rsync -az --delete \
+            -e "ssh -i /root/.ssh/id_backup -o StrictHostKeyChecking=no -o IdentitiesOnly=yes" \
+            "$BACKUP_DIR/" \
+            "debian@${REMOTE_HOST}:${REMOTE_DIR}/"
+          log "Rsync vers $REMOTE_HOST:$REMOTE_DIR OK"
+
+          log "END backup $TIMESTAMP"
+      tags: [t3, backup]
+
+    - name: Configurer cron backup 02h00 quotidien
+      ansible.builtin.cron:
+        name: "nova-mariadb-backup"
+        minute: "0"
+        hour: "2"
+        job: "/opt/nova-backup/backup-db.sh >> /var/log/nova-backup-db.log 2>&1"
+        user: root
+        state: present
+      tags: [t3, backup]
+
+    # --- Verification ---
+    - name: Lister les users crees
+      community.mysql.mysql_info:
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        filter: users
+      register: db_info
+      tags: [t3, verify]
+
+    - name: Verifier nova_audit existe
+      community.mysql.mysql_db:
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        name: nova_audit
+        state: present
+      register: audit_db
+      tags: [t3, verify]
+
+    - name: Verifier script backup present
+      ansible.builtin.stat:
+        path: /opt/nova-backup/backup-db.sh
+      register: backup_script
+      tags: [t3, verify]
+
+    - name: Afficher statut T3
+      ansible.builtin.debug:
+        msg:
+          - "nova_audit: present"
+          - "backup script: {{ backup_script.stat.exists }}"
+          - "cron 02h00: configure"
+      tags: [t3, verify]
