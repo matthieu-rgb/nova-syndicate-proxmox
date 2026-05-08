@@ -1,0 +1,195 @@
+---
+- name: "T5a -- node_exporter sur tous les hotes"
+  hosts: nova_all
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Installer prometheus-node-exporter
+      ansible.builtin.apt:
+        name: prometheus-node-exporter
+        state: present
+        update_cache: false
+      tags: [t5, node_exporter]
+
+    - name: Activer et demarrer node_exporter
+      ansible.builtin.systemd:
+        name: prometheus-node-exporter
+        state: started
+        enabled: true
+      tags: [t5, node_exporter]
+
+    - name: Verifier port 9100 listening
+      ansible.builtin.command:
+        cmd: ss -tlnp
+      register: ss_result
+      changed_when: false
+      tags: [t5, verify]
+
+    - name: Statut node_exporter
+      ansible.builtin.debug:
+        msg: "node_exporter 9100: {{ 'OK' if '9100' in ss_result.stdout else 'NOT listening' }}"
+      tags: [t5, verify]
+
+- name: "T5b -- Prometheus sur APP1"
+  hosts: app_servers
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Installer prometheus
+      ansible.builtin.apt:
+        name: prometheus
+        state: present
+        update_cache: false
+      tags: [t5, prometheus]
+
+    - name: Configurer prometheus.yml
+      ansible.builtin.copy:
+        dest: /etc/prometheus/prometheus.yml
+        owner: prometheus
+        group: prometheus
+        mode: "0644"
+        content: |
+          global:
+            scrape_interval: 30s
+            evaluation_interval: 30s
+            scrape_timeout: 10s
+
+          scrape_configs:
+            - job_name: 'prometheus'
+              static_configs:
+                - targets: ['localhost:9090']
+
+            - job_name: 'node'
+              static_configs:
+                - targets:
+                    - '192.168.20.10:9100'
+                    - '192.168.20.11:9100'
+                    - '192.168.20.12:9100'
+                    - '192.168.20.13:9100'
+                    - '192.168.15.2:9100'
+                    - '192.168.50.2:9100'
+                  labels:
+                    cluster: 'nova-syndicate'
+      notify: Restart prometheus
+      tags: [t5, prometheus]
+
+    - name: Activer et demarrer prometheus
+      ansible.builtin.systemd:
+        name: prometheus
+        state: started
+        enabled: true
+      tags: [t5, prometheus]
+
+  handlers:
+    - name: Restart prometheus
+      ansible.builtin.systemd:
+        name: prometheus
+        state: restarted
+
+- name: "T5c -- Grafana sur APP1"
+  hosts: app_servers
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Ajouter cle GPG Grafana
+      ansible.builtin.apt_key:
+        url: https://apt.grafana.com/gpg.key
+        state: present
+      tags: [t5, grafana]
+
+    - name: Ajouter repo Grafana
+      ansible.builtin.apt_repository:
+        repo: "deb https://apt.grafana.com stable main"
+        state: present
+        filename: grafana
+      tags: [t5, grafana]
+
+    - name: Installer Grafana
+      ansible.builtin.apt:
+        name: grafana
+        state: present
+        update_cache: true
+      tags: [t5, grafana]
+
+    - name: Activer et demarrer Grafana
+      ansible.builtin.systemd:
+        name: grafana-server
+        state: started
+        enabled: true
+      tags: [t5, grafana]
+
+    - name: Attendre que Grafana soit pret (port 3000)
+      ansible.builtin.wait_for:
+        port: 3000
+        host: 127.0.0.1
+        delay: 5
+        timeout: 60
+      tags: [t5, grafana]
+
+    - name: Changer le mot de passe admin Grafana via API
+      ansible.builtin.uri:
+        url: "http://localhost:3000/api/user/password"
+        method: PUT
+        user: admin
+        password: "admin"
+        force_basic_auth: true
+        body_format: json
+        body:
+          oldPassword: "admin"
+          newPassword: "{{ vault_grafana_admin_password }}"
+          confirmNew: "{{ vault_grafana_admin_password }}"
+        status_code: [200, 400]
+      no_log: true
+      ignore_errors: true
+      tags: [t5, grafana]
+
+    - name: Ajouter datasource Prometheus dans Grafana via API
+      ansible.builtin.uri:
+        url: "http://localhost:3000/api/datasources"
+        method: POST
+        user: admin
+        password: "{{ vault_grafana_admin_password }}"
+        force_basic_auth: true
+        body_format: json
+        body:
+          name: "Prometheus"
+          type: "prometheus"
+          url: "http://localhost:9090"
+          access: "proxy"
+          isDefault: true
+        status_code: [200, 409]
+      no_log: true
+      register: grafana_ds
+      ignore_errors: true
+      tags: [t5, grafana]
+
+    - name: Afficher statut datasource
+      ansible.builtin.debug:
+        msg: "Datasource Prometheus: {{ 'created' if (grafana_ds.status | default(0)) == 200 else 'already exists or error' }}"
+      tags: [t5, grafana]
+
+    - name: Verifier statut Grafana
+      ansible.builtin.command:
+        cmd: systemctl is-active grafana-server
+      register: grafana_status
+      changed_when: false
+      tags: [t5, verify]
+
+    - name: Verifier statut Prometheus
+      ansible.builtin.command:
+        cmd: systemctl is-active prometheus
+      register: prom_status
+      changed_when: false
+      tags: [t5, verify]
+
+    - name: Afficher statut monitoring
+      ansible.builtin.debug:
+        msg:
+          - "Prometheus: {{ prom_status.stdout }}"
+          - "Grafana: {{ grafana_status.stdout }}"
+          - "Acces Grafana: http://192.168.20.13:3000"
+          - "Note: dashboards ID 1860 + 13338 a importer manuellement"
+      tags: [t5, verify]

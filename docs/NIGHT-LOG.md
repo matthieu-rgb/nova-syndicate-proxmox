@@ -26,7 +26,7 @@ Contraintes actives:
 | T2 FS1 shares | DONE | 2026-05-08 | Domain joined, 5 shares (3 browseable + 2 hidden). chgrp domaine sur dirs. full_audit VFS desactive (opnames invalides Samba 4.17) |
 | T3 MariaDB | DONE | 2026-05-08 | 3 comptes (app_logistique_rw, app_hr_ro, backup_user), nova_audit, cron 02h00, dump+rsync OK |
 | T4 Wazuh agents | DONE | 2026-05-08 | 6 agents deja enrolles + actifs. 3 regles custom (Samba brute-force, MariaDB access denied, SSH brute-force) |
-| T5 Grafana+Prometheus | PENDING | - | - |
+| T5 Grafana+Prometheus | DONE | 2026-05-08 | node_exporter 10 hotes, Prometheus+Grafana sur APP1, datasource Prometheus. Dashboards 1860/13338: TODO matin |
 | T6 BorgBackup | PENDING | - | - |
 | T7 rclone template | PENDING | - | - |
 | T8 Runbooks | PENDING | - | - |
@@ -83,4 +83,12 @@ Test: dump 512K OK, rsync 192.168.50.2:/var/backups/from-db1 OK.
 Fix: <decoded_as>syslog</decoded_as> invalide Wazuh 4.11 -> supprime, utilise <match> + <field name="full_log">.
 wazuh-manager: active, config valide.
 
-### T5 Grafana+Prometheus [IN PROGRESS]
+### T5 Grafana+Prometheus [DONE]
+
+node_exporter installe et actif (port 9100) sur 10 hotes: dc01, fs01, db01, app01, bastion01, backup01, proxy-lyon01, proxy_mrs01, web01, mail01.
+Prometheus installe sur APP1 (192.168.20.13:9090), scrape 6 nodes + lui-meme.
+Grafana installe sur APP1 (192.168.20.13:3000), mot de passe vault_grafana_admin_password.
+Datasource Prometheus configuree via API. vault_grafana_admin_password ajoute au vault (32 chars random).
+TODO matin: import dashboards 1860 (Node Exporter Full) + 13338 (MariaDB) + dashboard custom Nova Overview.
+
+### T6 BorgBackup [IN PROGRESS]
