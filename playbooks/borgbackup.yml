@@ -1,0 +1,268 @@
+---
+- name: "T6 -- BorgBackup sur BACKUP01"
+  hosts: backups
+  gather_facts: false
+  become: true
+
+  vars:
+    borg_base: "/var/backups/borg"
+    borg_repos:
+      - name: filesystem
+        path: "{{ borg_base }}/filesystem"
+        passphrase: "{{ vault_borg_passphrase_filesystem }}"
+      - name: databases
+        path: "{{ borg_base }}/databases"
+        passphrase: "{{ vault_borg_passphrase_databases }}"
+      - name: configs
+        path: "{{ borg_base }}/configs"
+        passphrase: "{{ vault_borg_passphrase_configs }}"
+
+  tasks:
+
+    # --- Installation ---
+    - name: Installer borgbackup et cron
+      ansible.builtin.apt:
+        name:
+          - borgbackup
+          - cron
+        state: present
+        update_cache: false
+      tags: [t6, install]
+
+    - name: Creer repertoires borg
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0700"
+      loop: "{{ borg_repos }}"
+      tags: [t6, init]
+
+    # --- Init repos ---
+    - name: Init repo borg filesystem
+      ansible.builtin.command:
+        cmd: borg init --encryption=repokey "{{ borg_repos[0].path }}"
+        creates: "{{ borg_repos[0].path }}/README"
+      environment:
+        BORG_PASSPHRASE: "{{ vault_borg_passphrase_filesystem }}"
+        BORG_RSH: "ssh -o StrictHostKeyChecking=no"
+      no_log: true
+      tags: [t6, init]
+
+    - name: Init repo borg databases
+      ansible.builtin.command:
+        cmd: borg init --encryption=repokey "{{ borg_repos[1].path }}"
+        creates: "{{ borg_repos[1].path }}/README"
+      environment:
+        BORG_PASSPHRASE: "{{ vault_borg_passphrase_databases }}"
+      no_log: true
+      tags: [t6, init]
+
+    - name: Init repo borg configs
+      ansible.builtin.command:
+        cmd: borg init --encryption=repokey "{{ borg_repos[2].path }}"
+        creates: "{{ borg_repos[2].path }}/README"
+      environment:
+        BORG_PASSPHRASE: "{{ vault_borg_passphrase_configs }}"
+      no_log: true
+      tags: [t6, init]
+
+    # --- Scripts ---
+    - name: Creer repertoire scripts
+      ansible.builtin.file:
+        path: /opt/nova-backup
+        state: directory
+        owner: root
+        group: root
+        mode: "0750"
+      tags: [t6, scripts]
+
+    - name: Deployer backup-fs.sh
+      ansible.builtin.copy:
+        dest: /opt/nova-backup/backup-fs.sh
+        mode: "0750"
+        owner: root
+        group: root
+        content: |
+          #!/usr/bin/env bash
+          # Nova Syndicate -- BorgBackup filesystem (FS1 shares)
+          set -euo pipefail
+
+          BORG_REPO="{{ borg_repos[0].path }}"
+          FS1_IP="192.168.20.11"
+          SYNC_DIR="/tmp/nova-fs-sync"
+          ARCHIVE="nova-fs-$(date +%Y%m%d_%H%M%S)"
+
+          export BORG_PASSPHRASE="{{ vault_borg_passphrase_filesystem }}"
+          export BORG_RSH="ssh -i /home/debian/.ssh/id_ansible -o StrictHostKeyChecking=no -o IdentitiesOnly=yes"
+
+          log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
+
+          log "START backup-fs $ARCHIVE"
+
+          mkdir -p "$SYNC_DIR"
+          rsync -az --delete -e "$BORG_RSH" \
+            "debian@${FS1_IP}:/srv/samba/" "$SYNC_DIR/" 2>&1 || true
+
+          borg create \
+            --stats \
+            --compression lz4 \
+            "$BORG_REPO::$ARCHIVE" \
+            "$SYNC_DIR"
+
+          borg prune \
+            --keep-daily=7 \
+            --keep-weekly=4 \
+            --keep-monthly=12 \
+            --keep-yearly=10 \
+            "$BORG_REPO"
+
+          log "END backup-fs $ARCHIVE"
+      no_log: true
+      tags: [t6, scripts]
+
+    - name: Deployer backup-db.sh (borg)
+      ansible.builtin.copy:
+        dest: /opt/nova-backup/backup-db-borg.sh
+        mode: "0750"
+        owner: root
+        group: root
+        content: |
+          #!/usr/bin/env bash
+          # Nova Syndicate -- BorgBackup databases (dumps depuis DB1)
+          set -euo pipefail
+
+          BORG_REPO="{{ borg_repos[1].path }}"
+          DB_DUMPS="/var/backups/from-db1"
+          ARCHIVE="nova-db-$(date +%Y%m%d_%H%M%S)"
+
+          export BORG_PASSPHRASE="{{ vault_borg_passphrase_databases }}"
+
+          log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
+
+          log "START backup-db-borg $ARCHIVE"
+
+          borg create \
+            --stats \
+            --compression lz4 \
+            "$BORG_REPO::$ARCHIVE" \
+            "$DB_DUMPS"
+
+          borg prune \
+            --keep-daily=7 \
+            --keep-weekly=4 \
+            --keep-monthly=12 \
+            --keep-yearly=10 \
+            "$BORG_REPO"
+
+          log "END backup-db-borg $ARCHIVE"
+      no_log: true
+      tags: [t6, scripts]
+
+    - name: Deployer backup-configs.sh
+      ansible.builtin.copy:
+        dest: /opt/nova-backup/backup-configs.sh
+        mode: "0750"
+        owner: root
+        group: root
+        content: |
+          #!/usr/bin/env bash
+          # Nova Syndicate -- BorgBackup configs critiques
+          set -euo pipefail
+
+          BORG_REPO="{{ borg_repos[2].path }}"
+          SYNC_DIR="/tmp/nova-configs-sync"
+          ARCHIVE="nova-configs-$(date +%Y%m%d_%H%M%S)"
+          SSH="ssh -i /home/debian/.ssh/id_ansible -o StrictHostKeyChecking=no -o IdentitiesOnly=yes"
+
+          export BORG_PASSPHRASE="{{ vault_borg_passphrase_configs }}"
+
+          log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
+
+          log "START backup-configs $ARCHIVE"
+
+          HOSTS="192.168.20.10 192.168.20.11 192.168.20.12 192.168.20.13 192.168.15.2"
+          for host in $HOSTS; do
+            mkdir -p "$SYNC_DIR/$host"
+            rsync -az -e "$SSH" "debian@${host}:/etc/" "$SYNC_DIR/$host/etc/" 2>&1 || \
+              log "WARN: rsync /etc from $host failed (non-fatal)"
+          done
+
+          borg create \
+            --stats \
+            --compression lz4 \
+            "$BORG_REPO::$ARCHIVE" \
+            "$SYNC_DIR"
+
+          borg prune \
+            --keep-daily=7 \
+            --keep-weekly=4 \
+            --keep-monthly=12 \
+            --keep-yearly=10 \
+            "$BORG_REPO"
+
+          rm -rf "$SYNC_DIR"
+          log "END backup-configs $ARCHIVE"
+      no_log: true
+      tags: [t6, scripts]
+
+    # --- Crons ---
+    - name: Cron backup-fs 03h00
+      ansible.builtin.cron:
+        name: "nova-borg-filesystem"
+        minute: "0"
+        hour: "3"
+        job: "/opt/nova-backup/backup-fs.sh >> /var/log/nova-backup-fs.log 2>&1"
+        user: root
+        state: present
+      tags: [t6, crons]
+
+    - name: Cron backup-db-borg 04h00
+      ansible.builtin.cron:
+        name: "nova-borg-databases"
+        minute: "0"
+        hour: "4"
+        job: "/opt/nova-backup/backup-db-borg.sh >> /var/log/nova-backup-db-borg.log 2>&1"
+        user: root
+        state: present
+      tags: [t6, crons]
+
+    - name: Cron backup-configs 05h00
+      ansible.builtin.cron:
+        name: "nova-borg-configs"
+        minute: "0"
+        hour: "5"
+        job: "/opt/nova-backup/backup-configs.sh >> /var/log/nova-backup-configs.log 2>&1"
+        user: root
+        state: present
+      tags: [t6, crons]
+
+    # --- Test ---
+    - name: Test backup-configs.sh manuellement
+      ansible.builtin.command:
+        cmd: /opt/nova-backup/backup-configs.sh
+      register: borg_test
+      changed_when: false
+      no_log: true
+      tags: [t6, test]
+
+    - name: Afficher resultat test configs
+      ansible.builtin.debug:
+        msg: "{{ borg_test.stdout_lines | select('match', '.*(START|END|WARN|ERROR).*') | list }}"
+      tags: [t6, test]
+
+    - name: Verifier borg list configs
+      ansible.builtin.command:
+        cmd: borg list "{{ borg_repos[2].path }}"
+      environment:
+        BORG_PASSPHRASE: "{{ vault_borg_passphrase_configs }}"
+      register: borg_list
+      changed_when: false
+      no_log: true
+      tags: [t6, test]
+
+    - name: Afficher archives configs
+      ansible.builtin.debug:
+        msg: "Borg configs archives: {{ borg_list.stdout_lines }}"
+      tags: [t6, test]
