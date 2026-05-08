@@ -23,7 +23,7 @@ Contraintes actives:
 |-------|--------|-----------|-------|
 | PRE-FLIGHT | DONE | START | DC1 OK, DB1 OK, APP1 OK, 4 tunnels OK, TF No changes |
 | T1 AD Users | DONE | 2026-05-08 | 5 OUs, 8 groupes, 85 users. Total AD=91. Fixes: become:true + --given-name/surname + --userou relatif |
-| T2 FS1 shares | PENDING | - | - |
+| T2 FS1 shares | DONE | 2026-05-08 | Domain joined, 5 shares (3 browseable + 2 hidden). chgrp domaine sur dirs. full_audit VFS desactive (opnames invalides Samba 4.17) |
 | T3 MariaDB | PENDING | - | - |
 | T4 Wazuh agents | PENDING | - | - |
 | T5 Grafana+Prometheus | PENDING | - | - |
@@ -59,4 +59,12 @@ Fixes appliques:
 
 Resultat: Created=85, Skipped=0, Failed=0. samba-tool user list = 91 users (85+6 systeme)
 
-### T2 FS1 shares [IN PROGRESS]
+### T2 FS1 shares [DONE]
+
+FS1 joint a nova-syndicate.local via net ads join.
+5 shares crees: lyon, marseille, commun, finance (hidden), it-restricted (hidden).
+Dirs avec group domaine winbind (lyon-staff, marseille-staff, finance, it-admins, domain users).
+full_audit VFS desactive: opnames mkdir/rename invalides Samba 4.17 -- TODO valider + re-activer.
+Test: smbclient Lyon/Finance/IT-Restricted accessibles avec Administrator (ajout aux groupes).
+
+### T3 MariaDB [IN PROGRESS]
