@@ -316,3 +316,62 @@ Depuis FW-INT-LYON (ping -c 2 -W 1 -S <vlan_gw> 192.168.40.11) :
 - BACKUP   192.168.50.1 -> 192.168.40.11 : 2/2 (0% loss)
 
 ROLLBACK VALIDE. Tunnels UP.
+
+---
+
+## T-IMPORT -- Reintegration 9 routes orphelines (2026-05-08)
+
+### UUID mapping routes OPNsense -> ressources Terraform
+
+| Ressource Terraform | FW | UUID OPNsense | Reseau |
+|---------------------|----|---------------|--------|
+| opnsense_route.fwext_to_bastion | FW-EXT-LYON | 9d625e6a-4642-434c-a898-bb8b910e6afc | 192.168.15.0/29 |
+| opnsense_route.fwext_to_servers | FW-EXT-LYON | 9a55165b-684e-41cd-9505-21764cbd5489 | 192.168.20.0/28 |
+| opnsense_route.fwext_to_users | FW-EXT-LYON | 69e1dd92-b929-43ad-96f2-2c27810fd030 | 192.168.30.0/26 |
+| opnsense_route.fwext_to_backup | FW-EXT-LYON | ffa56a3d-90bb-4ee8-a2aa-b6177f2c0fc8 | 192.168.50.0/29 |
+| opnsense_route.fwext_to_mrs_lan | FW-EXT-LYON | 6a3ba959-f852-4647-9b9a-d2ce55a8e8d6 | 192.168.40.0/26 |
+| opnsense_route.fwextmrs_to_lyon | FW-EXT-MRS | 6fd5ee61-bba3-4a82-9599-e7cdf7681ddb | 192.168.0.0/16 |
+| opnsense_route.wansim_to_mrs_lan | WAN-SIM | 2bdb3470-30b8-4033-9d0b-8de61890127c | 192.168.40.0/26 |
+| opnsense_route.wansim_to_lyon_transit | WAN-SIM | 884b73c4-734f-45e5-bf5b-14805bd9ce03 | 10.0.1.0/30 |
+| opnsense_route.wansim_to_lyon_internal_subnets | WAN-SIM | d6760959-7a0f-4ac4-a0ff-3bcb4e4bcf7b | 192.168.0.0/16 |
+
+### terraform import : 9/9 succes
+
+```
+terraform import 'opnsense_route.fwext_to_bastion' '9d625e6a-4642-434c-a898-bb8b910e6afc'
+terraform import 'opnsense_route.fwext_to_servers' '9a55165b-684e-41cd-9505-21764cbd5489'
+terraform import 'opnsense_route.fwext_to_users' '69e1dd92-b929-43ad-96f2-2c27810fd030'
+terraform import 'opnsense_route.fwext_to_backup' 'ffa56a3d-90bb-4ee8-a2aa-b6177f2c0fc8'
+terraform import 'opnsense_route.fwext_to_mrs_lan' '6a3ba959-f852-4647-9b9a-d2ce55a8e8d6'
+terraform import 'opnsense_route.fwextmrs_to_lyon' '6fd5ee61-bba3-4a82-9599-e7cdf7681ddb'
+terraform import 'opnsense_route.wansim_to_mrs_lan' '2bdb3470-30b8-4033-9d0b-8de61890127c'
+terraform import 'opnsense_route.wansim_to_lyon_transit' '884b73c4-734f-45e5-bf5b-14805bd9ce03'
+terraform import 'opnsense_route.wansim_to_lyon_internal_subnets' 'd6760959-7a0f-4ac4-a0ff-3bcb4e4bcf7b'
+```
+
+terraform plan post-import : "No changes. Your infrastructure matches the configuration."
+
+### Pings post-import
+
+Depuis FW-INT-LYON :
+- SERVERS 192.168.20.1 -> 192.168.40.11 : 2/2 (0% loss)
+- BASTION 192.168.15.1 -> 192.168.40.11 : 2/2 (0% loss)
+- USERS   192.168.30.1 -> 192.168.40.11 : 2/2 (0% loss)
+- BACKUP  192.168.50.1 -> 192.168.40.11 : 2/2 (0% loss)
+
+### Audit des routes suspectes (Etape 5)
+
+Methode : disable API + reconfigure, 3 pings x 4 VLANs, reactivation immediate.
+4 Child SAs modernes restes INSTALLED pendant tout l'audit.
+
+| Route | Verdict | Pings sans elle |
+|-------|---------|----------------|
+| wansim_to_lyon_internal_subnets | PARASITE | 4/4 OK |
+| wansim_to_mrs_lan | PARASITE | 4/4 OK |
+| wansim_to_lyon_transit | PARASITE | 4/4 OK |
+| fwext_to_mrs_lan | PARASITE | 4/4 OK -- SPD strongSwan gere independamment |
+| fwextmrs_to_lyon | PARASITE | 4/4 OK -- idem cote responder MRS |
+
+5 routes PARASITES identifiees. A supprimer lors de T3-DURCISSEMENT.
+4 routes NECESSAIRES conservees (fwext_to_{bastion,servers,users,backup}).
+Ref detaillee : docs/runbook-ipsec-multi-vlan.md section "Audit des routes statiques"

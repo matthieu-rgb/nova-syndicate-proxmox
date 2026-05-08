@@ -31,20 +31,18 @@ verifier plan = No changes, puis durcir incrementalement.
 
 ## Dette technique restante
 
-### DT-1 -- 9 routes Terraform-orphan dans OPNsense
+### [x] DT-1 -- 9 routes Terraform-orphan dans OPNsense -- CLOSED 2026-05-08
 
-Routes creees par Phase 4 (avortee), non managees Terraform apres rollback.
-Restent actives dans OPNsense mais absentes du state Terraform.
-
-Repartition :
-- 5 routes FW-EXT-LYON : fwext_to_bastion (15.0/29), fwext_to_servers (20.0/28),
-  fwext_to_users (30.0/26), fwext_to_backup (50.0/29), fwext_to_mrs_lan (40.0/26 via WAN)
-- 1 route FW-EXT-MRS : fwextmrs_to_lyon (192.168.0.0/16 via WAN_GW)
-- 3 routes WAN-SIM : wansim_to_lyon_internal_subnets (192.168.0.0/16),
-  wansim_to_lyon_transit (10.0.1.0/30), wansim_to_mrs_lan (192.168.40.0/26)
-
-Contenu .tf archive : /tmp/routes.tf.removed-20260508-2103
-A reimporter en mode import-only (terraform import) avant toute modif routes.
+9 routes importees dans le state Terraform (terraform import x9).
+terraform plan = "No changes" confirme.
+Audit: 5 routes PARASITES identifiees, 4 NECESSAIRES conservees.
+Routes parasites a supprimer lors de T3-DURCISSEMENT :
+- wansim_to_lyon_internal_subnets
+- wansim_to_mrs_lan
+- wansim_to_lyon_transit
+- fwext_to_mrs_lan
+- fwextmrs_to_lyon
+Ref : docs/SESSION-LOG.md section "T-IMPORT" + runbook section "Audit des routes statiques"
 
 ### DT-2 -- 8 block_all=false sur interfaces WAN/OPT
 
