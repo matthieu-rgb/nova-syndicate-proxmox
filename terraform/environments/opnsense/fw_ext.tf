@@ -68,12 +68,12 @@ resource "opnsense_firewall_filter" "wan_to_mail" {
   }
 }
 
-resource "opnsense_firewall_filter" "lan_to_wan" {
+resource "opnsense_firewall_filter" "transit_to_wan" {
   provider    = opnsense.fw_ext
   enabled     = true
-  description = "Transit LAN vers internet"
+  description = "Transit interne (depuis FW-INT) vers internet"
   interface = {
-    interface = ["lan"]
+    interface = ["opt1"]
   }
   filter = {
     action    = "pass"
@@ -81,7 +81,7 @@ resource "opnsense_firewall_filter" "lan_to_wan" {
     quick     = true
     protocol  = "any"
     source = {
-      net = "10.0.1.0/24"
+      net = "10.0.1.0/30"
     }
     destination = {
       net = "any"
@@ -111,12 +111,12 @@ resource "opnsense_firewall_filter" "wan_block_all" {
   }
 }
 
-resource "opnsense_firewall_filter" "dmz_to_lan_ssh" {
+resource "opnsense_firewall_filter" "dmz_to_bastion_ssh" {
   provider    = opnsense.fw_ext
   enabled     = true
-  description = "SSH depuis DMZ vers BASTION01 pour Ansible"
+  description = "SSH depuis DMZ vers BASTION01 (Ansible)"
   interface = {
-    interface = ["opt1"]
+    interface = ["lan"]
   }
   filter = {
     action    = "pass"
