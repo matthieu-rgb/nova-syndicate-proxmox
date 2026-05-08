@@ -375,3 +375,41 @@ Methode : disable API + reconfigure, 3 pings x 4 VLANs, reactivation immediate.
 5 routes PARASITES identifiees. A supprimer lors de T3-DURCISSEMENT.
 4 routes NECESSAIRES conservees (fwext_to_{bastion,servers,users,backup}).
 Ref detaillee : docs/runbook-ipsec-multi-vlan.md section "Audit des routes statiques"
+
+---
+
+## T2 -- Internet BASTION (2026-05-08)
+
+### Diagnostic initial
+
+Phase 1 a revele que T2 etait deja accompli sans intervention :
+- `fwint_bastion_to_internet` (enabled=true) en state depuis Phase II IaC apply
+- `fwint_servers_to_internet`, `fwint_users_to_internet`, `fwint_backup_to_internet`
+  aussi enabled=true -- tous les VLANs avaient internet
+
+### Perimetre recalibre
+
+L'objectif T2 "donner internet a BASTION uniquement" etait sur-simplifie.
+Apres analyse :
+- BASTION internet : OK (curl github.com -> HTTP/2 200, DNS OK, git OK)
+- SERVERS/USERS/BACKUP internet "raw" : conserve (besoins legaux apt/NTP/web/rclone)
+- Filtrage granulaire par VLAN : reporte en T-SQUID (proxy Squid forward)
+
+### Tests de non-regression post-T2
+
+- terraform plan : "No changes"
+- swanctl --list-sas : 4 Child SA modernes INSTALLED (reqids 1-4)
+- 4 pings IPsec cross-site : 2/2 (0% loss) sur SERVERS/BASTION/USERS/BACKUP
+
+### Etat final Phase II
+
+| Tache | Statut |
+|-------|--------|
+| T-MIGRATION IPsec | CLOSED |
+| T-IMPORT 9 routes | CLOSED |
+| T2 Internet BASTION | CLOSED |
+| T3 Durcissement block_all | OPEN |
+| T-SQUID Proxy VLAN | OPEN (nouvelle) |
+| DT-2 block_all=false | OPEN (scope T3) |
+| DT-3 con1 legacy expire | SURVEILLANCE |
+| DT-4 IPsec state TF | OPEN (hors scope) |
