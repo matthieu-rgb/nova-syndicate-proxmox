@@ -1,0 +1,87 @@
+---
+- name: "T4 -- Wazuh custom rules"
+  hosts: app_servers
+  gather_facts: false
+  become: true
+
+  tasks:
+
+    - name: Deployer regles Wazuh custom
+      ansible.builtin.copy:
+        dest: /var/ossec/etc/rules/local_rules.xml
+        owner: wazuh
+        group: wazuh
+        mode: "0660"
+        content: |
+          <!-- Nova Syndicate: Custom Wazuh rules -->
+          <group name="local,nova,">
+
+            <!-- Samba brute-force: >5 echecs en 5 minutes -->
+            <rule id="100101" level="6">
+              <match>authentication failure</match>
+              <field name="full_log">smbd</field>
+              <description>Nova: Samba auth failure.</description>
+              <group>authentication_failed,samba,</group>
+            </rule>
+
+            <rule id="100100" level="10" frequency="5" timeframe="300">
+              <if_matched_sid>100101</if_matched_sid>
+              <description>Nova: Samba brute-force (>5 in 5 min).</description>
+              <group>authentication_failures,samba,</group>
+            </rule>
+
+            <!-- MariaDB acces non autorise -->
+            <rule id="100200" level="8">
+              <match>Access denied for user</match>
+              <description>Nova: MariaDB unauthorized access attempt.</description>
+              <group>database_access,mysql,</group>
+            </rule>
+
+            <!-- SSH brute-force (corrobore fail2ban) -->
+            <rule id="100300" level="10" frequency="8" timeframe="120">
+              <if_matched_sid>5716</if_matched_sid>
+              <description>Nova: SSH brute-force (>8 failures in 2 min).</description>
+              <group>authentication_failures,ssh,</group>
+            </rule>
+
+          </group>
+      notify: Restart wazuh-manager
+      tags: [t4, rules]
+
+    - name: Valider config Wazuh
+      ansible.builtin.command:
+        cmd: /var/ossec/bin/wazuh-analysisd -t
+      register: analysisd_test
+      changed_when: false
+      tags: [t4, verify]
+
+    - name: Afficher resultat validation
+      ansible.builtin.debug:
+        msg: "{{ analysisd_test.stderr | default('OK') | regex_findall('ERROR|WARNING|CRITICAL') | join(', ') or 'Config OK' }}"
+      tags: [t4, verify]
+
+    - name: Statut wazuh-manager
+      ansible.builtin.command:
+        cmd: systemctl is-active wazuh-manager
+      register: wazuh_status
+      changed_when: false
+      failed_when: false
+      tags: [t4, verify]
+
+    - name: Nombre agents actifs
+      ansible.builtin.command:
+        cmd: /var/ossec/bin/agent_control -l
+      register: agents_list
+      changed_when: false
+      tags: [t4, verify]
+
+    - name: Afficher agents
+      ansible.builtin.debug:
+        msg: "Agents: {{ agents_list.stdout_lines | select('match', '.*Active.*') | list | length }} actifs"
+      tags: [t4, verify]
+
+  handlers:
+    - name: Restart wazuh-manager
+      ansible.builtin.systemd:
+        name: wazuh-manager
+        state: restarted

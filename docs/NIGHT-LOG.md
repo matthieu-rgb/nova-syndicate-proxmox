@@ -25,7 +25,7 @@ Contraintes actives:
 | T1 AD Users | DONE | 2026-05-08 | 5 OUs, 8 groupes, 85 users. Total AD=91. Fixes: become:true + --given-name/surname + --userou relatif |
 | T2 FS1 shares | DONE | 2026-05-08 | Domain joined, 5 shares (3 browseable + 2 hidden). chgrp domaine sur dirs. full_audit VFS desactive (opnames invalides Samba 4.17) |
 | T3 MariaDB | DONE | 2026-05-08 | 3 comptes (app_logistique_rw, app_hr_ro, backup_user), nova_audit, cron 02h00, dump+rsync OK |
-| T4 Wazuh agents | PENDING | - | - |
+| T4 Wazuh agents | DONE | 2026-05-08 | 6 agents deja enrolles + actifs. 3 regles custom (Samba brute-force, MariaDB access denied, SSH brute-force) |
 | T5 Grafana+Prometheus | PENDING | - | - |
 | T6 BorgBackup | PENDING | - | - |
 | T7 rclone template | PENDING | - | - |
@@ -76,4 +76,11 @@ Cle SSH generee sur DB1 (/root/.ssh/id_backup) et autorisee sur BACKUP01.
 DB1 debanni de fail2ban BACKUP01 (ban apres tentatives SSH manuelles).
 Test: dump 512K OK, rsync 192.168.50.2:/var/backups/from-db1 OK.
 
-### T4 Wazuh agents [IN PROGRESS]
+### T4 Wazuh agents [DONE]
+
+6 agents deja enrolles et actifs (pre-deployes): backup01, proxy-lyon01, dc01, fs01, db01, bastion01.
+3 regles custom deployees via Ansible: Samba brute-force (100100/100101), MariaDB access denied (100200), SSH brute-force (100300).
+Fix: <decoded_as>syslog</decoded_as> invalide Wazuh 4.11 -> supprime, utilise <match> + <field name="full_log">.
+wazuh-manager: active, config valide.
+
+### T5 Grafana+Prometheus [IN PROGRESS]
