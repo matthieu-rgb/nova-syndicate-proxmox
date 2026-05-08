@@ -1,0 +1,103 @@
+---
+- name: "T7 -- rclone template + cloud sync script sur BACKUP01"
+  hosts: backups
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Installer rclone
+      ansible.builtin.apt:
+        name: rclone
+        state: present
+        update_cache: false
+      tags: [t7, install]
+
+    - name: Creer repertoire config rclone
+      ansible.builtin.file:
+        path: /etc/rclone
+        state: directory
+        owner: root
+        group: root
+        mode: "0700"
+      tags: [t7, config]
+
+    - name: Deployer rclone.conf TEMPLATE (section b2 vide)
+      ansible.builtin.copy:
+        dest: /etc/rclone/rclone.conf
+        owner: root
+        group: root
+        mode: "0600"
+        force: false
+        content: |
+          # Nova Syndicate -- rclone configuration
+          # Completer les creds cloud en journee (Backblaze B2 / Wasabi / OVH)
+
+          [b2-nova]
+          type = b2
+          account =
+          key =
+          # Procedure creation compte: voir docs/runbooks/runbook-backup.md
+
+          # Exemple Wasabi (alternative B2):
+          # [wasabi-nova]
+          # type = s3
+          # provider = Wasabi
+          # access_key_id =
+          # secret_access_key =
+          # region = eu-central-1
+          # endpoint = s3.eu-central-1.wasabisys.com
+      tags: [t7, config]
+
+    - name: Deployer script sync-cloud.sh
+      ansible.builtin.copy:
+        dest: /opt/nova-backup/sync-cloud.sh
+        owner: root
+        group: root
+        mode: "0750"
+        content: |
+          #!/usr/bin/env bash
+          # Nova Syndicate -- rclone sync vers cloud
+          # A activer quand les creds B2/Wasabi sont configures
+          # Voir /etc/rclone/rclone.conf pour la configuration
+          set -euo pipefail
+
+          BORG_BASE="/var/backups/borg"
+          REMOTE="b2-nova:nova-syndicate-backup"
+          LOG="/var/log/nova-sync-cloud.log"
+
+          log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG"; }
+
+          log "START sync-cloud"
+
+          rclone sync \
+            --config /etc/rclone/rclone.conf \
+            --transfers=4 \
+            --bwlimit=10M \
+            --log-level INFO \
+            --log-file "$LOG" \
+            "$BORG_BASE" "$REMOTE"
+
+          log "END sync-cloud"
+      tags: [t7, script]
+
+    - name: Cron sync-cloud 06h00 (DISABLED par defaut)
+      ansible.builtin.cron:
+        name: "nova-sync-cloud"
+        minute: "0"
+        hour: "6"
+        job: "/opt/nova-backup/sync-cloud.sh"
+        user: root
+        state: absent
+      tags: [t7, cron]
+
+    - name: Verifier rclone installe
+      ansible.builtin.command:
+        cmd: rclone version
+      register: rclone_version
+      changed_when: false
+      tags: [t7, verify]
+
+    - name: Afficher version rclone
+      ansible.builtin.debug:
+        msg: "rclone: {{ rclone_version.stdout_lines[0] }} -- config template pret, creds TODO matin"
+      tags: [t7, verify]
