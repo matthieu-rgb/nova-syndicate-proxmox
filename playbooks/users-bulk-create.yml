@@ -1,0 +1,199 @@
+---
+- name: "T1 -- AD OUs, groupes, et 85 users en masse"
+  hosts: domain_controllers
+  gather_facts: false
+  become: true
+
+  vars:
+    ad_domain: "nova-syndicate.local"
+    ad_dc: "DC=nova-syndicate,DC=local"
+    users_csv_src: "{{ playbook_dir }}/../inventory/users.csv"
+    users_csv_dest: "/tmp/nova_users.csv"
+
+    new_ous:
+      - "OU=Lyon,{{ ad_dc }}"
+      - "OU=Marseille,{{ ad_dc }}"
+      - "OU=Agents,{{ ad_dc }}"
+      - "OU=Servers,{{ ad_dc }}"
+      - "OU=Service-Accounts,{{ ad_dc }}"
+
+    new_groups:
+      - { name: "IT-Admins",       description: "IT Administrators" }
+      - { name: "Lyon-Staff",      description: "Personnel site Lyon" }
+      - { name: "Marseille-Staff", description: "Personnel site Marseille" }
+      - { name: "Mobile-Agents",   description: "Agents mobiles" }
+      - { name: "Finance",         description: "Departement Finance" }
+      - { name: "Sales",           description: "Departement Commercial" }
+      - { name: "Logistics",       description: "Departement Logistique" }
+      - { name: "Compliance",      description: "Departement Conformite" }
+
+  tasks:
+
+    # --- OUs ---
+    - name: Creer les nouvelles OUs
+      ansible.builtin.command:
+        cmd: >
+          samba-tool ou create "{{ item }}"
+          -U Administrator --password="{{ vault_samba_admin_password }}"
+      loop: "{{ new_ous }}"
+      register: ou_result
+      changed_when: "'Added' in (ou_result.stdout | default(''))"
+      failed_when: >
+        ou_result.rc != 0
+        and 'already' not in (ou_result.stdout | default('') ~ ou_result.stderr | default(''))
+      no_log: true
+      tags: [t1, ous]
+
+    # --- Groupes ---
+    - name: Creer les nouveaux groupes AD
+      ansible.builtin.command:
+        cmd: >
+          samba-tool group add "{{ item.name }}"
+          --description="{{ item.description }}"
+          -U Administrator --password="{{ vault_samba_admin_password }}"
+      loop: "{{ new_groups }}"
+      register: group_result
+      changed_when: "'Added group' in (group_result.stdout | default(''))"
+      failed_when: >
+        group_result.rc != 0
+        and 'already' not in (group_result.stdout | default('') ~ group_result.stderr | default(''))
+      no_log: true
+      tags: [t1, groups]
+
+    # --- Copier le CSV ---
+    - name: Copier users.csv sur le DC
+      ansible.builtin.copy:
+        src: "{{ users_csv_src }}"
+        dest: "{{ users_csv_dest }}"
+        mode: "0600"
+      tags: [t1, users]
+
+    # --- Script Python de creation en masse ---
+    - name: Copier script de creation users
+      ansible.builtin.copy:
+        dest: /tmp/create_users.py
+        mode: "0700"
+        content: |
+          #!/usr/bin/env python3
+          import csv
+          import subprocess
+          import sys
+          import json
+
+          admin_pass    = sys.argv[1]
+          csv_path      = sys.argv[2]
+          passwords_file = sys.argv[3]
+
+          with open(passwords_file) as pf:
+              passwords = json.load(pf)
+          results = {"created": [], "skipped": [], "failed": []}
+
+          with open(csv_path) as f:
+              for row in csv.DictReader(f):
+                  username   = row["username"]
+                  fullname   = row["fullname"]
+                  email      = row["email"]
+                  ou_full    = row["ou"]
+                  groups_str = row["groups"]
+                  password   = passwords.get(username, "Changeme123!")
+
+                  # --userou prend le chemin relatif sans domainDN
+                  # Ex: "OU=Lyon,DC=nova-syndicate,DC=local" -> "OU=Lyon"
+                  dc_idx = ou_full.upper().find(",DC=")
+                  ou = ou_full[:dc_idx] if dc_idx != -1 else ou_full
+
+                  parts = fullname.split(" ", 1)
+                  given_name = parts[0]
+                  surname    = parts[1] if len(parts) > 1 else ""
+
+                  # Create user
+                  cmd = [
+                      "samba-tool", "user", "create", username, password,
+                      f"--given-name={given_name}",
+                      f"--surname={surname}",
+                      f"--mail-address={email}",
+                      f"--userou={ou}",
+                      f"--use-username-as-cn",
+                      "-U", "Administrator",
+                      f"--password={admin_pass}",
+                  ]
+                  r = subprocess.run(cmd, capture_output=True, text=True)
+                  out = (r.stdout + r.stderr).lower()
+
+                  if r.returncode == 0:
+                      results["created"].append(username)
+                  elif "already" in out or "exists" in out:
+                      results["skipped"].append(username)
+                  else:
+                      results["failed"].append({"user": username, "err": r.stderr.strip()})
+                      continue
+
+                  # Add to groups
+                  for grp in groups_str.split("|"):
+                      grp = grp.strip()
+                      if not grp:
+                          continue
+                      gc = subprocess.run(
+                          ["samba-tool", "group", "addmembers", grp, username,
+                           "-U", "Administrator", f"--password={admin_pass}"],
+                          capture_output=True, text=True
+                      )
+                      # Ignore "already member" errors silently
+
+          print(f"Created: {len(results['created'])}")
+          print(f"Skipped (exist): {len(results['skipped'])}")
+          print(f"Failed: {len(results['failed'])}")
+          for f_item in results["failed"]:
+              print(f"  FAIL {f_item['user']}: {f_item['err']}")
+      tags: [t1, users]
+
+    # --- Ecriture passwords dans fichier temp (evite shlex.split sur JSON) ---
+    - name: Ecrire passwords JSON sur le DC
+      ansible.builtin.copy:
+        content: "{{ users_initial_passwords | to_json }}"
+        dest: /tmp/nova_passwords.json
+        mode: "0600"
+      no_log: true
+      tags: [t1, users]
+
+    # --- Execution creation en masse ---
+    - name: Executer la creation des 85 users
+      ansible.builtin.command:
+        argv:
+          - python3
+          - /tmp/create_users.py
+          - "{{ vault_samba_admin_password }}"
+          - "{{ users_csv_dest }}"
+          - /tmp/nova_passwords.json
+      register: bulk_create_result
+      no_log: true
+      tags: [t1, users]
+
+    - name: Afficher les resultats de creation
+      ansible.builtin.debug:
+        msg: "{{ bulk_create_result.stdout_lines }}"
+      tags: [t1, users]
+
+    # --- Verification finale ---
+    - name: Compter les users dans AD
+      ansible.builtin.command:
+        cmd: samba-tool user list
+      register: users_list
+      changed_when: false
+      tags: [t1, verify]
+
+    - name: Afficher le nombre de users AD
+      ansible.builtin.debug:
+        msg: "Total users AD: {{ users_list.stdout_lines | length }}"
+      tags: [t1, verify]
+
+    # --- Nettoyage ---
+    - name: Supprimer fichiers temporaires
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ users_csv_dest }}"
+        - /tmp/create_users.py
+        - /tmp/nova_passwords.json
+      tags: [t1, cleanup]
