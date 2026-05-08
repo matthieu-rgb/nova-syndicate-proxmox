@@ -1,0 +1,253 @@
+---
+- name: "T2 -- FS1 domain join + 5 shares Samba"
+  hosts: fileservers
+  gather_facts: false
+  become: true
+
+  vars:
+    ad_domain: "nova-syndicate.local"
+    ad_realm: "NOVA-SYNDICATE.LOCAL"
+    shares_base: "/srv/samba"
+
+    shares:
+      - name: lyon
+        path: "{{ shares_base }}/lyon"
+        group: "lyon-staff"
+        valid_users: "@Lyon-Staff @IT-Admins"
+        write_list:  "@Lyon-Staff @IT-Admins"
+        read_only: "no"
+      - name: marseille
+        path: "{{ shares_base }}/marseille"
+        group: "marseille-staff"
+        valid_users: "@Marseille-Staff @IT-Admins"
+        write_list:  "@Marseille-Staff @IT-Admins"
+        read_only: "no"
+      - name: commun
+        path: "{{ shares_base }}/commun"
+        group: "domain users"
+        valid_users: "@Domain Users @IT-Admins"
+        write_list:  "@IT-Admins"
+        read_only: "yes"
+      - name: finance
+        path: "{{ shares_base }}/finance"
+        group: "finance"
+        valid_users: "@Finance @IT-Admins"
+        write_list:  "@Finance @IT-Admins"
+        read_only: "no"
+      - name: it-restricted
+        path: "{{ shares_base }}/it-restricted"
+        group: "it-admins"
+        valid_users: "@IT-Admins"
+        write_list:  "@IT-Admins"
+        read_only: "no"
+
+  tasks:
+
+    # --- Domain join ---
+    - name: Verifier si FS1 est joint au domaine
+      ansible.builtin.command:
+        cmd: net ads testjoin
+      register: domain_join_check
+      changed_when: false
+      failed_when: false
+      tags: [t2, join]
+
+    - name: Joindre le domaine AD
+      ansible.builtin.command:
+        argv:
+          - net
+          - ads
+          - join
+          - "-U"
+          - "Administrator%{{ vault_samba_admin_password }}"
+      register: domain_join_result
+      when: domain_join_check.rc != 0
+      no_log: true
+      notify: Restart winbind
+      tags: [t2, join]
+
+    - name: Activer winbind (sans restart si deja joint)
+      ansible.builtin.systemd:
+        name: winbind
+        state: started
+        enabled: true
+      tags: [t2, join]
+
+    - name: Forcer flush handlers (restart winbind si domain join)
+      ansible.builtin.meta: flush_handlers
+      tags: [t2, join]
+
+    - name: Attendre que winbind soit operationnel
+      ansible.builtin.command:
+        cmd: wbinfo -t
+      register: wbinfo_test
+      retries: 10
+      delay: 3
+      until: wbinfo_test.rc == 0
+      changed_when: false
+      tags: [t2, join]
+
+    # --- Repertoires shares ---
+    - name: Creer repertoire de base
+      ansible.builtin.file:
+        path: "{{ shares_base }}"
+        state: directory
+        mode: "0755"
+        owner: root
+        group: root
+      tags: [t2, shares]
+
+    - name: Creer les repertoires des shares avec groupes domaine
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        mode: "0770"
+        owner: root
+        group: "{{ item.group }}"
+      loop: "{{ shares }}"
+      tags: [t2, shares]
+
+    # --- smb.conf avec les 5 nouveaux shares ---
+    - name: Deployer smb.conf
+      ansible.builtin.copy:
+        dest: /etc/samba/smb.conf
+        mode: "0644"
+        content: |
+          # Nova Syndicate -- smb.conf FS01 (Ansible managed T2)
+          [global]
+              workgroup = NOVA-SYNDICATE
+              realm = NOVA-SYNDICATE.LOCAL
+              security = ADS
+              encrypt passwords = yes
+
+              idmap config * : backend = tdb
+              idmap config * : range = 10000-20000
+              idmap config NOVA-SYNDICATE : backend = rid
+              idmap config NOVA-SYNDICATE : range = 20001-30000
+
+              winbind use default domain = yes
+              winbind enum users = yes
+              winbind enum groups = yes
+
+              vfs objects = acl_xattr
+              map acl inherit = yes
+              store dos attributes = yes
+              # NIS2 audit: full_audit VFS opnames differ par version Samba
+              # TODO: valider opnames valides et re-activer
+
+              log file = /var/log/samba/samba.log
+              max log size = 10000
+
+          [lyon]
+              path = /srv/samba/lyon
+              browseable = yes
+              read only = no
+              valid users = @Lyon-Staff @IT-Admins
+              write list = @Lyon-Staff @IT-Admins
+              create mask = 0660
+              directory mask = 0770
+              inherit acls = yes
+
+          [marseille]
+              path = /srv/samba/marseille
+              browseable = yes
+              read only = no
+              valid users = @Marseille-Staff @IT-Admins
+              write list = @Marseille-Staff @IT-Admins
+              create mask = 0660
+              directory mask = 0770
+              inherit acls = yes
+
+          [commun]
+              path = /srv/samba/commun
+              browseable = yes
+              read only = yes
+              valid users = @"Domain Users" @IT-Admins
+              write list = @IT-Admins
+              create mask = 0664
+              directory mask = 0775
+              inherit acls = yes
+
+          [finance]
+              path = /srv/samba/finance
+              browseable = no
+              read only = no
+              valid users = @Finance @IT-Admins
+              write list = @Finance @IT-Admins
+              create mask = 0660
+              directory mask = 0770
+              inherit acls = yes
+
+          [it-restricted]
+              path = /srv/samba/it-restricted
+              browseable = no
+              read only = no
+              valid users = @IT-Admins
+              write list = @IT-Admins
+              create mask = 0600
+              directory mask = 0700
+              inherit acls = yes
+      notify: Restart smbd
+      tags: [t2, config]
+
+    - name: Valider smb.conf syntax
+      ansible.builtin.command:
+        cmd: testparm -s
+      register: testparm_result
+      changed_when: false
+      failed_when: testparm_result.rc != 0
+      tags: [t2, config]
+
+    - name: Activer et demarrer smbd
+      ansible.builtin.systemd:
+        name: smbd
+        state: started
+        enabled: true
+      tags: [t2, services]
+
+    - name: Activer et demarrer nmbd
+      ansible.builtin.systemd:
+        name: nmbd
+        state: started
+        enabled: true
+      tags: [t2, services]
+
+    # --- Verification ---
+    - name: Verifier le domain join final
+      ansible.builtin.command:
+        cmd: net ads testjoin
+      register: final_join_check
+      changed_when: false
+      tags: [t2, verify]
+
+    - name: Afficher statut domain join
+      ansible.builtin.debug:
+        msg: "Domain join: {{ final_join_check.stdout }}"
+      tags: [t2, verify]
+
+    - name: Lister les shares disponibles (local)
+      ansible.builtin.command:
+        cmd: smbclient -L //localhost -U Administrator -N
+      register: smbclient_local
+      changed_when: false
+      failed_when: false
+      no_log: true
+      tags: [t2, verify]
+
+    - name: Compter les shares
+      ansible.builtin.debug:
+        msg: "Shares detectes: {{ smbclient_local.stdout | regex_findall('Disk') | length }}"
+      tags: [t2, verify]
+
+  handlers:
+    - name: Restart winbind
+      ansible.builtin.systemd:
+        name: winbind
+        state: restarted
+        enabled: true
+      listen: "Restart winbind"
+
+    - name: Restart smbd
+      ansible.builtin.systemd:
+        name: smbd
+        state: restarted
