@@ -132,3 +132,97 @@ resource "opnsense_firewall_filter" "dmz_to_bastion_ssh" {
     }
   }
 }
+# ============================================================
+# IPsec WAN entrant -- prepare Phase IV (tunnel vers MRS)
+# ============================================================
+
+resource "opnsense_firewall_filter" "fwext_wan_ipsec_ike" {
+  provider    = opnsense.fw_ext
+  enabled     = true
+  description = "IPsec IKE (UDP 500) depuis MRS -- prepare Phase IV"
+  interface = {
+    interface = ["wan"]
+  }
+  filter = {
+    action    = "pass"
+    direction = "in"
+    quick     = true
+    protocol  = "UDP"
+    source = {
+      net = "10.0.2.2"
+    }
+    destination = {
+      net  = "any"
+      port = "500"
+    }
+  }
+}
+
+resource "opnsense_firewall_filter" "fwext_wan_ipsec_natt" {
+  provider    = opnsense.fw_ext
+  enabled     = true
+  description = "IPsec NAT-T (UDP 4500) depuis MRS -- prepare Phase IV"
+  interface = {
+    interface = ["wan"]
+  }
+  filter = {
+    action    = "pass"
+    direction = "in"
+    quick     = true
+    protocol  = "UDP"
+    source = {
+      net = "10.0.2.2"
+    }
+    destination = {
+      net  = "any"
+      port = "4500"
+    }
+  }
+}
+
+resource "opnsense_firewall_filter" "fwext_wan_ipsec_esp" {
+  provider    = opnsense.fw_ext
+  enabled     = true
+  description = "IPsec ESP (proto 50) depuis MRS -- prepare Phase IV"
+  interface = {
+    interface = ["wan"]
+  }
+  filter = {
+    action    = "pass"
+    direction = "in"
+    quick     = true
+    protocol  = "ESP"
+    source = {
+      net = "10.0.2.2"
+    }
+    destination = {
+      net = "any"
+    }
+  }
+}
+
+# Au passage : enrichir wan_to_mail avec l'alias ports_mail_smtp
+# (deja en code, on rajoute juste une regle pour les ports submission/465)
+# Cette regle complete wan_to_mail qui ne gere que le port 25.
+
+resource "opnsense_firewall_filter" "fwext_wan_to_mail_submission" {
+  provider    = opnsense.fw_ext
+  enabled     = true
+  description = "Mail submission ports (465, 587) WAN vers MAIL01"
+  interface = {
+    interface = ["wan"]
+  }
+  filter = {
+    action    = "pass"
+    direction = "in"
+    quick     = true
+    protocol  = "TCP"
+    source = {
+      net = "any"
+    }
+    destination = {
+      net  = "host_mail01"
+      port = "ports_mail_smtp"
+    }
+  }
+}
