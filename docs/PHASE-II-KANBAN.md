@@ -24,16 +24,48 @@ leurs regles to_internet respectives (besoins legaux : apt, NTP, rclone B2).
 Le filtrage granulaire par VLAN est reporte en T-SQUID.
 Ref : docs/runbook-bastion-internet.md
 
-### [ ] T3 -- Durcissement block_all (dette technique)
+### [ ] T3 -- Durcissement firewall block_all + regles pass explicites
 
-Remplacer les 8 block_all=false par regles pass explicites :
-- FW-INT-LYON WAN : pass IPsec return (192.168.40.0/26 -> VLANs)
-- FW-EXT-LYON WAN : complement aux regles IKE/ESP existantes
-- FW-EXT-MRS WAN : complement aux regles IKE/ESP existantes
-- WAN-SIM WAN : pass trafic inter-FW legitime
+Scope : remettre block_all=true sur les 8 interfaces avec regles pass
+specifiques pour le trafic legitime AVANT de fermer.
 
-Approche : Terraform IMPORT-ONLY. Importer les regles existantes,
-verifier plan = No changes, puis durcir incrementalement.
+Interfaces concernees (8 block_all actuellement false) :
+- FW-INT-LYON : vtnet0 (WAN/transit) + opt1/opt2/opt3/opt4 (VLANs)
+- FW-EXT-LYON : vtnet0 (WAN)
+- FW-EXT-MRS : vtnet0 (WAN)
+- WAN-SIM : vtnet0 (WAN)
+
+Trafic a autoriser explicitement avant de fermer :
+- IPsec : UDP 500, 4500 + ESP entre 10.0.0.2 (LYON) et 10.0.2.2 (MRS)
+- Transit FW-INT <-> FW-EXT sur 10.0.1.0/30
+- IKE management interfaces OPNsense (SSH, HTTPS admin)
+- DNS/NTP sortants depuis VLANs internes
+- Replies IPsec decapsules (192.168.40.0/26 -> VLANs Lyon et inverse)
+- BASTION -> internet (fwint_bastion_to_internet deja OK)
+- SERVERS/USERS/BACKUP -> internet (conserve pour apt/NTP/web/rclone,
+  durcissement final en T-SQUID via proxy filtrant)
+
+Risques critiques :
+- Casser les 4 tunnels IPsec si oubli d'une regle pass ESP/IKE
+- Se couper l'acces SSH management depuis le Mac si regle WAN trop stricte
+
+Approche (une interface a la fois) :
+1. Importer les regles existantes (IMPORT-ONLY) -> plan = No changes
+2. Ecrire toutes les regles pass necessaires en Terraform
+3. terraform plan -> revue complete du diff avant apply
+4. Activer block_all sur UNE interface, tester immediatement :
+   - 4 pings IPsec cross-site
+   - SSH management OK
+   - Si KO : ajouter regle pass manquante, reprendre
+5. Repeter interface par interface
+6. Supprimer en meme temps les 5 routes PARASITES (DT-1 audit)
+
+Precautions operationnelles :
+- Garder un terminal SSH OPNsense ouvert en permanence
+- Avoir le script rollback-ipsec-migration.sh disponible
+- Faire en debut de journee frais, pas en fin de session
+
+Effort estime : 60-90 min
 
 ---
 
@@ -74,29 +106,41 @@ A documenter ou ignorer (hors scope browningluke/opnsense v0.16).
 
 ## Nouvelles taches
 
-### [ ] T-SQUID -- Proxy forward Squid avec whitelist par VLAN
+### [ ] T-SQUID -- Forward proxy avec whitelist par VLAN
 
-Objectif : remplacer l'acces internet "raw" (to any) par filtrage
-applicatif via proxy Squid, avec politique differenciee par VLAN.
+Prerequis : T3 termine (block_all=true). Sans T3, Squid ne sert a rien
+car le trafic peut bypasser le proxy par d'autres chemins.
 
-Strategie cible :
+Scope : deployer Squid sur proxy-lyon01 (deja dans alias host_proxy_lyon01,
+192.168.20.x) avec politique differenciee par VLAN source.
 
-| VLAN | Politique Squid | Whitelist / Categories |
-|------|-----------------|------------------------|
-| BASTION 15.0/29 | Bypass Squid OU whitelist large | github.com, registry.terraform.io, deb.debian.org, pypi.org, hub.docker.com, registry-1.docker.io, galaxy.ansible.com |
-| SERVERS 20.0/28 | Whitelist stricte | deb.debian.org, security.debian.org, pool.ntp.org, registry-1.docker.io, github.com, packages.microsoft.com |
-| USERS 30.0/26 | Categories Squid | work + news, blacklist streaming/social/gambling |
-| BACKUP 50.0/29 | Whitelist tres stricte | api.backblazeb2.com, f001.backblazeb2.com..f100.backblazeb2.com |
+Whitelist par VLAN :
+- BASTION (15.0/29) : whitelist large dev tools
+  github.com, registry.terraform.io, deb.debian.org, security.debian.org,
+  pypi.org, hub.docker.com, registry-1.docker.io, galaxy.ansible.com,
+  packages.debian.org, pythonhosted.org
+- SERVERS (20.0/28) : whitelist stricte ops
+  deb.debian.org, security.debian.org, pool.ntp.org,
+  registry-1.docker.io, github.com, packages.microsoft.com,
+  registry.terraform.io
+- USERS (30.0/26) : categories Squid (work + news),
+  blacklist streaming / social / gambling
+- BACKUP (50.0/29) : whitelist minimale B2
+  api.backblazeb2.com, f001.backblazeb2.com .. f100.backblazeb2.com
 
-Prerequis :
-- Deployer Squid sur une VM dediee (SERVERS VLAN ou DMZ)
-- Configurer le transparent proxy ou proxy explicite sur FW-INT-LYON
-- Basculer les regles *_to_internet de "to any" vers "to squid_ip port 3128"
-- Maintenir les no-NAT IPsec existants
+Configuration Squid :
+- forwarded_for off (protection L7 -- ne pas exposer IP interne aux sites)
+- access_log format JSON (ingestion Wazuh SIEM)
+- Retention logs 30 jours (RGPD minimisation)
+- TLS interception decline (preserve confidentialite, evite la complexite PKI)
+- Mode : proxy explicite d'abord (HTTP_PROXY=http://proxy:3128),
+  puis transparent si besoin (redir pf port 80/443 -> Squid)
 
-Sequence recommandee :
-1. Deployer Squid sur proxy-lyon01 (192.168.20.x -- deja dans alias host_proxy_lyon01)
-2. Configurer ACLs par VLAN source
-3. Tester en mode explicite (HTTP_PROXY) avant de basculer en transparent
-4. Modifier FW-INT-LYON : rediriger port 80/443 des VLANs vers Squid (sauf BASTION)
-5. Supprimer les regles to_internet "raw" une fois Squid valide
+Sequence :
+1. Deployer et configurer Squid sur proxy-lyon01
+2. Tester en mode explicite depuis chaque VLAN (curl --proxy)
+3. Modifier FW-INT-LYON : rediriger port 80/443 des VLANs vers Squid
+4. Basculer les regles *_to_internet de "to any" vers "to proxy-lyon01 port 3128"
+5. Supprimer les regles to_internet "raw" apres validation
+
+Effort estime : 90 min
