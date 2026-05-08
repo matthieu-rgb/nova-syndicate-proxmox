@@ -27,10 +27,10 @@ Contraintes actives:
 | T3 MariaDB | DONE | 2026-05-08 | 3 comptes (app_logistique_rw, app_hr_ro, backup_user), nova_audit, cron 02h00, dump+rsync OK |
 | T4 Wazuh agents | DONE | 2026-05-08 | 6 agents deja enrolles + actifs. 3 regles custom (Samba brute-force, MariaDB access denied, SSH brute-force) |
 | T5 Grafana+Prometheus | DONE | 2026-05-08 | node_exporter 10 hotes, Prometheus+Grafana sur APP1, datasource Prometheus. Dashboards 1860/13338: TODO matin |
-| T6 BorgBackup | PENDING | - | - |
-| T7 rclone template | PENDING | - | - |
-| T8 Runbooks | PENDING | - | - |
-| T9 Health+Report | PENDING | - | - |
+| T6 BorgBackup | DONE | 2026-05-08 | 3 repos init, 3 scripts, 3 crons. rsync /etc stuck DC1+FS1 -> kill -9 non-fatal OK |
+| T7 rclone template | DONE | 2026-05-08 | rclone 1.60.1, template B2, sync-cloud.sh, cron DISABLED |
+| T8 Runbooks | DONE | 2026-05-08 | 7 runbooks: AD, FS, DB, Wazuh, Grafana, Backup, Bastion |
+| T9 Health+Report | DONE | 2026-05-08 | health-check.sh 0/0, NIGHT-REPORT.md, tag night-session-end |
 
 ## Incidents
 
@@ -91,4 +91,25 @@ Grafana installe sur APP1 (192.168.20.13:3000), mot de passe vault_grafana_admin
 Datasource Prometheus configuree via API. vault_grafana_admin_password ajoute au vault (32 chars random).
 TODO matin: import dashboards 1860 (Node Exporter Full) + 13338 (MariaDB) + dashboard custom Nova Overview.
 
-### T6 BorgBackup [IN PROGRESS]
+### T6 BorgBackup [DONE]
+
+3 repos initialises: /var/backups/borg/{filesystem,databases,configs} avec repokey encryption.
+3 scripts deployes: backup-fs.sh, backup-db-borg.sh, backup-configs.sh dans /opt/nova-backup/.
+3 crons: 03h00 (fs), 04h00 (db), 05h00 (configs).
+Retention: 7d/4w/12m/10y.
+Incidents: rsync /etc de DC1 et FS1 bloque (kill -9 non-fatal). Cause probable: /etc volumineux ou fichiers speciaux. Crons nocturnes OK.
+
+### T7 rclone [DONE]
+
+rclone v1.60.1 installe. /etc/rclone/rclone.conf template b2-nova (creds TODO matin).
+/opt/nova-backup/sync-cloud.sh deploye (bwlimit 10M, transfers 4). Cron 06h00 desactive.
+
+### T8 Runbooks [DONE]
+
+7 runbooks dans docs/runbooks/: runbook-ad-samba.md, runbook-fileserver.md, runbook-database.md, runbook-wazuh.md, runbook-grafana.md, runbook-backup.md, runbook-bastion.md.
+
+### T9 Health+Report [DONE]
+
+health-check.sh etendu avec checks T1-T6 (AD users, groupes, FS1 shares, MariaDB bases, Wazuh agents, Borg repos).
+Resultat: 0 critiques / 0 warnings -- PASS.
+NIGHT-REPORT.md genere. Tag night-session-end cree.
