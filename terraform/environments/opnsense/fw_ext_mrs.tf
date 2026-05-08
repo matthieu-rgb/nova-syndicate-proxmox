@@ -97,7 +97,7 @@ resource "opnsense_firewall_filter" "fwextmrs_wan_ipsec_esp" {
 
 resource "opnsense_firewall_filter" "fwextmrs_wan_block_all" {
   provider    = opnsense.fw_ext_mrs
-  enabled     = true
+  enabled     = false
   description = "Block tout autre WAN entrant non autorise"
   interface = {
     interface = ["wan"]
