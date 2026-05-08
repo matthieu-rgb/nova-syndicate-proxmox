@@ -71,7 +71,7 @@ resource "opnsense_firewall_filter" "fwint_bastion_to_internet" {
 
 resource "opnsense_firewall_filter" "fwint_bastion_block_all" {
   provider    = opnsense.fw_int
-  enabled     = true
+  enabled     = false
   description = "Block + log tout autre trafic depuis BASTION"
   interface   = { interface = ["opt2"] }
   filter = {
@@ -106,7 +106,7 @@ resource "opnsense_firewall_filter" "fwint_servers_to_internet" {
 
 resource "opnsense_firewall_filter" "fwint_servers_block_all" {
   provider    = opnsense.fw_int
-  enabled     = true
+  enabled     = false
   description = "Block + log tout autre depuis servers"
   interface   = { interface = ["opt3"] }
   filter = {
@@ -186,7 +186,7 @@ resource "opnsense_firewall_filter" "fwint_users_to_internet" {
 
 resource "opnsense_firewall_filter" "fwint_users_block_all" {
   provider    = opnsense.fw_int
-  enabled     = true
+  enabled     = false
   description = "Block + log tout autre depuis users"
   interface   = { interface = ["opt4"] }
   filter = {
@@ -236,7 +236,7 @@ resource "opnsense_firewall_filter" "fwint_backup_to_internet" {
 
 resource "opnsense_firewall_filter" "fwint_backup_block_all" {
   provider    = opnsense.fw_int
-  enabled     = true
+  enabled     = false
   description = "Block + log tout autre depuis backup"
   interface   = { interface = ["opt1"] }
   filter = {
@@ -257,7 +257,7 @@ resource "opnsense_firewall_filter" "fwint_backup_block_all" {
 
 resource "opnsense_firewall_filter" "fwint_wan_block_all" {
   provider    = opnsense.fw_int
-  enabled     = true
+  enabled     = false
   description = "Block + log tout WAN entrant non sollicite"
   interface   = { interface = ["wan"] }
   filter = {
