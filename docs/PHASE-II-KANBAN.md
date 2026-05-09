@@ -230,3 +230,42 @@ Action pour chaque VLAN lors de T-SQUID :
 3. Supprimer la règle pass-all
 4. Vérifier que block_all (déjà enabled) bloque bien le reste
 5. Valider via pflog0 pendant 24h
+
+---
+
+## Session AFK 2026-05-09 -- Taches T-AFK-1 a T-AFK-7
+
+### [>] T-AFK-1 -- Validation T3 + tag + prep
+
+En cours. Validation croisee : 8/8 interfaces block_all actives, 4 tunnels
+IPsec INSTALLED, cross-site Lyon<->MRS OK, services metier OK.
+
+### [ ] T-AFK-2 -- Whitelist fail2ban BASTION
+
+fail2ban sur DC1/FS1/APP1/BACKUP01 -- whitelist 192.168.15.0/29 (subnet BASTION).
+Idempotent via /etc/fail2ban/jail.d/00-nova-whitelist.conf.
+
+### [ ] T-AFK-3 -- Cle SSH BASTION vers 6 hotes
+
+Deploy pubkey BASTION01 sur DC1, FS1, APP1, BACKUP01, proxy-lyon01, WEB01.
+Authorized_keys uniquement (pas de sshd_config change).
+
+### [ ] T-AFK-4 -- nginx WEB01 + page placeholder
+
+WEB01 (172.16.1.2) : nginx start + page placeholder Nova Syndicate.
+Headers securite basiques (sans HSTS/TLS). Loopback only = non, DMZ interne.
+
+### [ ] T-AFK-5 -- Squid PROXY-MRS01
+
+proxy-mrs01 (192.168.40.11) : config copiee de proxy-lyon01, ACL adaptees
+pour LAN MRS (192.168.40.0/26). Port 3128.
+
+### [ ] T-AFK-6 -- Postfix + Dovecot MAIL01 minimal
+
+MAIL01 (172.16.1.3) : inet_interfaces=loopback-only. Pas d'ecoute externe.
+Config sandbox uniquement, prod avec LDAP/DKIM apres retour.
+
+### [ ] T-AFK-7 -- Grafana imports dashboards
+
+APP1 (192.168.20.13) : import dashboards officiels + custom Nova Overview.
+Datasource Prometheus si non configure.
