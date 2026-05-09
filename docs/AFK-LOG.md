@@ -57,7 +57,7 @@
 
 ## T-AFK-3 — Cle SSH BASTION vers 6 hotes
 
-**Status : PASS**
+**Status : PASS (commit 1f90bec)**
 - Cle ed25519 generee sur bastion01 (SHA256:55x6DFsTZ9owpAUJqRAaDxBDwwtEwgHyJc7mDWZlb3A)
 - DC1 (192.168.20.10) : PASS
 - FS1 (192.168.20.11) : PASS
@@ -67,5 +67,15 @@
 - WEB01 (172.16.1.2) : PASS
 - DB1 : SKIP (instruction utilisateur -- probleme SSH agent)
 - Test depuis BASTION : 6/6 hostname sans password
+
+## T-AFK-4 -- nginx WEB01 + page placeholder
+
+**Status : PASS**
+- nginx 1.22.1 installe et actif sur WEB01 (172.16.1.2)
+- Page placeholder Nova Syndicate deployee (/var/www/html/index.html)
+- Config nginx avec headers securite (X-Frame-Options, X-Content-Type-Options, Referrer-Policy)
+- Test BASTION -> WEB01 : HTTP 200 OK, contenu "Nova Syndicate" confirme
+- Wazuh agent absent sur WEB01 : note TODO runbook
+- runbook-web01.md cree
 
 
