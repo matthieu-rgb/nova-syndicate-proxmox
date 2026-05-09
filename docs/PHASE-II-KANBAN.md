@@ -155,4 +155,28 @@ Sequence :
 4. Basculer les regles *_to_internet de "to any" vers "to proxy-lyon01 port 3128"
 5. Supprimer les regles to_internet "raw" apres validation
 
-Effort estime : 90 min
+Effort estime : ~3h (réévalué T3 2026-05-09)
+  - 60 min règles granulaires par VLAN (AD/Wazuh/Prometheus/intra-VLAN)
+  - 90 min déploiement Squid + config
+  - 30 min tests validation par VLAN
+
+Raison du report des règles granulaires (décision T3 2026-05-09) :
+Faire les règles granulaires maintenant sans Squid = double travail.
+Quand Squid arrivera, les règles *_to_internet seront remplacées et les
+granulaires devront tenir compte du passage proxy. Cohérent avec T3
+Option A pour USERS et SERVERS (block_all placeholder).
+
+### Dette T3 -- Pass-all a remplacer par granulaire en T-SQUID
+
+| Interface     | Règle pass-all UUID | Flux à granulariser |
+|---------------|---------------------|---------------------|
+| opt4 USERS (vlan04)   | 435d8df8 | DC AD (53,88,389,445,464,636,3268) + FS SMB (445) + APP1 Wazuh (1514,1515) + Squid proxy (3128) -- supprime internet direct |
+| opt3 SERVERS (vlan03) | 7c8e2113 | DC AD complet + intra-VLAN (DC<->FS<->DB<->APP) + BACKUP rsync (22) + APP1 Wazuh/Prom (1514,1515,9100) + cross-site MRS + Squid proxy -- supprime internet direct |
+| opt1 BACKUP (vlan01)  | 502bd253 | Sortie internet via Squid uniquement (rclone B2 + apt + NTP) -- supprime pass-all |
+
+Action pour chaque VLAN lors de T-SQUID :
+1. Creer règles granulaires spécifiques (apply séparé)
+2. Tester chaque flux avec pass-all encore actif
+3. Supprimer la règle pass-all
+4. Vérifier que block_all (déjà enabled) bloque bien le reste
+5. Valider via pflog0 pendant 24h

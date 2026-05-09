@@ -482,14 +482,57 @@ Block_all sur vtnet0 peut etre active en Phase 3 sans risque.
 
 | Interface | FW | Statut | Commit |
 |-----------|-----|--------|--------|
-| vtnet0 WAN | WAN-SIM | CLOSED | 04eae76+ |
-| opt1 BACKUP | FW-INT-LYON | pending | - |
-| opt4 USERS | FW-INT-LYON | pending | - |
-| vtnet0 WAN | FW-EXT-MRS | pending | - |
-| vtnet0 WAN | FW-EXT-LYON | pending | - |
-| opt3 SERVERS | FW-INT-LYON | pending | - |
+| vtnet0 WAN | WAN-SIM | CLOSED | d5c4991 |
+| opt1 BACKUP | FW-INT-LYON | CLOSED | d5c4991 |
+| opt4 USERS | FW-INT-LYON | CLOSED | c4fbf10 |
+| vtnet0 WAN | FW-EXT-MRS | CLOSED | 364c044 |
+| vtnet0 WAN | FW-EXT-LYON | CLOSED | d838416 |
+| opt3 SERVERS | FW-INT-LYON | CLOSED | pending |
 | opt2 BASTION | FW-INT-LYON | pending | - |
 | vtnet0 WAN | FW-INT-LYON | pending | - |
+
+Note T3 : interfaces USERS/SERVERS/BACKUP fermées avec block_all placeholder
+(pass-all *_to_internet positionné avant block => block dead code).
+Hardening réel différé en T-SQUID. Voir PHASE-II-KANBAN.md section
+"Dette T3 -- Pass-all à remplacer".
+
+#### Interface 1/8 correction : commit WAN-SIM = commit initial de session,
+BACKUP = d5c4991 (même session), USERS = c4fbf10, EXT-MRS = 364c044,
+EXT-LYON = d838416.
+
+#### Interface 2/8 -- FW-INT-LYON opt1 BACKUP (2026-05-09)
+
+Ressource : opnsense_firewall_filter.fwint_backup_block_all [ac3427cc]
+Ordering confirmé post -replace : pass SSH + pass-all AVANT block.
+Tests : BACKUP01 ping DC1/FS1/APP1 0%, curl 200, Wazuh active, 7/7, 0/0.
+
+#### Interface 3/8 -- FW-INT-LYON opt4 USERS (2026-05-09)
+
+Ressource : opnsense_firewall_filter.fwint_users_block_all [17883b5f]
+Note : fwint_users_to_internet (435d8df8) pass-all positionné avant block.
+Block dead code. Flux testés depuis 192.168.30.1 vers DC1/FS1/APP1 : 0%.
+
+#### Interface 4/8 -- FW-EXT-MRS vtnet0 (2026-05-09)
+
+Ressource : opnsense_firewall_filter.fwextmrs_wan_block_all [e16e4a40]
+IPsec : ESP + NAT-T/4500 + IKE/500 AVANT block. 8 SA INSTALLED. 0/0.
+
+#### Interface 5/8 -- FW-EXT-LYON vtnet0 (2026-05-09)
+
+Ressource : opnsense_firewall_filter.wan_block_all [fa96cb54 après -replace]
+INCIDENT : premier apply positionne block à ligne 5 (entre SMTP/25 et IPsec).
+IPsec IKE/ESP dead code -- tunnels tenus par état pf seulement.
+Fix : terraform apply -replace immédiat -> block repositionné ligne 13.
+Ordering final : SMTP+HTTP+HTTPS+NAT-T+IKE+ESP -> block -> reply-to auto.
+Tests post-fix : 8 SA, 3x curl 200, 4 pings 0%, 7/7, 0/0.
+
+#### Interface 6/8 -- FW-INT-LYON opt3 SERVERS (2026-05-09)
+
+Ressource : opnsense_firewall_filter.fwint_servers_block_all [b19da746]
+Seule règle pass : fwint_servers_to_internet pass-all (7c8e2113).
+Block placeholder (dead code). Option A retenue (cohérence avec USERS).
+Tests : MariaDB OK, SMB FS01 OK, cross-site DC01->MRS 0%, Prometheus 2 up,
+Wazuh 7/7, SSH 3/3, health-check 0/0.
 
 #### Interface 1/8 -- WAN-SIM vtnet0 (2026-05-09 14:56)
 
