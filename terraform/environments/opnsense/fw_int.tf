@@ -186,7 +186,7 @@ resource "opnsense_firewall_filter" "fwint_users_to_internet" {
 
 resource "opnsense_firewall_filter" "fwint_users_block_all" {
   provider    = opnsense.fw_int
-  enabled     = false
+  enabled     = true
   description = "Block + log tout autre depuis users"
   interface   = { interface = ["opt4"] }
   filter = {
