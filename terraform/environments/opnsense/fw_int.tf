@@ -255,6 +255,21 @@ resource "opnsense_firewall_filter" "fwint_backup_block_all" {
 # Le stateful firewall gere automatiquement les retours.
 # ============================================================
 
+resource "opnsense_firewall_filter" "fwint_wan_ipsec_decapsulated" {
+  provider    = opnsense.fw_int
+  enabled     = true
+  description = "Trafic IPsec decapsule MRS (192.168.40.0/26) -> VLANs Lyon"
+  interface   = { interface = ["wan"] }
+  filter = {
+    action    = "pass"
+    direction = "in"
+    quick     = true
+    protocol  = "any"
+    source      = { net = "net_lan_mrs" }
+    destination = { net = "net_lyon_internal" }
+  }
+}
+
 resource "opnsense_firewall_filter" "fwint_wan_block_all" {
   provider    = opnsense.fw_int
   enabled     = false

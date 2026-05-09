@@ -413,3 +413,41 @@ Apres analyse :
 | DT-2 block_all=false | OPEN (scope T3) |
 | DT-3 con1 legacy expire | SURVEILLANCE |
 | DT-4 IPsec state TF | OPEN (hors scope) |
+
+---
+
+## T3 -- Durcissement Firewall block_all (2026-05-09)
+
+### Phase 1 -- Cartographie trafic
+
+Ref : docs/T3-traffic-matrix.md
+Resultat : 1 seule regle manquante identifiee (fwint_wan_ipsec_decapsulated sur FW-INT vtnet0).
+Toutes les autres interfaces disposent deja des regles pass necessaires.
+
+### Apply A -- Suppression 5 routes parasites (2026-05-09)
+
+Commande :
+```
+terraform apply -target=opnsense_route.wansim_to_lyon_internal_subnets \
+  -target=opnsense_route.wansim_to_lyon_transit \
+  -target=opnsense_route.wansim_to_mrs_lan \
+  -target=opnsense_route.fwext_to_mrs_lan \
+  -target=opnsense_route.fwextmrs_to_lyon
+```
+
+Resultat : 0 added, 0 changed, 5 destroyed
+
+Routes supprimees :
+- wansim_to_lyon_internal_subnets [d6760959] -- 192.168.0.0/16
+- wansim_to_lyon_transit           [884b73c4] -- 10.0.1.0/30
+- wansim_to_mrs_lan                [2bdb3470] -- 192.168.40.0/26
+- fwext_to_mrs_lan                 [6a3ba959] -- 192.168.40.0/26
+- fwextmrs_to_lyon                 [6fd5ee61] -- 192.168.0.0/16
+
+Tests post-Apply A :
+- 4 pings IPsec cross-site : 2/2 (0% loss) sur BASTION/SERVERS/USERS/BACKUP
+- swanctl --list-sas : 8 INSTALLED (4 modernes UUID + 4 legacy expirant)
+- Wazuh agents : 7 Active (000-006)
+- SSH 6 hotes : OK
+- AD, FS, DB, Monitoring, BorgBackup : OK
+- terraform plan : 2 creates pending (Apply B -- normal, non-regression)

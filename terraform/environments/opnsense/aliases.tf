@@ -16,6 +16,7 @@ locals {
     net_lyon_servers  = { content = ["192.168.20.0/28"], description = "VLAN 20 - Servers subnet" }
     net_lyon_users    = { content = ["192.168.30.0/26"], description = "VLAN 30 - Users subnet" }
     net_lyon_backup   = { content = ["192.168.50.0/29"], description = "VLAN 50 - Backup subnet" }
+    net_lyon_internal = { content = ["192.168.15.0/29", "192.168.20.0/28", "192.168.30.0/26", "192.168.50.0/29"], description = "Tous les VLANs internes Lyon" }
     net_lan_mrs       = { content = ["192.168.40.0/26"], description = "LAN Marseille (cross-site)" }
   }
 
