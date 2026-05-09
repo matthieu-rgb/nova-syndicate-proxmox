@@ -68,6 +68,17 @@
 - DB1 : SKIP (instruction utilisateur -- probleme SSH agent)
 - Test depuis BASTION : 6/6 hostname sans password
 
+## T-AFK-5 -- Squid PROXY-MRS01
+
+**Status : PASS**
+- squid 5.7 installe et actif sur proxy-mrs01 (192.168.40.11)
+- Config adaptee de proxy-lyon01 : subnet MRS 192.168.40.0/26, visible_hostname proxy-mrs01.nova-syndicate.local
+- forwarded_for off + via off (NIS2)
+- Port 3128 actif (ss -tlnp confirme)
+- Test fonctionnel : TCP_MISS/302 confirme (relais http://www.debian.org)
+- Wazuh absent sur proxy-mrs01 : TODO runbook
+- runbook-squid.md cree
+
 ## T-AFK-4 -- nginx WEB01 + page placeholder
 
 **Status : PASS**
