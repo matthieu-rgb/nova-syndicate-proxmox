@@ -108,6 +108,18 @@ A documenter ou ignorer (hors scope browningluke/opnsense v0.16).
 
 ### [ ] T-SQUID -- Forward proxy avec whitelist par VLAN
 
+ALERTE T3 INTERFACE 3 (2026-05-09) : fwint_users_to_internet (UUID 435d8df8)
+est un pass-all net_lyon_users -> any. Il se positionne AVANT fwint_users_block_all
+dans pfctl (quick => le block ne s'active jamais pour les users). VLAN 30 non
+filtre en l'etat. Meme audit a faire pour :
+- fwint_servers_to_internet (VLAN 20, rule fwint_servers_to_internet)
+- fwint_backup_to_internet  (VLAN 50, rule fwint_backup_to_internet)
+
+Action T-SQUID obligatoire :
+1. Remplacer fwint_*_to_internet par : source VLAN -> proxy-lyon01 port 3128 uniquement
+2. Supprimer les regles to_internet pass-all apres validation Squid
+3. La destination "any" doit rester uniquement pour BASTION (besoin dev tools valide)
+
 Prerequis : T3 termine (block_all=true). Sans T3, Squid ne sert a rien
 car le trafic peut bypasser le proxy par d'autres chemins.
 
