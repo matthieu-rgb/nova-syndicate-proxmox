@@ -91,7 +91,7 @@ resource "opnsense_firewall_filter" "transit_to_wan" {
 
 resource "opnsense_firewall_filter" "wan_block_all" {
   provider    = opnsense.fw_ext
-  enabled     = false
+  enabled     = true
   description = "Block tout WAN entrant non autorise"
   interface = {
     interface = ["wan"]
