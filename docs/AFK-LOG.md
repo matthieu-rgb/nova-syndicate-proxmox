@@ -79,6 +79,17 @@
 - Wazuh absent sur proxy-mrs01 : TODO runbook
 - runbook-squid.md cree
 
+## T-AFK-6 -- Postfix + Dovecot MAIL01
+
+**Status : PASS**
+- postfix 3.7.x et dovecot 2.3.19 installes sur MAIL01 (172.16.1.3)
+- postfix : inet_interfaces=loopback-only, ecoute 127.0.0.1:25 uniquement
+- dovecot : listen=127.0.0.1 ::1, ecoute 127.0.0.1:143 uniquement
+- Test envoi local : mail livre a /var/mail/debian (postfix OK)
+- Aucune ecoute externe sur 0.0.0.0 (valide apres restart)
+- Wazuh absent sur MAIL01 : TODO runbook
+- runbook-mail01.md cree
+
 ## T-AFK-4 -- nginx WEB01 + page placeholder
 
 **Status : PASS**
