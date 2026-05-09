@@ -51,11 +51,25 @@ curl -X PUT -H "Content-Type: application/json" \
   http://admin:<ancien>@localhost:3000/api/user/password
 ```
 
-### Importer un dashboard (TODO matin)
+### Importer les dashboards prepares (session AFK 2026-05-09)
 
-- Dashboard Node Exporter Full : ID 1860
-- Dashboard MariaDB : ID 13338
-- Via Grafana UI : Dashboards > Import > ID > Load
+JSOns telecharges et script prets sur APP1 : `/opt/nova-dashboards/`
+
+```bash
+# Depuis APP1 :
+sudo bash /opt/nova-dashboards/import-dashboards.sh <vault_grafana_admin_password>
+```
+
+Dashboards prepares :
+- `dash-1860.json` : Node Exporter Full (officiel Grafana)
+- `dash-14057.json` : MariaDB Exporter (officiel Grafana)
+- `dash-12175.json` : pfSense/OPNsense (officiel Grafana)
+- `nova-overview-dashboard.json` : Nova Syndicate Overview (custom -- Nodes UP, CPU, Memoire)
+
+Note : vault_grafana_admin_password = dechiffrer via :
+```bash
+ansible-vault view inventory/group_vars/all/vault.yml --vault-password-file ~/.ansible/nova_vault_pass | grep grafana
+```
 
 ## Diagnostic
 
