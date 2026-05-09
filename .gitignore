@@ -19,3 +19,10 @@ terraform/environments/proxmox/*.tfstate*
 terraform/environments/proxmox/.terraform.lock.hcl
 tfplan
 tfplan-*
+
+# automation pipeline local config
+.automation/
+**/.automation/
+
+# Local backups
+backups/
