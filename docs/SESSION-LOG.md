@@ -477,3 +477,25 @@ Tests post-Apply B :
 Regle fwint_wan_ipsec_decapsulated validee fonctionnellement.
 Trafic MRS-initie traverse FW-INT-LYON vtnet0 sans blocage.
 Block_all sur vtnet0 peut etre active en Phase 3 sans risque.
+
+### Phase 3 -- Fermeture progressive (2026-05-09)
+
+| Interface | FW | Statut | Commit |
+|-----------|-----|--------|--------|
+| vtnet0 WAN | WAN-SIM | CLOSED | 04eae76+ |
+| opt1 BACKUP | FW-INT-LYON | pending | - |
+| opt4 USERS | FW-INT-LYON | pending | - |
+| vtnet0 WAN | FW-EXT-MRS | pending | - |
+| vtnet0 WAN | FW-EXT-LYON | pending | - |
+| opt3 SERVERS | FW-INT-LYON | pending | - |
+| opt2 BASTION | FW-INT-LYON | pending | - |
+| vtnet0 WAN | FW-INT-LYON | pending | - |
+
+#### Interface 1/8 -- WAN-SIM vtnet0 (2026-05-09 14:56)
+
+Ressource : opnsense_firewall_filter.wansim_wan_block_all [e480ceaa]
+enabled false -> true
+
+pfctl confirme : block drop in log quick on vtnet0 inet all label "e480ceaa-..."
+Tests : 4 pings 0% loss, 8 SAs INSTALLED, SSH INT/EXT/MRS OK, 7 Wazuh Active
+health-check : 0/0

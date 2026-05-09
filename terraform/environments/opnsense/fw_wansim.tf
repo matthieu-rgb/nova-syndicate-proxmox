@@ -49,7 +49,7 @@ resource "opnsense_firewall_filter" "wansim_opt1_to_any" {
 
 resource "opnsense_firewall_filter" "wansim_wan_block_all" {
   provider    = opnsense.wansim
-  enabled     = false
+  enabled     = true
   description = "Block tout WAN entrant non sollicite (etat-firewall gere les retours)"
   interface = {
     interface = ["wan"]
