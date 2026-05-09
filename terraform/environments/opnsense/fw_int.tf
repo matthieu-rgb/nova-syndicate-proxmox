@@ -236,7 +236,7 @@ resource "opnsense_firewall_filter" "fwint_backup_to_internet" {
 
 resource "opnsense_firewall_filter" "fwint_backup_block_all" {
   provider    = opnsense.fw_int
-  enabled     = false
+  enabled     = true
   description = "Block + log tout autre depuis backup"
   interface   = { interface = ["opt1"] }
   filter = {
