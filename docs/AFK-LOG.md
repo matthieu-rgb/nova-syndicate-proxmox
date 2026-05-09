@@ -79,6 +79,21 @@
 - Wazuh absent sur proxy-mrs01 : TODO runbook
 - runbook-squid.md cree
 
+## T-AFK-7 -- Grafana imports dashboards
+
+**Status : PARTIAL** (preparation complete, import bloque par password)
+- Raison : vault_grafana_admin_password dans vault Ansible chiffre AES256, inaccessible sans cle vault
+- admin/admin refuse (password change lors de la session precedente NIGHT)
+- Pas de reset password (interdit en autonomie per contrainte utilisateur)
+- Dashboards JSON telecharges et stockes sur APP1 : /opt/nova-dashboards/
+  - dash-1860.json : Node Exporter Full (468 KB)
+  - dash-14057.json : MariaDB Exporter (103 KB)
+  - dash-12175.json : pfSense/OPNsense (102 KB)
+  - nova-overview-dashboard.json : Nova Syndicate Overview (custom, 4 panels)
+- Script d'import pret : /opt/nova-dashboards/import-dashboards.sh
+- runbook-grafana.md mis a jour avec procedure d'import
+- ACTION RETOUR : sudo bash /opt/nova-dashboards/import-dashboards.sh <vault_grafana_admin_password>
+
 ## T-AFK-6 -- Postfix + Dovecot MAIL01
 
 **Status : PASS**
