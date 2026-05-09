@@ -487,9 +487,9 @@ Block_all sur vtnet0 peut etre active en Phase 3 sans risque.
 | opt4 USERS | FW-INT-LYON | CLOSED | c4fbf10 |
 | vtnet0 WAN | FW-EXT-MRS | CLOSED | 364c044 |
 | vtnet0 WAN | FW-EXT-LYON | CLOSED | d838416 |
-| opt3 SERVERS | FW-INT-LYON | CLOSED | pending |
-| opt2 BASTION | FW-INT-LYON | pending | - |
-| vtnet0 WAN | FW-INT-LYON | pending | - |
+| opt3 SERVERS | FW-INT-LYON | CLOSED | 7d963fa |
+| opt2 BASTION | FW-INT-LYON | CLOSED | a49d145 |
+| vtnet0 WAN | FW-INT-LYON | CLOSED | af8ed10 |
 
 Note T3 : interfaces USERS/SERVERS/BACKUP fermées avec block_all placeholder
 (pass-all *_to_internet positionné avant block => block dead code).
@@ -534,6 +534,32 @@ Block placeholder (dead code). Option A retenue (cohérence avec USERS).
 Tests : MariaDB OK, SMB FS01 OK, cross-site DC01->MRS 0%, Prometheus 2 up,
 Wazuh 7/7, SSH 3/3, health-check 0/0.
 
+#### Interface 7/8 -- FW-INT-LYON opt2 BASTION (2026-05-09)
+
+Ressource : opnsense_firewall_filter.fwint_bastion_block_all [ea6cf741]
+Regles pass opt2 avant block : SSH servers (22), AD TCP/UDP DC01, internet any.
+Note direction : block_all direction=in sur vlan02 -- SSH entrant Mac->BASTION01
+est direction=OUT depuis vlan02, non affecte. SSH management OPNsense
+sur 192.168.99.1 (interface management dedie), pas sur vtnet0.
+Tests : BASTION01 -> servers SSH 0%, -> DC01 AD TCP/UDP 0%, -> internet 0%,
+SSH Mac -> BASTION01 OK, Wazuh 7/7, health-check 0/0.
+
+#### Interface 8/8 -- FW-INT-LYON vtnet0 WAN (2026-05-09)
+
+Ressource : opnsense_firewall_filter.fwint_wan_block_all [730f9aeb]
+INCIDENT MAJEUR : OPNsense PREPEND les nouvelles regles (insertion en tete).
+Premier apply : block [8dbaaa6d] position 4, ipsec_decapsulated [ff99886c]
+position 5 -> trafic MRS-initie : 100% packet loss confirme.
+-replace : echec (OPNsense recycle le slot libere, position inchangee).
+double -replace avec depends_on : Terraform CYCLE ERROR dans les deux sens.
+Fix : API OPNsense directe :
+  POST /api/firewall/filter/setRule/730f9aeb {"rule": {"sequence": "2"}}
+  POST /api/firewall/filter/apply
+Resultat pfctl : ipsec_decapsulated(seq=1, pos 4) -> block(seq=2, pos 5).
+Alignement Terraform : sequence=1 sur ipsec_decapsulated, sequence=2 sur block_all.
+terraform plan post-fix : No changes.
+Tests : MRS-initie ping DC01 100% loss -> 0% loss. 4 pings IPsec 0%. 7/7. 0/0.
+
 #### Interface 1/8 -- WAN-SIM vtnet0 (2026-05-09 14:56)
 
 Ressource : opnsense_firewall_filter.wansim_wan_block_all [e480ceaa]
@@ -542,6 +568,61 @@ enabled false -> true
 pfctl confirme : block drop in log quick on vtnet0 inet all label "e480ceaa-..."
 Tests : 4 pings 0% loss, 8 SAs INSTALLED, SSH INT/EXT/MRS OK, 7 Wazuh Active
 health-check : 0/0
+
+---
+
+## T3 -- Recap final (2026-05-09)
+
+### Duree totale
+
+Session unique 2026-05-09. Duree reelle : ~3h (estimation initiale : 60-90 min).
+Causes du depassement : incidents ordering interfaces 5 et 8 (+45 min chacun).
+
+### 8/8 interfaces fermees
+
+| Interface | FW | UUID block_all | Commit | Notes |
+|-----------|-----|----------------|--------|-------|
+| vtnet0 WAN | WAN-SIM | e480ceaa | d5c4991 | Clean |
+| opt1 BACKUP | FW-INT-LYON | ac3427cc | d5c4991 | Placeholder pass-all avant block |
+| opt4 USERS | FW-INT-LYON | 17883b5f | c4fbf10 | Placeholder pass-all avant block |
+| vtnet0 WAN | FW-EXT-MRS | e16e4a40 | 364c044 | Clean |
+| vtnet0 WAN | FW-EXT-LYON | fa96cb54 | d838416 | -replace fix (ordering initial incorrect) |
+| opt3 SERVERS | FW-INT-LYON | b19da746 | 7d963fa | Placeholder pass-all avant block |
+| opt2 BASTION | FW-INT-LYON | ea6cf741 | a49d145 | Clean (regles granulaires) |
+| vtnet0 WAN | FW-INT-LYON | 730f9aeb | af8ed10 | Fix sequence via API (prepend bug) |
+
+### 3 lecons systemiques OPNsense
+
+1. -replace ne repositionne pas si OPNsense recycle le slot libere.
+   Symptome : block_all reste en position intermediaire apres -replace.
+   Detection : pfctl -sr | nl apres chaque apply.
+
+2. OPNsense PREPEND les nouvelles regles. Derniere regle creee = premiere dans pfctl.
+   Impact : double -replace avec depends_on inefficace + risque cycle error.
+   Fix declaratif : champ sequence= dans opnsense_firewall_filter.
+
+3. Champ sequence= expose par provider browningluke/opnsense v0.16.
+   Utiliser sequence=1/2/N pour garantir l'ordre de maniere idempotente.
+   terraform plan = No changes quand sequence aligne avec OPNsense.
+
+### Dettes ouvertes post-T3
+
+| Dette | Priorite | Effort |
+|-------|----------|--------|
+| T-SQUID -- Proxy VLAN (remplacer 3 pass-all) | HAUTE | ~3h |
+| T-FAIL2BAN-CLEANUP -- Debannir BASTION01 | MOYENNE | 15 min |
+| T-BASTION-JUMPBOX -- Deployer cle SSH + Ansible | BASSE | 60 min |
+
+### Metriques session T3
+
+- Regressions services : 0
+- Pertes SSH management : 0
+- Pertes agents Wazuh : 0 (7/7 actifs tout au long)
+- IPsec Child SAs impactees : 0 (4 modernes INSTALLED, 0 downtime)
+- Rollbacks necessaires : 0
+- Incidents de production : 2 (interfaces 5 et 8 -- resolus en session)
+
+---
 
 ## TODO post-T3 — Fail2ban + Host keys
 

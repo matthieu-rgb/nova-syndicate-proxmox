@@ -24,7 +24,7 @@ leurs regles to_internet respectives (besoins legaux : apt, NTP, rclone B2).
 Le filtrage granulaire par VLAN est reporte en T-SQUID.
 Ref : docs/runbook-bastion-internet.md
 
-### [ ] T3 -- Durcissement firewall block_all + regles pass explicites
+### [x] T3 -- Durcissement firewall block_all + regles pass explicites COMPLETE 2026-05-09
 
 Scope : remettre block_all=true sur les 8 interfaces avec regles pass
 specifiques pour le trafic legitime AVANT de fermer.
@@ -65,7 +65,57 @@ Precautions operationnelles :
 - Avoir le script rollback-ipsec-migration.sh disponible
 - Faire en debut de journee frais, pas en fin de session
 
-Effort estime : 60-90 min
+Effort estime : 60-90 min (reel : ~3h session 2026-05-09)
+
+Interfaces fermees (8/8) :
+| Interface | FW | UUID block_all | Notes |
+|---|---|---|---|
+| vtnet0 WAN | WAN-SIM | e480ceaa | Clean |
+| opt1 BACKUP | FW-INT-LYON | ac3427cc | Placeholder (pass-all avant block) |
+| opt4 USERS | FW-INT-LYON | 17883b5f | Placeholder (pass-all avant block) |
+| vtnet0 WAN | FW-EXT-MRS | e16e4a40 | Clean |
+| vtnet0 WAN | FW-EXT-LYON | fa96cb54 | -replace fix (mauvais ordering initial) |
+| opt3 SERVERS | FW-INT-LYON | b19da746 | Placeholder (pass-all avant block) |
+| opt2 BASTION | FW-INT-LYON | ea6cf741 | Clean (regles granulaires) |
+| vtnet0 WAN | FW-INT-LYON | 730f9aeb | Fix sequence via API (prepend bug) |
+
+### Findings T3 -- Lecons systemiques OPNsense
+
+#### Lecon 1 : -replace ne repositionne pas si OPNsense recycle le slot
+
+Quand un block_all etait cree entre deux regles pass (config.xml creation order),
+le -replace pouvait recycler le meme slot de sequence (position identique). Symptome :
+block_all apparait en milieu de pfctl entre des pass rules. Detection : verifier
+pfctl -sr | nl apres chaque apply. Fix : API setRule sequence ou double -replace
+avec depends_on dans le bon sens.
+
+#### Lecon 2 : OPNsense PREPEND les nouvelles regles (insere en tete)
+
+Contrairement a ce qu'on attend (append), OPNsense place les nouvelles regles en tete
+de la liste utilisateur. Consequence : la regle creee EN DERNIER apparait EN PREMIER
+dans pfctl. Impact sur le double -replace avec depends_on : il faut creer la regle
+la plus basse (prioritaire) EN DERNIER pour qu'elle se retrouve EN PREMIER.
+
+#### Lecon 3 : champ sequence= expose par le provider v0.16
+
+Le champ sequence (integer) est disponible dans opnsense_firewall_filter. Utiliser
+sequence=1/2/N pour garantir l'ordre de maniere declarative et idem-potente.
+Terraform plan = No changes quand sequence aligne avec OPNsense.
+
+---
+
+### [ ] T-FAIL2BAN-CLEANUP -- Debannissement BASTION01 (hors scope T3)
+
+Identifie pendant T3 Interface 7. Fail2ban sur DC1/FS1/DB1/APP1/BACKUP01 a banni
+192.168.15.2 (BASTION01) suite aux tests SSH automatises des sessions precedentes.
+DB1 a aussi un host key change non accepte par BASTION.
+
+Actions :
+1. Sur chaque serveur : sudo fail2ban-client set sshd unbanip 192.168.15.2
+2. Sur BASTION01 : ssh-keyscan 192.168.20.12 >> ~/.ssh/known_hosts (DB1 host key)
+3. Retest depuis BASTION : ssh dc01/fs01/db01/app01/backup01 "hostname"
+
+Effort estime : 15 min
 
 ---
 
