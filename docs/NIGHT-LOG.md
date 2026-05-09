@@ -3,7 +3,7 @@
 ## Debut session
 
 Timestamp: 2026-05-08
-Operateur: automation pipeline (mode autonome)
+Operateur: Automated DevOps pipeline
 Contraintes actives:
 - AUCUN terraform apply qui modifie infra firewall
 - AUCUNE modif IPsec/strongSwan

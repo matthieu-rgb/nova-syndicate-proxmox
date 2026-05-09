@@ -1,6 +1,6 @@
 # NIGHT-REPORT -- Session autonome 2026-05-08
 
-Operateur: automation pipeline (mode autonome absolu)
+Operateur: Automated DevOps pipeline
 Fenetre: debut de session -> 23:53
 Health-check final: 0 critiques / 0 warnings
 

@@ -1,7 +1,7 @@
 # Nova Syndicate Phase II - Deploiement Proxmox - Rapport final
 
 Date : 2026-05-07
-Session : autonome automation pipeline (Sonnet 4.6)
+Session : autonome Automated DevOps pipeline
 Duree totale : ~3h (phases A+B+C+D)
 
 ---
@@ -132,7 +132,7 @@ iface vmbr1.20 inet static
 ```
 
 ### Restriction TCC macOS observee
-Le processus shell de automation pipeline (mode autonome) ne peut pas lire les fichiers
+Le processus shell de Automated DevOps pipeline ne peut pas lire les fichiers
 dans ~/Documents apres un certain temps. Le ansible-playbook initial a fonctionne
 car la session avait deja change de repertoire avant la restriction.
 En session normale (interactive), aucune restriction - ansible fonctionne normalement.
