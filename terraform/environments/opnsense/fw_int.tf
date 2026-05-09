@@ -71,7 +71,7 @@ resource "opnsense_firewall_filter" "fwint_bastion_to_internet" {
 
 resource "opnsense_firewall_filter" "fwint_bastion_block_all" {
   provider    = opnsense.fw_int
-  enabled     = false
+  enabled     = true
   description = "Block + log tout autre trafic depuis BASTION"
   interface   = { interface = ["opt2"] }
   filter = {
