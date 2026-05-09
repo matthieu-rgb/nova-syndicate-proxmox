@@ -556,3 +556,27 @@ health-check : 0/0
 
 - Whitelist fail2ban à ajouter pour subnet BASTION (à traiter en 
   T-FAIL2BAN-TUNING).
+
+## TODO post-T3 — Suite cleanup BASTION jumpbox
+
+Découverte pendant cleanup fail2ban T3 : la clé SSH publique 
+debian@BASTION01 n'est pas déployée dans les authorized_keys des 
+serveurs internes. BASTION01 ne fonctionne pas réellement comme 
+jumpbox.
+
+Symptôme : debian@BASTION01 → debian@<DC1|FS1|DB1|APP1|BACKUP01> = 
+Permission denied (publickey,keyboard-interactive).
+
+Action différée (T-BASTION-JUMPBOX) :
+1. Récupérer la clé publique : 
+   ssh debian@192.168.15.2 "cat ~/.ssh/id_ed25519.pub" 
+   (ou id_rsa.pub selon ce qui est configuré)
+   Si pas de clé : générer une (ssh-keygen -t ed25519)
+2. Déployer sur les 5 hôtes via Ansible :
+   ansible-playbook playbooks/deploy-bastion-pubkey.yml
+3. Hardening sshd des serveurs internes : 
+   AllowUsers debian@192.168.15.0/29 dans sshd_config
+4. Test : depuis BASTION, ssh chaque host = OK sans password
+
+Effort estimé : 60 min
+Dépendance recommandée : T-MFA-BASTION (TOTP) avant ce déploiement
