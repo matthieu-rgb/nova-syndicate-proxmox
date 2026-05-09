@@ -258,6 +258,7 @@ resource "opnsense_firewall_filter" "fwint_backup_block_all" {
 resource "opnsense_firewall_filter" "fwint_wan_ipsec_decapsulated" {
   provider    = opnsense.fw_int
   enabled     = true
+  sequence    = 1
   description = "Trafic IPsec decapsule MRS (192.168.40.0/26) -> VLANs Lyon"
   interface   = { interface = ["wan"] }
   filter = {
@@ -272,7 +273,8 @@ resource "opnsense_firewall_filter" "fwint_wan_ipsec_decapsulated" {
 
 resource "opnsense_firewall_filter" "fwint_wan_block_all" {
   provider    = opnsense.fw_int
-  enabled     = false
+  enabled     = true
+  sequence    = 2
   description = "Block + log tout WAN entrant non sollicite"
   interface   = { interface = ["wan"] }
   filter = {
