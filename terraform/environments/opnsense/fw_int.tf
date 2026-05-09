@@ -106,7 +106,7 @@ resource "opnsense_firewall_filter" "fwint_servers_to_internet" {
 
 resource "opnsense_firewall_filter" "fwint_servers_block_all" {
   provider    = opnsense.fw_int
-  enabled     = false
+  enabled     = true
   description = "Block + log tout autre depuis servers"
   interface   = { interface = ["opt3"] }
   filter = {
