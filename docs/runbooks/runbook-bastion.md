@@ -80,10 +80,47 @@ ssh -L 8080:192.168.20.13:3000 debian@192.168.15.2
 # Grafana accessible sur localhost:8080
 ```
 
+## SSH key deployment (2026-05-09)
+
+Cle ed25519 generee sur bastion01 : `~/.ssh/id_ed25519`
+Empreinte : `SHA256:55x6DFsTZ9owpAUJqRAaDxBDwwtEwgHyJc7mDWZlb3A bastion01@nova-syndicate.local`
+
+### Hotes accessibles sans password depuis bastion01
+
+| Hote | IP | Statut |
+|------|-----|--------|
+| dc01 | 192.168.20.10 | cle deployee 2026-05-09 |
+| fs01 | 192.168.20.11 | cle deployee 2026-05-09 |
+| app01 | 192.168.20.13 | cle deployee 2026-05-09 |
+| backup01 | 192.168.50.2 | cle deployee 2026-05-09 |
+| proxy-lyon01 | 192.168.20.14 | cle deployee 2026-05-09 |
+| web01 | 172.16.1.2 | cle deployee 2026-05-09 |
+| db01 | 192.168.20.12 | SKIP -- probleme SSH agent pre-existant |
+| proxy-mrs01 | 192.168.40.11 | TODO retour (scope MRS) |
+| mail01 | 172.16.1.3 | TODO retour |
+
+### Procedure de deploiement cle BASTION sur nouvel hote
+
+```bash
+# 1. Recuperer la cle pub depuis bastion
+BASTION_PUBKEY=$(ssh debian@192.168.15.2 'cat ~/.ssh/id_ed25519.pub')
+
+# 2. Verifier si deja presente (idempotent)
+ssh debian@<host> "grep -F '$BASTION_PUBKEY' ~/.ssh/authorized_keys 2>/dev/null && echo PRESENT || echo ABSENT"
+
+# 3. Deployer si absente
+ssh debian@<host> "echo '$BASTION_PUBKEY' >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
+
+# 4. Tester depuis bastion (sans password)
+ssh debian@192.168.15.2 "ssh -o BatchMode=yes -o ConnectTimeout=5 debian@<host> 'hostname'"
+```
+
+Ne jamais modifier sshd_config pour cette operation. Authorized_keys append uniquement.
+
 ## Notes techniques
 
 - SSH port : 22
-- Cle d'admin Ansible : /home/debian/.ssh/id_ansible (cle de rebond vers les autres hotes)
+- Cle jumpbox : /home/debian/.ssh/id_ed25519 (deploye 2026-05-09)
 - Wazuh agent actif (surveille les acces SSH)
 - node_exporter actif (port 9100, scrape par Prometheus sur APP1)
-- Config fail2ban : /etc/fail2ban/jail.local
+- Config fail2ban : /etc/fail2ban/jail.local + /etc/fail2ban/jail.d/00-nova-whitelist.conf

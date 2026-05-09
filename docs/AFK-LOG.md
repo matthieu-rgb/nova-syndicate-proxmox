@@ -46,7 +46,7 @@
 
 ## T-AFK-2 — Whitelist fail2ban BASTION
 
-**Status : PASS**
+**Status : PASS (commit e59cce6)**
 - DC1 (192.168.20.10) : whitelist active, 192.168.15.0/29 confirme
 - FS1 (192.168.20.11) : whitelist active, 192.168.15.0/29 confirme
 - APP1 (192.168.20.13) : whitelist active, 192.168.15.0/29 confirme
@@ -54,5 +54,18 @@
 - proxy-lyon01 (192.168.20.14) : fail2ban actif, whitelist active, 192.168.15.0/29 confirme
 - Skip DB1 (192.168.20.12) : probleme SSH agent pre-existant (instruction utilisateur)
 - Fichier deploye : /etc/fail2ban/jail.d/00-nova-whitelist.conf sur 5 hotes
+
+## T-AFK-3 — Cle SSH BASTION vers 6 hotes
+
+**Status : PASS**
+- Cle ed25519 generee sur bastion01 (SHA256:55x6DFsTZ9owpAUJqRAaDxBDwwtEwgHyJc7mDWZlb3A)
+- DC1 (192.168.20.10) : PASS
+- FS1 (192.168.20.11) : PASS
+- APP1 (192.168.20.13) : PASS
+- BACKUP01 (192.168.50.2) : PASS
+- proxy-lyon01 (192.168.20.14) : PASS
+- WEB01 (172.16.1.2) : PASS
+- DB1 : SKIP (instruction utilisateur -- probleme SSH agent)
+- Test depuis BASTION : 6/6 hostname sans password
 
 
