@@ -542,3 +542,17 @@ enabled false -> true
 pfctl confirme : block drop in log quick on vtnet0 inet all label "e480ceaa-..."
 Tests : 4 pings 0% loss, 8 SAs INSTALLED, SSH INT/EXT/MRS OK, 7 Wazuh Active
 health-check : 0/0
+
+## TODO post-T3 — Fail2ban + Host keys
+
+- DC1, FS1, APP1, BACKUP01 ont banni BASTION01 via fail2ban suite 
+  aux tests SSH automatisés. À débannir : 
+  for ip in 192.168.20.10 192.168.20.11 192.168.20.13 192.168.50.2; do
+    ssh debian@$ip "sudo fail2ban-client set sshd unbanip 192.168.15.2"
+  done
+
+- DB1 host key a changé (probablement après réinstall) : 
+  ssh debian@192.168.15.2 "ssh-keygen -R 192.168.20.12"
+
+- Whitelist fail2ban à ajouter pour subnet BASTION (à traiter en 
+  T-FAIL2BAN-TUNING).
