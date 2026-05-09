@@ -451,3 +451,29 @@ Tests post-Apply A :
 - SSH 6 hotes : OK
 - AD, FS, DB, Monitoring, BorgBackup : OK
 - terraform plan : 2 creates pending (Apply B -- normal, non-regression)
+
+### Apply B -- Alias net_lyon_internal + regle decapsulated (2026-05-09)
+
+Ressources creees :
+- opnsense_firewall_alias.fwint_network["net_lyon_internal"] [e35c88d6]
+  content = [192.168.15.0/29, 192.168.20.0/28, 192.168.30.0/26, 192.168.50.0/29]
+- opnsense_firewall_filter.fwint_wan_ipsec_decapsulated [ff99886c]
+  pass in quick on vtnet0 inet from net_lan_mrs to net_lyon_internal
+
+Verification pfctl : regle visible avant auto-pass-all (position correcte) :
+  pass in quick on vtnet0 inet from <net_lan_mrs> to <net_lyon_internal>
+  flags S/SA keep state label "ff99886c-0cd1-4167-9447-c91d2ce9c263"
+
+Tests post-Apply B :
+- 4 pings IPsec (FW-INT-LYON initie) : 0% loss ✓
+- swanctl --list-sas : 8 INSTALLED (4 modernes + 4 legacy) ✓
+- Wazuh agents : 7 Active ✓
+- health-check.sh : 0 critiques / 0 warnings ✓
+- terraform plan : No changes ✓
+- BONUS (MRS initie -> Lyon) :
+  192.168.40.11 -> DC1 (192.168.20.10) : 2/2 (0% loss) ✓
+  192.168.40.11 -> APP1 (192.168.20.13) : 2/2 (0% loss) ✓
+
+Regle fwint_wan_ipsec_decapsulated validee fonctionnellement.
+Trafic MRS-initie traverse FW-INT-LYON vtnet0 sans blocage.
+Block_all sur vtnet0 peut etre active en Phase 3 sans risque.
