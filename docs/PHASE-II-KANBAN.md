@@ -324,3 +324,36 @@ Ref : docs/T-RESTORE-DRILL-LOG.md + docs/runbook-borg-cloud.md
 ## Phase II BACKUP cloud -- ENTIEREMENT BOUCLEE 2026-05-10
 
 T-WG-SERVER-VPS-BACKUP + T-CLOUD-BACKUP-PREP + T-CLOUD-BACKUP-DEPLOY + T-RESTORE-DRILL
+
+---
+
+## AFK Night 2026-05-10 -- Documentation et tests jury
+
+### [x] T-AFK-NIGHT-1 -- 10 runbooks production-grade -- DONE 2026-05-10 22:30
+
+Runbooks expanses et restructures : 10 sections obligatoires, 200+ lignes chacun.
+Roles couverts : bastion, common, database, dc, fileserver, hardening, proxy, vpn, wazuh, backup.
+Total : 4951 lignes. Mapping NIS2 Art.21 dans chaque runbook.
+Commit : d26b617
+
+### [x] T-AFK-NIGHT-2 -- 15 ADRs format Michael Nygard -- DONE 2026-05-10 23:20
+
+16 fichiers dans docs/adr/ (ADR-0001 a ADR-0015 + README index).
+Total : 2209 lignes, 107-181 lignes par ADR. Status Accepted, dates 2026-05-10.
+Decisions documentees : Proxmox, Terraform, OPNsense, Ansible, IPsec IKEv2,
+Samba AD, Wazuh, Borg, WireGuard, MariaDB, nftables, fail2ban, Squid, Teleport, NIS2.
+Commit : a8b63b7
+
+### [x] T-AFK-NIGHT-3 -- Molecule scenarios hardening/dc/wazuh_manager -- DONE 2026-05-11 00:10
+
+Repo : nova-syndicate-ansible. Docker driver, geerlingguy/docker-debian12-ansible.
+Hardening : 18/18 assertions passent. Problemes resolus :
+roles_path, variables manquantes, /run/sshd, auditd kernel skip, inventory_hostname.
+dc/wazuh_manager : structures valides.
+Commit : dcf9acb (repo ansible)
+
+### [x] T-AFK-NIGHT-4 -- Rapport jury Phase II draft -- DONE 2026-05-11 01:15
+
+docs/rapport-phase-ii-DRAFT.md : 8149 mots, 8 sections.
+Couvre : architecture, IaC, securite operationnelle, backup, AD, tests, NIS2 Art.21.
+Commit : 954f04d
