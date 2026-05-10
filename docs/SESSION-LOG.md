@@ -685,3 +685,30 @@ Solution future à debattre :
 
 Pas urgent. À traiter en T-NETOPS-REFACTOR session dédiée 
 (2-3h, avec impact réseau).
+
+## 2026-05-10 — Session Bloc 1 + Bloc 2 partiel
+
+Realise :
+- T-WAZUH-NFT : peren regle 1514 + drift SSH /29 + ajout 192.168.18.0/24 + 9100 peren
+- T-WG-SERVER-VPS-BACKUP : tunnel WireGuard 10.30.0.0/24 UP, persistant
+- T-CLOUD-BACKUP-PREP : Borg server VPS, append-only, restrict-path, repo init
+- T-BORG-KEY-EXPORT : key paper exportee + passphrase changee post-rotation
+
+Annule :
+- T-NETOPS-CLEANUP : faux probleme, gateways Proxmox sont actives (NAT MASQUERADE)
+  -> dette T-NETOPS-REFACTOR documentee pour plus tard
+
+Reporte demain :
+- T-TAILSCALE-SSH-HARDEN : Tailscale SSH bypass sshd_config pour borguser
+- T-CLOUD-BACKUP-DEPLOY : script + cron + prune
+- T-RESTORE-DRILL : test restore VPS->BACKUP01
+
+Etat infra :
+- 4 IPsec INSTALLED
+- 7 Wazuh agents Active
+- 6/6 Prometheus targets UP
+- 50 groupes AD
+- Tunnel WireGuard 10.30.0.0/24 UP
+- Borg repo nova-syndicate cree
+- Tailscale VPS active (n8n + Costwave inchanges)
+
