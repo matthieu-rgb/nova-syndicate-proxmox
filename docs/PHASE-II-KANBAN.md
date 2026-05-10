@@ -269,3 +269,32 @@ Config sandbox uniquement, prod avec LDAP/DKIM apres retour.
 
 APP1 (192.168.20.13) : import dashboards officiels + custom Nova Overview.
 Datasource Prometheus si non configure.
+
+---
+
+## Backup hors-site
+
+### [x] T-WAZUH-NFT -- Perenniser regle nftables port 1514 dans Ansible -- DONE 2026-05-10
+
+Regle tactique post-incident IPsec perennisee via wazuh_manager_listeners dans
+host_vars/app01.yml. Template nftables.conf.j2 etendu avec boucle conditionnelle.
+1514 retire de la regle unrestricted dans app_servers/vars.yml.
+Drifts detectes et corriges en passant : 9100 perennise, SSH /24->/29 bastion,
+192.168.18.0/24 Proxmox admin ajoutee.
+Ref : commit cebb6c2
+
+### [x] T-WG-SERVER-VPS-BACKUP -- WireGuard concentrateur backup VPS Hetzner -- DONE 2026-05-10
+
+Tunnel WireGuard 10.30.0.0/24 entre VPS (10.30.0.1) et BACKUP01 (10.30.0.2).
+wg-quick@wg0 enabled et active sur les 2 noeuds. Ping bidirectionnel OK ~39ms.
+PersistentKeepalive=25 cote BACKUP01. Cohabitation Tailscale preservee.
+Ref : docs/T-WG-SERVER-VPS-BACKUP-LOG.md + docs/runbook-wireguard-vps.md
+
+### [ ] T-CLOUD-BACKUP-PREP -- Borg server sur VPS
+
+Prerequis T-WG-SERVER-VPS-BACKUP termine.
+- Creer borguser sur VPS (shell=/bin/bash, home=/var/backups/borg)
+- Configurer sshd pour bind borguser sur 10.30.0.1 uniquement (Match Address)
+- Borg init repo sur VPS depuis BACKUP01 via tunnel
+- Premier backup test depuis BACKUP01
+- Documenter dans runbook-borg-backup.md
