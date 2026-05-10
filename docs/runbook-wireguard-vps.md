@@ -146,3 +146,21 @@ ssh -J debian@192.168.15.2 debian@192.168.50.2 \
 # --> Utiliser la console Hetzner Cloud (web UI)
 # URL : console.hetzner.cloud
 ```
+
+## Acces SSH au VPS (post T-TAILSCALE-SSH-HARDEN)
+
+Tailscale SSH a ete desactive le 2026-05-10 pour empecher le bypass 
+de la restriction borguser from="10.30.0.2" via Tailscale.
+
+Acces autorise au VPS :
+- ssh matthieu@100.94.199.97 (via Tailscale mesh + cle SSH classique)
+- ssh -J debian@192.168.15.2 debian@192.168.50.2 puis SSH borguser 
+  via tunnel WG (10.30.0.1) avec cle id_ed25519_borg-cloud
+
+Acces NON autorise :
+- ssh root@100.94.199.97 direct (SSH root direct desactive)
+- ssh borguser@100.94.199.97 (bloque par from="10.30.0.2")
+- Tailscale SSH a tout user systeme (desactive)
+
+Pour root sur VPS : ssh matthieu@100.94.199.97 puis sudo -i
+
