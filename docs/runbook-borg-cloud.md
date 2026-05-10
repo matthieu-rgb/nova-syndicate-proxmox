@@ -93,25 +93,120 @@ export BORG_RSH="ssh -i /root/.ssh/id_ed25519_borg-cloud"
 borg list borguser@10.30.0.1:/srv/borg-repo/nova-syndicate/
 ```
 
-## Tester un restore
+## DR -- Restore complet depuis VPS
+
+Valide le 2026-05-10. Temps observe : 14.6s pour 14.92 MB (836 fichiers).
+
+```bash
+# Sur BACKUP01 en root
+sudo bash
+export BORG_PASSPHRASE=$(cat /etc/borg/passphrase)
+export BORG_RSH="ssh -i /root/.ssh/id_ed25519_borg-cloud"
+REPO="borguser@10.30.0.1:/srv/borg-repo/nova-syndicate/"
+
+# 1. Verifier que le repo est accessible
+borg list "$REPO" --remote-path=/usr/bin/borg --short --last 5
+
+# 2. Creer un dossier de restore isole (NE PAS extraire dans /)
+mkdir -p /tmp/restore-test
+cd /tmp/restore-test
+
+# 3. Extraire l'archive complete
+borg extract --stats --progress \
+    --rsh "ssh -i /root/.ssh/id_ed25519_borg-cloud" \
+    --remote-path=/usr/bin/borg \
+    "$REPO::NOM_ARCHIVE"
+
+# 4. Verifier la structure
+ls -la /tmp/restore-test/
+# Attendu : etc/ var/
+
+# 5. Comparer checksums (exemple)
+md5sum /var/backups/borg/filesystem/config
+md5sum /tmp/restore-test/var/backups/borg/filesystem/config
+
+# 6. Si OK -> copier vers destination finale
+# cp -a /tmp/restore-test/etc/borg/ /etc/borg/
+
+# Cleanup
+rm -rf /tmp/restore-test
+```
+
+## DR -- Restore partiel (un dossier ou fichier)
 
 ```bash
 sudo bash
 export BORG_PASSPHRASE=$(cat /etc/borg/passphrase)
-export BORG_RSH="ssh -i /root/.ssh/id_ed25519_borg-cloud"
-REPO="borguser@10.30.0.1:/srv/borg-repo/nova-syndicate"
+REPO="borguser@10.30.0.1:/srv/borg-repo/nova-syndicate/"
 
-# Lister les fichiers d'une archive
-borg list ${REPO}::NOM_ARCHIVE
+mkdir -p /tmp/restore-partial
+cd /tmp/restore-partial
 
-# Extraire un fichier dans /tmp/borg-restore/
-mkdir -p /tmp/borg-restore
-cd /tmp/borg-restore
-borg extract ${REPO}::NOM_ARCHIVE etc/hostname
+# Extraire uniquement etc/borg (exemple)
+borg extract \
+    --rsh "ssh -i /root/.ssh/id_ed25519_borg-cloud" \
+    --remote-path=/usr/bin/borg \
+    "$REPO::NOM_ARCHIVE" \
+    etc/borg
 
-# Verifier le contenu
-ls /tmp/borg-restore/
+# Verifier
+ls -laR /tmp/restore-partial/
+
+# Cleanup
+rm -rf /tmp/restore-partial
 ```
+
+## DR -- Restore from scratch (BACKUP01 totalement perdu)
+
+Procedure si la machine BACKUP01 est detruite et doit etre reconstruite.
+
+Pre-requis hors-infra (dans password manager) :
+- Passphrase Borg repo
+- Cle SSH privee /root/.ssh/id_ed25519_borg-cloud
+- Cle publique WireGuard peer-backup01
+
+Etapes :
+```bash
+# 1. Installer Debian + borgbackup sur nouvelle machine
+
+# 2. Configurer WireGuard avec la cle privee peer-backup01
+#    (le VPS connait deja la cle publique peer-backup01)
+#    - Interface : 10.30.0.2/24
+#    - Peer : VPS 10.30.0.1, cle publique VPS inchangee
+sudo wg-quick up wg0
+
+# 3. Creer /root/.ssh/ et deposer id_ed25519_borg-cloud depuis password manager
+chmod 600 /root/.ssh/id_ed25519_borg-cloud
+
+# 4. Deposer la passphrase dans /etc/borg/passphrase
+mkdir -p /etc/borg
+chmod 700 /etc/borg
+echo "PASSPHRASE" > /etc/borg/passphrase
+chmod 600 /etc/borg/passphrase
+
+# 5. Tester l'acces au repo
+export BORG_PASSPHRASE=$(cat /etc/borg/passphrase)
+borg list --rsh "ssh -i /root/.ssh/id_ed25519_borg-cloud" \
+    borguser@10.30.0.1:/srv/borg-repo/nova-syndicate/ \
+    --remote-path=/usr/bin/borg
+
+# 6. Restore depuis la derniere archive backup01-XXXX
+mkdir -p /tmp/restore && cd /tmp/restore
+borg extract --stats \
+    --rsh "ssh -i /root/.ssh/id_ed25519_borg-cloud" \
+    --remote-path=/usr/bin/borg \
+    borguser@10.30.0.1:/srv/borg-repo/nova-syndicate/::NOM_ARCHIVE
+
+# 7. Verifier + copier vers destinations finales
+```
+
+Points d'attention :
+- Verifier repo accessible AVANT restore (borg list en premier)
+- NE PAS faire borg break-lock sauf si certain qu'aucun process borg tourne
+- Toujours extraire dans dossier isole, copier ensuite
+- Le mode append-only signifie que les archives anciennes sont lisibles meme si le client ne peut pas les supprimer
+
+## Tester un restore
 
 ## Verifier l'integrite du repo
 

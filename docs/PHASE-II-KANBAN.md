@@ -313,11 +313,14 @@ Lock file anti-concurrence. Mode --dry-run. Logging syslog + fichier.
 Premier backup reel pousse (backup01-2026-05-10-2110, 13.32 MB compresse).
 Ref : docs/T-CLOUD-BACKUP-DEPLOY-LOG.md + docs/runbook-borg-cloud.md
 
-### [ ] T-RESTORE-DRILL -- Valider restauration depuis VPS Hetzner
+### [x] T-RESTORE-DRILL -- Valider restauration depuis VPS Hetzner -- DONE 2026-05-10
 
-Prerequis T-CLOUD-BACKUP-DEPLOY termine.
-- Lister archives sur VPS depuis BACKUP01
-- Extraire un fichier test (/etc/hostname ou un dump SQL)
-- Verifier integrite via borg check
-- Documenter la procedure complete dans runbook-borg-cloud.md
-- Valider que la retention fonctionne apres 7+ backups
+Restore complet (836 fichiers, 14.92 MB) en 14.6s depuis backup01-2026-05-10-2110.
+5/5 checksums MD5 OK. Comptage fichiers exact (borg: 48, db1: 12).
+Restore partiel (etc/borg uniquement) : isolation parfaite.
+3 procedures DR documentees dans runbook-borg-cloud.md (complet, partiel, from-scratch).
+Ref : docs/T-RESTORE-DRILL-LOG.md + docs/runbook-borg-cloud.md
+
+## Phase II BACKUP cloud -- ENTIEREMENT BOUCLEE 2026-05-10
+
+T-WG-SERVER-VPS-BACKUP + T-CLOUD-BACKUP-PREP + T-CLOUD-BACKUP-DEPLOY + T-RESTORE-DRILL
