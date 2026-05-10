@@ -20,6 +20,48 @@ WireGuard tunnel UP sur BACKUP01 :
 sudo wg show | grep "latest handshake"
 ```
 
+## Backup quotidien automatique
+
+Cron actif sur BACKUP01 : `/etc/cron.d/borg-cloud-backup`
+Schedule : **23h30 daily**
+Script : `/usr/local/bin/borg-cloud-sync.sh`
+
+Sources : `/var/backups/borg`, `/var/backups/from-db1`, `/etc`
+Retention : 7 jours / 4 semaines / 6 mois
+Compression : zstd
+
+Lire les logs :
+```bash
+sudo tail -50 /var/log/borg-cloud-sync.log
+# ou via syslog
+sudo journalctl -t borg-cloud-sync --since today
+```
+
+Tester manuellement (dry-run, aucune modification) :
+```bash
+ssh -J debian@192.168.15.2 debian@192.168.50.2
+sudo /usr/local/bin/borg-cloud-sync.sh --dry-run
+```
+
+Lancer un backup immediat :
+```bash
+sudo /usr/local/bin/borg-cloud-sync.sh
+```
+
+Changer la retention (editer le script) :
+```bash
+sudo nano /usr/local/bin/borg-cloud-sync.sh
+# Modifier les valeurs --keep-daily / --keep-weekly / --keep-monthly
+# dans la section "Pruning"
+```
+
+Desactiver temporairement le cron :
+```bash
+sudo rm /etc/cron.d/borg-cloud-backup
+sudo systemctl restart cron
+# Reinstaller : recréer le fichier depuis T-CLOUD-BACKUP-DEPLOY-LOG.md
+```
+
 ## Backup manuel
 
 ```bash

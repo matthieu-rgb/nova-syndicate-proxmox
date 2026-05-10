@@ -304,12 +304,20 @@ Ref : docs/T-WG-SERVER-VPS-BACKUP-LOG.md + docs/runbook-wireguard-vps.md
 - DETTE T-TAILSCALE-SSH-HARDEN : Tailscale SSH bypasse sshd ForceCommand
 Ref : docs/T-CLOUD-BACKUP-PREP-LOG.md + docs/runbook-borg-cloud.md
 
-### [ ] T-CLOUD-BACKUP-DEPLOY -- Cron backup Borg + script production
+### [x] T-CLOUD-BACKUP-DEPLOY -- Cron backup Borg + script production -- DONE 2026-05-10
 
-Prerequis T-CLOUD-BACKUP-PREP termine.
-- Script /usr/local/bin/borg-backup.sh sur BACKUP01 (backup /etc, /var/backups)
-- Cron systemd timer ou cron.d : backup quotidien 2h00
-- borg prune : keep-daily=7, keep-weekly=4, keep-monthly=3 (via VPS root)
-- Alerte si backup echoue (logger + optionnel webhook)
-- T-BORG-KEY-EXPORT : exporter cle repo + stocker dans password manager
-- T-VAULT-INTEGRATE : passphrase -> Ansible vault
+Script /usr/local/bin/borg-cloud-sync.sh production sur BACKUP01.
+Sources : /var/backups/borg, /var/backups/from-db1, /etc. Compression zstd.
+Cron /etc/cron.d/borg-cloud-backup : 23h30 daily. Retention 7d/4w/6m.
+Lock file anti-concurrence. Mode --dry-run. Logging syslog + fichier.
+Premier backup reel pousse (backup01-2026-05-10-2110, 13.32 MB compresse).
+Ref : docs/T-CLOUD-BACKUP-DEPLOY-LOG.md + docs/runbook-borg-cloud.md
+
+### [ ] T-RESTORE-DRILL -- Valider restauration depuis VPS Hetzner
+
+Prerequis T-CLOUD-BACKUP-DEPLOY termine.
+- Lister archives sur VPS depuis BACKUP01
+- Extraire un fichier test (/etc/hostname ou un dump SQL)
+- Verifier integrite via borg check
+- Documenter la procedure complete dans runbook-borg-cloud.md
+- Valider que la retention fonctionne apres 7+ backups
