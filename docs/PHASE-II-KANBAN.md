@@ -347,10 +347,21 @@ Commit : a8b63b7
 ### [x] T-AFK-NIGHT-3 -- Molecule scenarios hardening/dc/wazuh_manager -- DONE 2026-05-11 00:10
 
 Repo : nova-syndicate-ansible. Docker driver, geerlingguy/docker-debian12-ansible.
-Hardening : 18/18 assertions passent. Problemes resolus :
-roles_path, variables manquantes, /run/sshd, auditd kernel skip, inventory_hostname.
-dc/wazuh_manager : structures valides.
+Hardening : 18/18 assertions passent.
+dc/wazuh_manager : structures creees mais non testees en execution.
 Commit : dcf9acb (repo ansible)
+
+### [x] T-AFK-NIGHT-3B -- Molecule dc PASSE -- DONE 2026-05-11 01:00
+
+Samba AD provision complete dans Docker. Converge PASS, verify PASS (assertions OK).
+Workarounds : hostname, /etc/hosts, smb.conf par defaut, samba_server_role, crontab.
+Commit : d0ddea1 (repo ansible)
+
+### [x] T-AFK-NIGHT-3C -- Molecule wazuh_manager PASSE -- DONE 2026-05-11 01:10
+
+wazuh-manager 4.11.2, idempotence PASSE (0 changed), verify 20/20 assertions.
+Workarounds : xmllint, ossec-control->wazuh-control, permissions 0660.
+Commit : e7ace4e (repo ansible)
 
 ### [x] T-AFK-NIGHT-4 -- Rapport jury Phase II draft -- DONE 2026-05-11 01:15
 
