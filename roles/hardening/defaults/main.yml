@@ -5,3 +5,4 @@ hardening_allowed_ssh_nets:
   - "192.168.15.0/24"
 hardening_auditd_log_size:    100
 hardening_auditd_num_logs:    12
+wazuh_manager_listeners:      []

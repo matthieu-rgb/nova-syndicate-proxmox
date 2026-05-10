@@ -2,3 +2,10 @@ ansible_ip: 192.168.20.13
 ansible_netmask: 255.255.255.240
 ansible_gateway: 192.168.20.1
 ansible_dns: 192.168.20.10
+
+wazuh_manager_listeners:
+  - { name: "wazuh-agents-bastion",  ip: "192.168.15.0/29", port: 1514 }
+  - { name: "wazuh-agents-backup",   ip: "192.168.50.0/29", port: 1514 }
+  - { name: "wazuh-agents-servers",  ip: "192.168.20.0/28", port: 1514 }
+  - { name: "wazuh-agents-mrs",      ip: "192.168.40.0/26", port: 1514 }
+  - { name: "wazuh-agents-dmz",      ip: "172.16.1.0/29",   port: 1514 }

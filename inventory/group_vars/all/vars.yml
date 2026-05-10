@@ -80,6 +80,7 @@ proxmox_snapshot_schedule: "0 * * * *"
 hardening_allowed_ssh_nets:
   - "192.168.10.0/24"    # Legacy management
   - "192.168.15.0/29"    # Bastion VLAN (Proxmox a 192.168.15.6/29 aussi)
+  - "192.168.18.0/24"    # Admin Proxmox (192.168.18.50)
   - "192.168.20.0/28"    # Servers VLAN (Proxmox a 192.168.20.5/28)
   - "192.168.30.0/26"    # Users VLAN (Proxmox a 192.168.30.62/26)
   - "192.168.50.0/29"    # Backup VLAN (Proxmox a 192.168.50.6/29)

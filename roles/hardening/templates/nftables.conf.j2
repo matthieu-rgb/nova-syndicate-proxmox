@@ -29,6 +29,13 @@ table inet filter {
         {{ rule }}
 {% endfor %}
 
+{% if wazuh_manager_listeners is defined and wazuh_manager_listeners | length > 0 %}
+        # Wazuh manager listeners (port 1514 inbound from agent subnets)
+{% for listener in wazuh_manager_listeners %}
+        ip saddr {{ listener.ip }} tcp dport {{ listener.port }} accept comment "{{ listener.name }}"
+{% endfor %}
+{% endif %}
+
         # Log et drop tout le reste
         log prefix "[NFT-DROP] " flags all counter drop
     }
