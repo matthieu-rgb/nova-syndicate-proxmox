@@ -290,11 +290,26 @@ wg-quick@wg0 enabled et active sur les 2 noeuds. Ping bidirectionnel OK ~39ms.
 PersistentKeepalive=25 cote BACKUP01. Cohabitation Tailscale preservee.
 Ref : docs/T-WG-SERVER-VPS-BACKUP-LOG.md + docs/runbook-wireguard-vps.md
 
-### [ ] T-CLOUD-BACKUP-PREP -- Borg server sur VPS
+### [x] T-CLOUD-BACKUP-PREP -- Borg server sur VPS -- DONE 2026-05-10
 
-Prerequis T-WG-SERVER-VPS-BACKUP termine.
-- Creer borguser sur VPS (shell=/bin/bash, home=/var/backups/borg)
-- Configurer sshd pour bind borguser sur 10.30.0.1 uniquement (Match Address)
-- Borg init repo sur VPS depuis BACKUP01 via tunnel
-- Premier backup test depuis BACKUP01
-- Documenter dans runbook-borg-backup.md
+- borgbackup 1.2.8 installe sur VPS
+- borguser cree, /srv/borg-repo/nova-syndicate/ (700 borguser:borguser)
+- sshd Match borguser : ForceCommand borg serve --append-only, PermitTTY no
+- Cle SSH dediee /root/.ssh/id_ed25519_borg-cloud generee sur BACKUP01
+- authorized_keys : from="10.30.0.2" + command= (double restriction)
+- UFW : SSH TCP 22 sur wg0 ajoutee pour le tunnel
+- Repo init repokey-blake2, passphrase dans /etc/borg/passphrase
+- Premier backup test-2026-05-10-1740 OK (0.09s, append-only)
+- Quota monitoring cron 23h00 (alerte si > 15 GB dans syslog)
+- DETTE T-TAILSCALE-SSH-HARDEN : Tailscale SSH bypasse sshd ForceCommand
+Ref : docs/T-CLOUD-BACKUP-PREP-LOG.md + docs/runbook-borg-cloud.md
+
+### [ ] T-CLOUD-BACKUP-DEPLOY -- Cron backup Borg + script production
+
+Prerequis T-CLOUD-BACKUP-PREP termine.
+- Script /usr/local/bin/borg-backup.sh sur BACKUP01 (backup /etc, /var/backups)
+- Cron systemd timer ou cron.d : backup quotidien 2h00
+- borg prune : keep-daily=7, keep-weekly=4, keep-monthly=3 (via VPS root)
+- Alerte si backup echoue (logger + optionnel webhook)
+- T-BORG-KEY-EXPORT : exporter cle repo + stocker dans password manager
+- T-VAULT-INTEGRATE : passphrase -> Ansible vault
