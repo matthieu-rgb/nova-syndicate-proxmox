@@ -661,3 +661,27 @@ Action différée (T-BASTION-JUMPBOX) :
 
 Effort estimé : 60 min
 Dépendance recommandée : T-MFA-BASTION (TOTP) avant ce déploiement
+
+## 2026-05-10 — T-NETOPS-CLEANUP : ANNULÉE
+
+Investigation revealing : les gateways .x.1 sur Proxmox sont 
+ACTIVES et nécessaires.
+- Proxmox a ip_forward=1 et MASQUERADE sur vmbr0 pour 192.168.15.0/29, 
+  192.168.20.0/28, 192.168.50.0/29
+- BASTION traceroute : 192.168.15.1 (Proxmox) → 10.0.1.1 (FW-INT-LYON) 
+  → 10.0.0.1 (FW-EXT-LYON)
+- Proxmox EST la gateway de premier niveau des VMs
+
+Dette d'architecture identifiée (T-NETOPS-REFACTOR) :
+- Double NAT actuellement : Proxmox MASQUERADE + FW-EXT-LYON NAT
+- FW-INT-LYON ne voit pas les vraies IPs sources (NAT Proxmox masque)
+- Architecture non standard pour prod NIS2
+
+Solution future à debattre :
+- Option A : Garder Proxmox comme gateway (simple, mais limite la 
+  visibilité firewall)
+- Option B : Déplacer la gateway sur FW-INT-LYON (plus orthodoxe, 
+  mais demande reconfiguration réseau de toutes les VMs)
+
+Pas urgent. À traiter en T-NETOPS-REFACTOR session dédiée 
+(2-3h, avec impact réseau).
