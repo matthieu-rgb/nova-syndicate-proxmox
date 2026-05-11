@@ -712,3 +712,35 @@ Etat infra :
 - Borg repo nova-syndicate cree
 - Tailscale VPS active (n8n + Costwave inchanges)
 
+
+## 2026-05-11 — Dette T-TEMPLATE-CLEANUP identifiee
+
+Probleme : Le template Proxmox `debian-12-cloud-template-nova` (VMID 9000) 
+contient des DNS Tailscale dans son cloud-init netplan :
+  nameservers: 100.100.100.100, fd7a:115c:a1e0::53
+  search: tail98861d.ts.net
+
+Origine : Le template a ete cree sur un host qui avait Tailscale 
+authentifie. Cloud-init a herite de ces DNS comme defaults.
+
+Impact : Toute VM clonee depuis ce template heritera de DNS qui ne 
+resolvent pas (Tailscale non present sur la VM clonee) → apt update 
+bloque indefiniment.
+
+Manifestation : T-WG-ROAD-WARRIORS GATE 1, vpn-gw01 a heritage 
+Tailscale DNS, hardening apt-get install bloque 30+ min.
+
+Fix applique sur vpn-gw01 :
+- Netplan force DNS Cloudflare/Google/Quad9
+- /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg cree
+- Permissions netplan 600
+
+A FAIRE (T-TEMPLATE-CLEANUP) :
+1. Booter le template VMID 9000
+2. Editer /etc/netplan/50-cloud-init.yaml pour DNS publics
+3. Verifier qu'aucun residu Tailscale (apt list, /etc/systemd/resolved.conf.d/)
+4. Re-creer le template (qm template 9000)
+5. Documenter procedure de creation de template propre
+
+Effort : 30 min en session dediee.
+
