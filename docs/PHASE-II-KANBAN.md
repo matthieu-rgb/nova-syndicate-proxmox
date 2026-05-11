@@ -420,10 +420,26 @@ Ajouter au minimum 172.16.1.0/29 (DMZ) si absent.
 Industrialiser dans Ansible (role proxmox_host ou script idempotent).
 Report : session dediee Proxmox host hardening.
 
-### [ ] T-MFA-BASTION -- Teleport ou Authelia 2FA bastion -- PHASE III
+### [x] T-MFA-BASTION -- MFA TOTP bastion01 SSH + sudo -- DONE 2026-05-11
 
-Facteur TOTP en complement de la cle WireGuard (NIS2 Art.21.e).
-Ref : ADR-0014.
+libpam-google-authenticator deploye sur bastion01. SSH = cle + TOTP. sudo = password + TOTP.
+timestamp_timeout=15 min. Role Ansible mfa_totp cree.
+ADR-0018 + runbook-mfa-bastion.md commites.
+Dette : T-ANSIBLE-SERVICE-ACCOUNT (Ansible ne peut pas s'auth avec TOTP en batch).
+Workaround : ControlMaster manuel pre-TOTP avant ansible-playbook.
+Commit : voir ci-dessous
+
+### [ ] T-ANSIBLE-SERVICE-ACCOUNT -- Compte service ansible exempt TOTP -- DETTE
+
+Probleme : MFA TOTP bloque Ansible (keyboard-interactive non automatisable).
+Solution : user "ansible" avec PAM pam_succeed_if.so user = ansible (bypass TOTP).
+Effort : 2h. Session dediee Phase III.
+Ref : docs/SESSION-LOG.md section 2026-05-11.
+
+### [ ] T-AUTHELIA-DEPLOY -- Authelia proxy auth + OIDC -- PHASE III
+
+Authentification centralisee pour les services web internes (Grafana, etc.).
+Complement ou remplacement de la solution TOTP PAM locale.
 
 ### [ ] T-SQUID -- Proxy filtrant Squid SERVERS/USERS/BACKUP -- PHASE III
 

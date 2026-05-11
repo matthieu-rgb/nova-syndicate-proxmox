@@ -27,6 +27,7 @@ Toutes les decisions sont au statut `Accepted` : elles ont ete implementees et v
 | [ADR-0015](ADR-0015-hardening-custom-role.md) | Role hardening Ansible custom plutot qu'outillage CIS automatise | Accepted | 2026-05-10 |
 | [ADR-0016](ADR-0016-vpn-concentrator-architecture.md) | Architecture VPN concentrateur road-warriors (VM dediee DMZ) | Accepted | 2026-05-11 |
 | [ADR-0017](ADR-0017-nat-asymmetry-policy-routing.md) | Resolution NAT asymetrique par policy-based routing | Accepted | 2026-05-11 |
+| [ADR-0018](ADR-0018-mfa-totp-bastion.md) | MFA TOTP libpam-google-authenticator sur bastion01 SSH + sudo | Accepted | 2026-05-11 |
 
 ## Dependances entre ADRs
 

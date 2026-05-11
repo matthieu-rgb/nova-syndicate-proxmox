@@ -744,3 +744,40 @@ A FAIRE (T-TEMPLATE-CLEANUP) :
 
 Effort : 30 min en session dediee.
 
+---
+
+## Session 2026-05-11 (suite) -- T-MFA-BASTION
+
+### Realise
+
+MFA TOTP libpam-google-authenticator deploye sur bastion01 :
+- SSH : cle publique (facteur 1) + TOTP (facteur 2). Workflow: connexion -> "Verification code:" -> shell
+- sudo : mot de passe Unix (facteur 1) + TOTP (facteur 2). Cache timestamp_timeout=15 min
+- Role Ansible mfa_totp cree (tasks install/configure-sshd/configure-sudo, templates pam-sshd.j2/pam-sudo.j2)
+- ADR-0018 + runbook-mfa-bastion.md documentes
+
+Validation manuelle OK :
+- SSH avec bonne cle + bon TOTP -> shell
+- sudo whoami -> TOTP + password -> root
+- sudo ls (dans les 15 min) -> pas de redemande
+
+### Dette T-ANSIBLE-SERVICE-ACCOUNT
+
+Probleme : MFA TOTP sur bastion01 bloque Ansible (keyboard-interactive
+non automatisable en batch mode).
+
+Workaround actuel : ControlMaster manuel avec TOTP avant chaque run :
+```
+ssh -o ControlMaster=yes -o ControlPath='/tmp/ansible-cp-debian@192.168.15.2:22' -o ControlPersist=600 debian@192.168.15.2
+ansible-playbook playbooks/deploy_mfa.yml --limit bastion01
+```
+
+Solution prod (T-ANSIBLE-SERVICE-ACCOUNT) :
+1. Creer user "ansible" sur tous les hosts via Ansible
+2. Cle SSH dediee chiffree (passphrase Ansible-vault)
+3. PAM exempt : auth [success=1 default=ignore] pam_succeed_if.so user = ansible
+4. sudo reste avec MFA pour user ansible (defense-in-depth)
+5. Audit via git log Ansible
+
+Effort : 2h en session dediee.
+
