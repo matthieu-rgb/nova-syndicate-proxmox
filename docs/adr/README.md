@@ -25,6 +25,8 @@ Toutes les decisions sont au statut `Accepted` : elles ont ete implementees et v
 | [ADR-0013](ADR-0013-wazuh-siem-nis2.md) | Wazuh comme SIEM centralise pour NIS2 art. 21.f | Accepted | 2026-05-10 |
 | [ADR-0014](ADR-0014-bastion-teleport-mfa.md) | Bastion jumpbox avec Teleport planifie pour MFA | Accepted | 2026-05-10 |
 | [ADR-0015](ADR-0015-hardening-custom-role.md) | Role hardening Ansible custom plutot qu'outillage CIS automatise | Accepted | 2026-05-10 |
+| [ADR-0016](ADR-0016-vpn-concentrator-architecture.md) | Architecture VPN concentrateur road-warriors (VM dediee DMZ) | Accepted | 2026-05-11 |
+| [ADR-0017](ADR-0017-nat-asymmetry-policy-routing.md) | Resolution NAT asymetrique par policy-based routing | Accepted | 2026-05-11 |
 
 ## Dependances entre ADRs
 
@@ -52,6 +54,12 @@ ADR-0008 (Borg)
 ADR-0011 (Ansible)
   --> ADR-0015 (role hardening, deploye par Ansible)
   --> ADR-0013 (Wazuh agents, deployes par Ansible)
+  --> ADR-0016 (role vpn_gateway, deploye par Ansible)
+
+ADR-0016 (concentrateur VPN)
+  --> ADR-0017 (policy routing, complement technique obligatoire)
+  --> ADR-0015 (hardening, applique sur vpn-gw01)
+  --> ADR-0014 (MFA bastion, Phase III complement)
 
 ADR-0014 (bastion)
   --> ADR-0007 (Tailscale, couche d'acces complementaire)

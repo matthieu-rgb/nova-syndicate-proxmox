@@ -368,3 +368,72 @@ Commit : e7ace4e (repo ansible)
 docs/rapport-phase-ii-DRAFT.md : 8149 mots, 8 sections.
 Couvre : architecture, IaC, securite operationnelle, backup, AD, tests, NIS2 Art.21.
 Commit : 954f04d
+
+---
+
+## Session 2026-05-11 -- Regularisation VPN road-warriors
+
+### [x] T-WG-ROAD-WARRIORS -- GATE 5 concentrateur road-warriors -- DONE 2026-05-11
+
+vpn-gw01 (VMID 110, 172.16.1.4) deploye en DMZ.
+WireGuard wg0 : 10.20.0.1/24, port UDP 51820.
+2 peers actifs : matthieu-mac (10.20.0.10) + vps-hetzner-test (10.20.0.20).
+Handshake < 10s depuis Internet, transfer bidirectionnel confirme.
+Root cause NAT asymetrique documente : ADR-0017 + T-WG-HANDSHAKE-DEBUG.md (commit 66cbc0f).
+
+### [x] T-VPN-GW-REGULARISATION GATE A -- Role Ansible vpn_gateway idempotent -- DONE 2026-05-11
+
+Role `vpn_gateway` cree dans nova-syndicate-ansible :
+- tasks/wireguard.yml : wg-quick@wg0, keypair guard, sysctl ip_forward
+- tasks/dnsmasq.yml : forwardeur DNS 10.20.0.1:53 -> DC01
+- tasks/policy_routing.yml : script wg-policy-routing.sh via PostUp/PostDown
+- templates/wg0.conf.j2, wg-policy-routing.sh.j2
+- Idempotence validee : changed=0 au 2e run (fix sysctl conflict common/vpn_gateway)
+- Symlinks inventory/host_vars/ -> ../../host_vars/ pour resolution ansible-playbook
+Commit ansible : 48d5293
+
+### [x] T-VPN-GW-REGULARISATION GATE B -- Template VMID 9000 cleanup -- DONE 2026-05-11
+
+Root cause DNS Tailscale herites : Tailscale sur host Proxmox overwrite /etc/resolv.conf,
+cloud-init ISOs heritent 100.100.100.100 et tail98861d.ts.net sans DNS explicite VM.
+Fix : qm set 9000 --nameserver 192.168.18.1 --searchdomain nova-syndicate.local
+Test clone 999 : network-config propre confirme, 999 detruit.
+Limitation documentee : LVM thin = pas de qm snapshot.
+Runbook : docs/runbook-proxmox-template.md
+Commit : b14a533
+
+### [x] T-VPN-GW-REGULARISATION GATE D -- ADRs + runbook WireGuard -- DONE 2026-05-11
+
+ADR-0016 : Architecture VPN concentrateur road-warriors (alternatives, NIS2, consequences)
+ADR-0017 : Resolution NAT asymetrique par policy-based routing (validation experimentale)
+Runbook : docs/runbook-wireguard-road-warriors.md (ajout/revocation peer, troubleshooting 5 niveaux, HA)
+Commit : voir ci-dessous
+
+---
+
+## Dette technique et reports
+
+### [ ] T-VPN-GW-REGULARISATION GATE C -- Audit MASQUERADE Proxmox -- REPORTE
+
+Auditer les regles iptables MASQUERADE sur Proxmox pour tous les subnets internes.
+Ajouter au minimum 172.16.1.0/29 (DMZ) si absent.
+Industrialiser dans Ansible (role proxmox_host ou script idempotent).
+Report : session dediee Proxmox host hardening.
+
+### [ ] T-MFA-BASTION -- Teleport ou Authelia 2FA bastion -- PHASE III
+
+Facteur TOTP en complement de la cle WireGuard (NIS2 Art.21.e).
+Ref : ADR-0014.
+
+### [ ] T-SQUID -- Proxy filtrant Squid SERVERS/USERS/BACKUP -- PHASE III
+
+Filtrage sortant granulaire par VLAN via proxy Squid.
+Actuellement : acces internet "raw" tolere pour apt/NTP.
+
+### [ ] T-WEB01-NGINX -- nginx WEB01 + TLS -- PHASE III
+
+WEB01 (172.16.1.2) : nginx + certificat Let's Encrypt via Cloudflare DNS.
+
+### [ ] T-MAIL01-POSTFIX -- Postfix minimal MAIL01 -- PHASE III
+
+MAIL01 (172.16.1.3) : inet_interfaces=loopback-only, integration LDAP AD.
