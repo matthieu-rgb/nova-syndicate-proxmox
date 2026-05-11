@@ -28,6 +28,7 @@ Toutes les decisions sont au statut `Accepted` : elles ont ete implementees et v
 | [ADR-0016](ADR-0016-vpn-concentrator-architecture.md) | Architecture VPN concentrateur road-warriors (VM dediee DMZ) | Accepted | 2026-05-11 |
 | [ADR-0017](ADR-0017-nat-asymmetry-policy-routing.md) | Resolution NAT asymetrique par policy-based routing | Accepted | 2026-05-11 |
 | [ADR-0018](ADR-0018-mfa-totp-bastion.md) | MFA TOTP libpam-google-authenticator sur bastion01 SSH + sudo | Accepted | 2026-05-11 |
+| [ADR-0019](ADR-0019-authelia-mfa-portail-web.md) | Authelia comme portail MFA pour les services web internes | Accepted | 2026-05-11 |
 
 ## Dependances entre ADRs
 
@@ -65,6 +66,11 @@ ADR-0016 (concentrateur VPN)
 ADR-0014 (bastion)
   --> ADR-0007 (Tailscale, couche d'acces complementaire)
   --> ADR-0013 (Wazuh, audit des connexions bastion)
+
+ADR-0019 (Authelia portail MFA web)
+  --> ADR-0013 (Wazuh, service protege par Authelia)
+  --> ADR-0018 (MFA TOTP bastion, complementaire SSH vs web)
+  --> ADR-0011 (Ansible, Phase IV role authelia)
 ```
 
 ## Contexte du projet

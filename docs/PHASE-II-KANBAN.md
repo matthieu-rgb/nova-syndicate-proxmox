@@ -436,10 +436,22 @@ Solution : user "ansible" avec PAM pam_succeed_if.so user = ansible (bypass TOTP
 Effort : 2h. Session dediee Phase III.
 Ref : docs/SESSION-LOG.md section 2026-05-11.
 
-### [ ] T-AUTHELIA-DEPLOY -- Authelia proxy auth + OIDC -- PHASE III
+### [x] T-AUTHELIA-DEPLOY -- Authelia portail MFA web -- DONE 2026-05-11
 
-Authentification centralisee pour les services web internes (Grafana, etc.).
-Complement ou remplacement de la solution TOTP PAM locale.
+Authelia v4.39.19 deploye sur APP01 (192.168.20.13).
+Forward auth Nginx : Grafana protege par LDAP AD + TOTP.
+Phase 1 : binary install, systemd, SQLite, users file.
+Phase 2 : LDAP backend Samba AD DC01 (LDAPS 636, svc-authelia).
+Phase 3 : Nginx TLS, forward auth Grafana valide (302 -> /authelia/).
+Validation : HTTP 301, HTTPS 302 Grafana, HTTPS 200 portal, LDAP bind OK.
+ADR-0019 + runbook-authelia.md.
+Dette : T-AUTHELIA-TLS-PKI, T-AUTHELIA-LDAP-CERT, T-AUTHELIA-ANSIBLE, T-AUTHELIA-PROMETHEUS.
+
+### [ ] T-AUTHELIA-PHASE4 -- Role Ansible authelia -- DETTE PHASE III
+
+Role Ansible `authelia` : installation binary, configuration, nginx vhost, TLS PKI.
+Secrets dans ansible-vault (remplacer mot de passe svc-authelia en clair).
+Idempotence. Tests Molecule.
 
 ### [ ] T-SQUID -- Proxy filtrant Squid SERVERS/USERS/BACKUP -- PHASE III
 
