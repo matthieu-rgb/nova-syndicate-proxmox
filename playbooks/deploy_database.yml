@@ -1,6 +1,7 @@
 ---
 - name: "Deploiement DB01 -- common + hardening + MariaDB"
   hosts: databases
+  become: true
   roles:
     - common
     - hardening

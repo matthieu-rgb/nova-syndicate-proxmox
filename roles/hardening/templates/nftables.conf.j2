@@ -2,7 +2,8 @@
 # Nova Syndicate — nftables (Ansible managed)
 # Pare-feu local en complement de pfSense perimetrique
 
-flush ruleset
+add table inet filter
+flush table inet filter
 
 table inet filter {
     chain input {

@@ -35,3 +35,13 @@ UsePAM yes
 PrintMotd no
 AcceptEnv LANG LC_*
 Subsystem sftp /usr/lib/openssh/sftp-server
+
+{% if hardening_ssh_mfa_enabled | default(false) %}
+# MFA TOTP (bastion uniquement -- ADR-0018)
+KbdInteractiveAuthentication yes
+AuthenticationMethods publickey,keyboard-interactive
+
+# Service account ansible bypass MFA depuis subnets de confiance
+Match User {{ ansible_service_user }} Address {{ hardening_allowed_ssh_nets | join(',') }}
+    AuthenticationMethods publickey
+{% endif %}

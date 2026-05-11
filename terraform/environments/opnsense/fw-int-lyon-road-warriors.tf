@@ -224,3 +224,19 @@ resource "opnsense_firewall_filter" "fwint_rw_to_dc01_dns" {
     destination = { net = "host_dc01", port = "53" }
   }
 }
+
+resource "opnsense_firewall_filter" "fwint_roadwarriors_to_app01_https" {
+  provider    = opnsense.fw_int
+  enabled     = true
+  sequence    = 1
+  description = "Road-warriors (10.20.0.0/24) -> APP01:443 - Authelia/Grafana/Wazuh via VPN"
+  interface   = { interface = ["wan"] }
+  filter = {
+    action    = "pass"
+    direction = "in"
+    quick     = true
+    protocol  = "TCP"
+    source      = { net = "net_road_warriors" }
+    destination = { net = "host_app01", port = "443" }
+  }
+}

@@ -1,6 +1,7 @@
 ---
 - name: "Deploiement DC01 -- common + hardening + Samba AD"
   hosts: domain_controllers
+  become: true
   roles:
     - common
     - hardening

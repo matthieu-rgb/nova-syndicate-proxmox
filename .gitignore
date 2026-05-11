@@ -24,6 +24,7 @@ tfplan-*
 .automation/
 **/.automation/
 
-# Local backups
+# Local backups (sauf group_vars Ansible)
 backups/
+!inventory/group_vars/backups/
 .DS_Store

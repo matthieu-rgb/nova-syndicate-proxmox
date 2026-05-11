@@ -74,16 +74,15 @@ syslog_server:        "192.168.10.5"
 proxmox_host:         "192.168.10.1"
 proxmox_snapshot_schedule: "0 * * * *"
 
-# --- Hardening : Override SSH allowed nets pour deploiement Proxmox ---
-# Phase II : Proxmox-management dans VLAN 20 doit pouvoir SSH (deploy ansible)
-# A retirer quand BASTION01 + FW-INT-LYON seront actifs
+# --- Hardening : SSH allowed nets (bastion + Proxmox servers VLAN uniquement) ---
 hardening_allowed_ssh_nets:
-  - "192.168.10.0/24"    # Legacy management
-  - "192.168.15.0/29"    # Bastion VLAN (Proxmox a 192.168.15.6/29 aussi)
-  - "192.168.18.0/24"    # Admin Proxmox (192.168.18.50)
-  - "192.168.20.0/28"    # Servers VLAN (Proxmox a 192.168.20.5/28)
-  - "192.168.30.0/26"    # Users VLAN (Proxmox a 192.168.30.62/26)
-  - "192.168.50.0/29"    # Backup VLAN (Proxmox a 192.168.50.6/29)
+  - "192.168.15.0/29"    # Bastion VLAN
+  - "192.168.20.0/28"    # Servers VLAN (Proxmox + Ansible)
+
+# --- Ansible : ProxyJump bastion01 pour tous les hosts (sauf bastion lui-meme) ---
+ansible_ssh_common_args: >-
+  -o StrictHostKeyChecking=no
+  -o ProxyCommand='ssh -i ~/.ssh/nova_ansible_ed25519 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -o ControlPath=none -W %h:%p ansible@192.168.15.2'
 
 # --- DHCP server (ISC DHCP) ---
 # Active a true uniquement quand FW-INT-LYON est deploye avec dhcp-relay configure

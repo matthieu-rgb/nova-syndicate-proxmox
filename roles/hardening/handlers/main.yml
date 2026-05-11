@@ -7,7 +7,7 @@
 - name: reload nftables
   ansible.builtin.systemd:
     name: nftables
-    state: restarted
+    state: reloaded
 
 - name: restart fail2ban
   ansible.builtin.systemd:

@@ -23,6 +23,7 @@ db_binlog_path:           "/var/log/mysql"
 
 hardening_extra_nft_rules:
   - "tcp dport 3306 accept"
+  - "ip saddr {{ nova_ip_app01 }} tcp dport 9100 accept"
 
 nova_databases:
   - name:     "nova_logistique"

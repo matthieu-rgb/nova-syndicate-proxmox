@@ -18,6 +18,7 @@ dhcp_lease_time:          86400
 hardening_extra_nft_rules:
   - "tcp dport { 53, 88, 135, 139, 389, 445, 464, 636, 3268, 3269 } accept"
   - "udp dport { 53, 67, 68, 88, 123, 137, 138, 389, 464 } accept"
+  - "ip saddr {{ nova_ip_app01 }} tcp dport 9100 accept"
 
 # Paquets communs supplementaires (necessaires aux taches du role dc)
 common_extra_packages:

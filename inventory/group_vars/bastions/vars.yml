@@ -32,3 +32,15 @@ hardening_extra_nft_rules:
   - "tcp dport 3023 accept"
   - "tcp dport 3024 accept"
   - "tcp dport 3025 accept"
+  - "ip saddr 192.168.20.13 tcp dport 9100 accept"
+
+hardening_ssh_mfa_enabled: true
+
+# Bastion SSH accessible depuis Mac admin + Tailscale (pas de ProxyJump pour lui-meme)
+hardening_allowed_ssh_nets:
+  - "192.168.15.0/29"    # Bastion VLAN (loopback Teleport nodes)
+  - "192.168.18.0/24"    # Mac admin LAN
+  - "192.168.20.0/28"    # Servers VLAN (Ansible depuis Proxmox)
+  - "100.64.0.0/10"      # Tailscale CGNAT (acces distant Mac)
+
+ansible_ssh_common_args: "-o StrictHostKeyChecking=no"

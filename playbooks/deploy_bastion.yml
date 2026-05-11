@@ -1,6 +1,7 @@
 ---
 - name: "Deploiement BASTION01 -- common + hardening + Teleport"
   hosts: bastions
+  become: true
   roles:
     - common
     - hardening
