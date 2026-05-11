@@ -271,6 +271,22 @@ resource "opnsense_firewall_filter" "fwint_wan_ipsec_decapsulated" {
   }
 }
 
+resource "opnsense_firewall_filter" "fwint_admin_to_app01_https" {
+  provider    = opnsense.fw_int
+  enabled     = true
+  sequence    = 1
+  description = "Reseau admin (192.168.18.0/24) -> APP01 HTTPS 443 (Authelia/Grafana/Wazuh)"
+  interface   = { interface = ["wan"] }
+  filter = {
+    action    = "pass"
+    direction = "in"
+    quick     = true
+    protocol  = "TCP"
+    source      = { net = "net_proxmox_admin" }
+    destination = { net = "host_app01", port = "443" }
+  }
+}
+
 resource "opnsense_firewall_filter" "fwint_wan_block_all" {
   provider    = opnsense.fw_int
   enabled     = true
