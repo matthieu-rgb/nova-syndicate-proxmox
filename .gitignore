@@ -28,3 +28,15 @@ tfplan-*
 backups/
 !inventory/group_vars/backups/
 .DS_Store
+
+# Certificates and keys (NEVER commit private keys)
+*.pem
+*.crt
+*.key
+*.csr
+*.p12
+*.pfx
+
+# Local certs working dir
+_certs-LOCAL-DO-NOT-COMMIT/
+**/certs-LOCAL/
