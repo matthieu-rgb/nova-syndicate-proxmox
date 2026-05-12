@@ -1,3 +1,7 @@
 ---
+# Hardening firewall rules
 hardening_extra_nft_rules:
   - "ip saddr {{ nova_ip_app01 }} tcp dport 9100 accept"
+
+# Reference la passphrase vault
+borg_passphrase: "{{ vault_borg_passphrase }}"

@@ -1,7 +1,8 @@
 ---
-- name: "Deploiement BACKUP01 -- common + hardening"
+- name: "Deploiement BACKUP01 -- common + hardening + borg"
   hosts: backups
   become: true
   roles:
     - common
     - hardening
+    - backup

@@ -1,0 +1,74 @@
+---
+# Role: backup
+# Configure Borg backup repository on backup01
+# Reference : NIS2 art.21 (BCP/DRP), RGPD art.32
+
+- name: Ensure acl package is installed (required for become_user)
+  ansible.builtin.apt:
+    name: acl
+    state: present
+    update_cache: false
+  tags: [borg, package, prereq]
+
+- name: Ensure borg package is installed
+  ansible.builtin.apt:
+    name: borgbackup
+    state: present
+    update_cache: false
+  tags: [borg, package]
+
+- name: Ensure borg group exists
+  ansible.builtin.group:
+    name: "{{ borg_group }}"
+    gid: "{{ borg_user_gid }}"
+    state: present
+  tags: [borg, user]
+
+- name: Ensure borg user exists
+  ansible.builtin.user:
+    name: "{{ borg_user }}"
+    uid: "{{ borg_user_uid }}"
+    group: "{{ borg_group }}"
+    home: "{{ borg_user_home }}"
+    shell: "{{ borg_user_shell }}"
+    create_home: true
+    state: present
+  tags: [borg, user]
+
+- name: Ensure borg repository parent directory exists
+  ansible.builtin.file:
+    path: "{{ borg_repo_path }}"
+    state: directory
+    owner: "{{ borg_user }}"
+    group: "{{ borg_group }}"
+    mode: '0750'
+  tags: [borg, repo]
+
+- name: Check if borg repository already initialized
+  ansible.builtin.stat:
+    path: "{{ borg_repo_path }}/config"
+  register: borg_repo_config
+  tags: [borg, repo]
+
+- name: Initialize borg repository (if not already done)
+  ansible.builtin.command:
+    cmd: >-
+      sudo -u {{ borg_user }} -H
+      env BORG_PASSPHRASE='{{ borg_passphrase }}'
+      borg init --encryption={{ borg_repo_encryption }} {{ borg_repo_path }}
+  when: not borg_repo_config.stat.exists
+  changed_when: true
+  no_log: true
+  tags: [borg, repo, init]
+
+- name: Verify borg repository is healthy
+  ansible.builtin.command:
+    cmd: >-
+      sudo -u {{ borg_user }} -H
+      env BORG_PASSPHRASE='{{ borg_passphrase }}'
+      borg info {{ borg_repo_path }}
+  register: borg_info
+  changed_when: false
+  failed_when: borg_info.rc != 0
+  no_log: true
+  tags: [borg, verify]

@@ -1,0 +1,22 @@
+---
+# Borg repository configuration
+borg_user: borg
+borg_group: borg
+borg_user_uid: 2001
+borg_user_gid: 2001
+borg_user_home: /home/borg
+borg_user_shell: /bin/bash
+
+borg_repo_path: /srv/borg-repo
+borg_repo_encryption: repokey-blake2
+
+# Backup scheduling (override in group_vars/host_vars if needed)
+borg_backup_schedule: "OnCalendar=*-*-* 02:00:00"
+borg_backup_randomized_delay: 1800  # 30 min jitter
+
+# Retention policy (NIS2 sector medical = 10 ans)
+borg_retention_keep_hourly: 24
+borg_retention_keep_daily: 7
+borg_retention_keep_weekly: 4
+borg_retention_keep_monthly: 12
+borg_retention_keep_yearly: 10
