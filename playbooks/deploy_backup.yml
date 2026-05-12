@@ -1,0 +1,7 @@
+---
+- name: "Deploiement BACKUP01 -- common + hardening"
+  hosts: backups
+  become: true
+  roles:
+    - common
+    - hardening
