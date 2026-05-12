@@ -1,0 +1,8 @@
+---
+- name: "Deploiement APP01 -- common + hardening + Wazuh Manager"
+  hosts: app_servers
+  become: true
+  roles:
+    - common
+    - hardening
+    - wazuh_manager

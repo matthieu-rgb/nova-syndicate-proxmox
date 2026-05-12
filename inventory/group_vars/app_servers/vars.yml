@@ -1,11 +1,15 @@
 ---
-# APP01 - Wazuh Manager + Indexer + Dashboard
-# Phase II : monitoring centralise NIS2
+# APP01 - Wazuh Manager + Indexer + Dashboard + Authelia + Grafana
+# Phase II : monitoring centralise NIS2 + portail MFA
 
 hardening_extra_nft_rules:
-  # Wazuh enrollment (1515) — 1514 restricted by wazuh_manager_listeners in host_vars/app01.yml
+  # Authelia + portail web (HTTP/HTTPS)
+  - "tcp dport { 80, 443 } accept"
+  # Grafana
+  - "tcp dport 3000 accept"
+  # Wazuh enrollment (1515) -- 1514 restricted by wazuh_manager_listeners in host_vars/app01.yml
   - "tcp dport 1515 accept"
-  # Wazuh dashboard (Indexer + UI)
-  - "tcp dport { 9200, 5601, 55000 } accept"
+  # Wazuh dashboard (Indexer + UI + API)
+  - "tcp dport { 5601, 9200, 55000 } accept"
   # Prometheus self-scrape (node_exporter on app01 scraped by Prometheus on app01)
   - "ip saddr {{ nova_ip_app01 }} tcp dport 9100 accept"
