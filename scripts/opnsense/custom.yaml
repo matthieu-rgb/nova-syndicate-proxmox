@@ -1,0 +1,5 @@
+%YAML 1.1
+---
+# Nova Syndicate custom rules (T-SURICATA-DETECTION-FIX, 2026-05-17)
+rule-files:
+  - local.rules

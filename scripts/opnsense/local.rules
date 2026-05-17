@@ -1,0 +1,15 @@
+# Regles locales Nova Syndicate -- Tests detection pipeline
+# Reference : T-SURICATA-DETECTION-FIX
+# A reduire / retirer une fois pipeline valide en production
+
+# Detection ICMP echo vers IP publique WAN (test simple)
+alert icmp any any -> 185.55.247.170 any (msg:"NOVA Test ICMP to WAN public IP"; sid:9000001; rev:1;)
+
+# Detection SYN entrant sur HTTP/HTTPS vers IP publique
+alert tcp any any -> 185.55.247.170 [80,443,8080] (msg:"NOVA Test SYN to WAN HTTP/HTTPS"; flags:S; sid:9000002; rev:1;)
+
+# Detection NMAP user-agent quel que soit le dst (signature classique)
+alert tcp any any -> any any (msg:"NOVA NMAP scripted scan detected"; content:"Nmap"; nocase; sid:9000003; rev:1;)
+
+# Detection ICMP echo vers IP locale WAN (fallback si dest n'est pas l'IP publique)
+alert icmp any any -> 10.0.0.2 any (msg:"NOVA Test ICMP to WAN local IP"; sid:9000004; rev:1;)
