@@ -50,4 +50,3 @@
   args:
     creates: /var/ossec/etc/client.keys
   notify: Restart wazuh-agent
-

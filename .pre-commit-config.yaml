@@ -1,0 +1,52 @@
+# Pre-commit config -- defense in depth contre re-leak vault.yml plaintext
+# DETTE-011 (suite T-VAULT-PLAINTEXT-FIX-2026-05-18)
+# Install:  pre-commit install
+# Run all:  pre-commit run --all-files
+
+repos:
+  # 1. Custom hook -- vault.yml chiffre obligatoire (filet local principal)
+  - repo: local
+    hooks:
+      - id: ansible-vault-encrypted
+        name: Check Ansible vault files are encrypted
+        entry: scripts/check-vault-encrypted.sh
+        language: script
+        files: vault\.yml$
+        pass_filenames: true
+
+      - id: forbid-known-leaked-strings
+        name: Forbid known previously-leaked secret patterns
+        entry: scripts/check-no-leaked-strings.sh
+        language: script
+        pass_filenames: true
+
+  # 2. detect-secrets -- baseline scan (Yelp project, mature, no API key needed)
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: |
+          (?x)^(
+            .*\.lock$|
+            inventory/group_vars/all/vault\.yml$|
+            .*\.PLAINTEXT-BACKUP-.*$|
+            .*\.OLDENC-BACKUP-.*$
+          )$
+
+  # 3. Hygiene generale (quick wins)
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: '\.md$'
+      - id: end-of-file-fixer
+        exclude: '\.md$'
+      - id: check-yaml
+        exclude: |
+          (?x)^(
+            inventory/group_vars/all/vault\.yml$|
+            .*\.j2$
+          )$
+      - id: check-merge-conflict
+      - id: detect-private-key

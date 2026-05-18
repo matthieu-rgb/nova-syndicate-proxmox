@@ -198,8 +198,15 @@ Distribuer la nouvelle pubkey serveur `9ExSPQD6PWsFChdoX3SDEkY8ZppRnvXmH78SKM0vv
 aux 2 clients WG. Mettre a jour leur fichier conf (champ `PublicKey` sous `[Peer]`).
 Verifier handshake actif via `wg show` cote serveur. Priorite : P1.
 
-### DETTE-011 -- Pre-commit hook anti-vault-plaintext
-Cf. section "Recommendations" infra. Priorite : P2.
+### DETTE-011 -- Pre-commit hook anti-vault-plaintext (**RESOLUE 2026-05-18**)
+Voir [ADR-0028](ADR-0028-precommit-gitleaks-anti-secret-leak.md) :
+- Pre-commit framework local installe sur les 2 repos (.pre-commit-config.yaml)
+  avec hooks `ansible-vault-encrypted`, `forbid-known-leaked-strings`,
+  `detect-secrets`, hygiene
+- GitHub Action gitleaks server-side (`.github/workflows/secret-scan.yml`)
+  comme filet final non-contournable
+- Tests fail volontaires PASS : commit fake vault plaintext + commit avec
+  Nova2026! tous deux BLOQUES avec messages explicites
 
 ### DETTE-008 (rappel, inchange)
 Placeholders "CHANGE_ME" dans vault.yml restent : vault_b2_*, vault_hcv_*,

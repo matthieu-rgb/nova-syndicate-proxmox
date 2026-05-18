@@ -55,4 +55,3 @@ resource "opnsense_route" "fwext_to_backup" {
   gateway     = "FW_INT_GW"
   # NECESSAIRE : meme raison que fwext_to_bastion
 }
-

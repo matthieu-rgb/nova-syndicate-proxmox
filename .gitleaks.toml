@@ -1,0 +1,25 @@
+# gitleaks custom config for nova-syndicate-ansible
+# Inherits the default ruleset; allowlist documents legit patterns.
+# DETTE-011 (T-VAULT-PLAINTEXT-FIX-2026-05-18 follow-up).
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allowlist for known-safe references"
+paths = [
+  # Local backup files (gitignored but in case they slip in a diff)
+  '''.*\.PLAINTEXT-BACKUP-.*$''',
+  '''.*\.OLDENC-BACKUP-.*$''',
+  # detect-secrets baseline (audited file)
+  '''^\.secrets\.baseline$''',
+  # vault.yml is encrypted -- gitleaks default sometimes complains on AES blocks
+  '''^inventory/group_vars/all/vault\.yml$''',
+]
+regexes = [
+  # Doc references to the rotated-and-purged historical leak (redacted form)
+  '''Nova\*\*\*\*''',
+  '''kHr1\*\*\*\*REDACTED\*\*\*\*FK0U=''',
+  '''\[REDACTED-OLD-PASSWORD\]''',
+  '''\[REDACTED-OLD-WG-PRIVKEY\]''',
+]

@@ -131,4 +131,3 @@ nis2_rules:
     description: "Modification configuration critique systeme"
     nis2_article: "21.2.e"
     rule_groups: "file_integrity,nis2"
-    

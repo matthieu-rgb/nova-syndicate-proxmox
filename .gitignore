@@ -55,4 +55,3 @@ apikey-*.txt
 *vault_pass*
 .ansible/nova_vault_pass
 **/nova-iac-secrets/**
-

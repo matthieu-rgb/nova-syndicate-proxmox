@@ -78,3 +78,16 @@ ansible-playbook -i inventory/hosts.yml site.yml
 
 Jean Thalor - DSI Nova Syndicate
 j.thalor@nova-syndicate.fr
+
+## Setup dev environment
+
+Pre-commit hooks (anti-vault-plaintext + anti-leaked-secrets) :
+```bash
+brew install pre-commit
+pre-commit install                 # active .git/hooks/pre-commit
+pre-commit run --all-files         # smoke test
+```
+
+GitHub Action `secret-scan.yml` (gitleaks) tourne automatiquement sur chaque
+push / PR vers `main`. C'est le filet final non-contournable.
+Documentation : [ADR-0028](docs/adr/ADR-0028-precommit-gitleaks-anti-secret-leak.md)
