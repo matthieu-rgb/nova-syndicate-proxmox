@@ -193,10 +193,21 @@ ADR-0026 (ce document) + mise a jour INFRA-FULL-TEST-2026-05-18.md (FAIL 10.02
   (89 entrees BULK_ROTATE + CREATE + GRANT + DISABLE + HARD_DELETE).
   Cf. [ADR-0027](ADR-0027-iam-industrialise-ansible.md).
 
-### DETTE-010 -- WireGuard road-warriors a reconfigurer
-Distribuer la nouvelle pubkey serveur `9ExSPQD6PWsFChdoX3SDEkY8ZppRnvXmH78SKM0vvy4=`
-aux 2 clients WG. Mettre a jour leur fichier conf (champ `PublicKey` sous `[Peer]`).
-Verifier handshake actif via `wg show` cote serveur. Priorite : P1.
+### DETTE-010 -- WireGuard road-warriors a reconfigurer (**PARTIELLEMENT RESOLUE 2026-05-18**)
+Procedure documentee dans `docs/runbook-wireguard-road-warriors.md` section
+"Rotation cle privee serveur" + memo + script applicables disponibles dans
+`nova-iac-secrets/wg-distribute-server-pubkey-2026-05-18.md` +
+`wg-hetzner-apply.sh`. Le script est deja deploye sur le VPS Hetzner
+(`/tmp/wg-hetzner-apply.sh`).
+
+Etapes manuelles restantes :
+- macOS : edition GUI WireGuard.app par l'operateur (PublicKey serveur
+  `9ExSPQD6PWsFChdoX3SDEkY8ZppRnvXmH78SKM0vvy4=`)
+- VPS Hetzner : `ssh -t matthieu@100.94.199.97 'bash /tmp/wg-hetzner-apply.sh'`
+  (sudo password requis interactif).
+
+Verification post-distribution : `wg show wg0` cote vpn-gw01 doit afficher
+`latest handshake: <recent>` pour les 2 peers.
 
 ### DETTE-011 -- Pre-commit hook anti-vault-plaintext (**RESOLUE 2026-05-18**)
 Voir [ADR-0028](ADR-0028-precommit-gitleaks-anti-secret-leak.md) :

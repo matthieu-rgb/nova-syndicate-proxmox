@@ -358,6 +358,53 @@ ssh root@192.168.18.50 'iptables -t nat -L PREROUTING -n | grep 51820'
 
 ---
 
+## Rotation cle privee serveur -- DETTE-010 / T-VAULT-PLAINTEXT-FIX-2026-05-18
+
+Quand la `PrivateKey` du serveur est rotated (cf. ADR-0026 Phase 2.5), tous les
+road-warriors perdent leur tunnel jusqu'a redistribution de la nouvelle pubkey
+serveur dans leur config `[Peer]` locale.
+
+### Procedure cote serveur (vpn-gw01)
+
+```bash
+ssh root@100.112.113.2 'qm guest exec 110 -- /bin/bash -c "
+  wg genkey | tee /tmp/wg_new_privkey | wg pubkey > /tmp/wg_new_pubkey
+  cat /tmp/wg_new_pubkey
+  cp /etc/wireguard/wg0.conf /etc/wireguard/wg0.conf.bak.\$(date +%s)
+  NEW_PRIV=\$(cat /tmp/wg_new_privkey)
+  sed -i \"s|^PrivateKey = .*|PrivateKey = \$NEW_PRIV|\" /etc/wireguard/wg0.conf
+  systemctl restart wg-quick@wg0
+  shred -u /tmp/wg_new_privkey /tmp/wg_new_pubkey
+"'
+```
+
+### Procedure cote client (redistribution manuelle de la pubkey serveur)
+
+Procedure pas-a-pas + script dans
+`nova-iac-secrets/wg-distribute-server-pubkey-<DATE>.md`.
+
+Resume :
+- macOS : WireGuard.app -> editer tunnel -> remplacer `[Peer] PublicKey = ...`
+  par la nouvelle valeur -> reactiver.
+- Linux/Hetzner : `sudo sed -i 's|^PublicKey = .*$|PublicKey = <NEW>|'
+  /etc/wireguard/wg0.conf && sudo wg-quick down wg0 && sudo wg-quick up wg0`.
+- Validation : `wg show wg0` cote serveur doit montrer `latest handshake:
+  <recent>` pour chaque peer.
+
+### Backups manipules
+
+- `/etc/wireguard/wg0.conf.bak.<unix-ts>` sur serveur (par sed wrapper)
+- `/etc/wireguard/wg0.conf.bak.<unix-ts>` sur chaque client (par script)
+
+### TODO futur : automatisation Ansible
+
+Role `vpn_gateway` actuel deploie la config serveur. Ajouter un sous-role
+`vpn_client_distribute` qui iterate sur la liste des road-warriors + leurs IP
+de management + la nouvelle pubkey serveur, et applique le sed + restart en
+parallele. Priorite : P3.
+
+---
+
 ## References
 
 - ADR-0016 : Architecture concentrateur VPN road-warriors
