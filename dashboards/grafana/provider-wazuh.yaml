@@ -1,0 +1,14 @@
+# T-DASHBOARD-WAZUH-2026-05-18 -- Provider Nova Syndicate Security
+apiVersion: 1
+
+providers:
+  - name: 'Nova Syndicate -- Security'
+    orgId: 1
+    folder: 'Nova Syndicate -- Security'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/nova-security
+      foldersFromFilesStructure: false

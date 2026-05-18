@@ -1,0 +1,90 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {"type": "grafana-opensearch-datasource", "uid": "wazuh-opensearch"},
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"axisPlacement": "auto", "fillOpacity": 80, "lineWidth": 1}, "unit": "short"}, "overrides": []},
+      "gridPos": {"h": 9, "w": 12, "x": 0, "y": 0},
+      "id": 1,
+      "options": {"barRadius": 0, "barWidth": 0.97, "groupWidth": 0.7, "legend": {"displayMode": "list", "placement": "bottom", "showLegend": true}, "orientation": "auto", "showValue": "auto", "stacking": "none", "tooltip": {"mode": "single"}, "xField": "action", "xTickLabelRotation": -45},
+      "targets": [{
+        "alias": "",
+        "bucketAggs": [{"field": "data.action.keyword", "id": "2", "settings": {"min_doc_count": "1", "order": "desc", "orderBy": "_count", "size": "20"}, "type": "terms"}],
+        "metrics": [{"id": "1", "type": "count"}],
+        "query": "rule.groups:*nova_iam*",
+        "queryType": "lucene",
+        "refId": "A",
+        "timeField": "@timestamp"
+      }],
+      "title": "Actions IAM par type",
+      "type": "barchart"
+    },
+    {
+      "datasource": {"type": "grafana-opensearch-datasource", "uid": "wazuh-opensearch"},
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green"}]}}},
+      "gridPos": {"h": 9, "w": 12, "x": 12, "y": 0},
+      "id": 2,
+      "options": {"showHeader": true},
+      "targets": [{
+        "alias": "",
+        "bucketAggs": [{"field": "data.operator.keyword", "id": "2", "settings": {"min_doc_count": "1", "order": "desc", "orderBy": "_count", "size": "10"}, "type": "terms"}],
+        "metrics": [{"id": "1", "type": "count"}],
+        "query": "rule.groups:*nova_iam*",
+        "queryType": "lucene",
+        "refId": "A",
+        "timeField": "@timestamp"
+      }],
+      "title": "Top operators (by <operator>)",
+      "type": "table"
+    },
+    {
+      "datasource": {"type": "grafana-opensearch-datasource", "uid": "wazuh-opensearch"},
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"axisLabel": "", "axisPlacement": "auto", "drawStyle": "line", "fillOpacity": 20, "lineInterpolation": "smooth", "lineWidth": 2, "showPoints": "auto", "stacking": {"group": "A", "mode": "none"}}, "unit": "short"}},
+      "gridPos": {"h": 8, "w": 18, "x": 0, "y": 9},
+      "id": 3,
+      "options": {"legend": {"displayMode": "list", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "single"}},
+      "targets": [{
+        "alias": "",
+        "bucketAggs": [{"field": "@timestamp", "id": "2", "settings": {"interval": "1h", "min_doc_count": "0"}, "type": "date_histogram"}],
+        "metrics": [{"id": "1", "type": "count"}],
+        "query": "rule.groups:*nova_iam*",
+        "queryType": "lucene",
+        "refId": "A",
+        "timeField": "@timestamp"
+      }],
+      "title": "Actions IAM (timeline 7j)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "grafana-opensearch-datasource", "uid": "wazuh-opensearch"},
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "red"}]}}},
+      "gridPos": {"h": 8, "w": 6, "x": 18, "y": 9},
+      "id": 4,
+      "options": {"showHeader": true},
+      "targets": [{
+        "alias": "",
+        "bucketAggs": [{"field": "rule.id", "id": "2", "settings": {"min_doc_count": "1", "order": "desc", "orderBy": "_count", "size": "10"}, "type": "terms"}],
+        "metrics": [{"id": "1", "type": "count"}],
+        "query": "rule.groups:*nova_iam* AND rule.level:>=8",
+        "queryType": "lucene",
+        "refId": "A",
+        "timeField": "@timestamp"
+      }],
+      "title": "Alertes level >=8 (priv esc / hard delete)",
+      "type": "table"
+    }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 39,
+  "tags": ["wazuh", "security", "nova-syndicate", "iam"],
+  "templating": {"list": []},
+  "time": {"from": "now-7d", "to": "now"},
+  "timezone": "",
+  "title": "Nova Syndicate -- IAM Audit",
+  "uid": "nova-iam-audit",
+  "version": 1
+}

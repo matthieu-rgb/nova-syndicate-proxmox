@@ -1,0 +1,123 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {"type": "grafana-opensearch-datasource", "uid": "wazuh-opensearch"},
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"axisPlacement": "auto", "drawStyle": "bars", "fillOpacity": 80, "stacking": {"group": "A", "mode": "normal"}}, "unit": "short"}},
+      "gridPos": {"h": 9, "w": 24, "x": 0, "y": 0},
+      "id": 1,
+      "options": {"legend": {"displayMode": "list", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "single"}},
+      "targets": [{
+        "alias": "{{agent.name}}",
+        "bucketAggs": [
+          {"field": "@timestamp", "id": "2", "settings": {"interval": "10m", "min_doc_count": "0"}, "type": "date_histogram"},
+          {"field": "agent.name", "id": "3", "settings": {"min_doc_count": "1", "order": "desc", "orderBy": "_count", "size": "10"}, "type": "terms"}
+        ],
+        "metrics": [{"id": "1", "type": "count"}],
+        "query": "decoder.name:suricata AND agent.name:/$capteur/",
+        "queryType": "lucene",
+        "refId": "A",
+        "timeField": "@timestamp"
+      }],
+      "title": "Alertes Suricata stackees par capteur",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "grafana-opensearch-datasource", "uid": "wazuh-opensearch"},
+      "gridPos": {"h": 9, "w": 12, "x": 0, "y": 9},
+      "id": 2,
+      "options": {"showHeader": true},
+      "targets": [{
+        "alias": "",
+        "bucketAggs": [{"field": "data.alert.signature.keyword", "id": "2", "settings": {"min_doc_count": "1", "order": "desc", "orderBy": "_count", "size": "20"}, "type": "terms"}],
+        "metrics": [{"id": "1", "type": "count"}],
+        "query": "decoder.name:suricata",
+        "queryType": "lucene",
+        "refId": "A",
+        "timeField": "@timestamp"
+      }],
+      "title": "Top 20 signatures Suricata",
+      "type": "table"
+    },
+    {
+      "datasource": {"type": "grafana-opensearch-datasource", "uid": "wazuh-opensearch"},
+      "gridPos": {"h": 9, "w": 6, "x": 12, "y": 9},
+      "id": 3,
+      "options": {"showHeader": true},
+      "targets": [{
+        "alias": "",
+        "bucketAggs": [{"field": "data.src_ip.keyword", "id": "2", "settings": {"min_doc_count": "1", "order": "desc", "orderBy": "_count", "size": "10"}, "type": "terms"}],
+        "metrics": [{"id": "1", "type": "count"}],
+        "query": "decoder.name:suricata",
+        "queryType": "lucene",
+        "refId": "A",
+        "timeField": "@timestamp"
+      }],
+      "title": "Top 10 src.ip",
+      "type": "table"
+    },
+    {
+      "datasource": {"type": "grafana-opensearch-datasource", "uid": "wazuh-opensearch"},
+      "gridPos": {"h": 9, "w": 6, "x": 18, "y": 9},
+      "id": 4,
+      "options": {"showHeader": true},
+      "targets": [{
+        "alias": "",
+        "bucketAggs": [{"field": "data.dest_ip.keyword", "id": "2", "settings": {"min_doc_count": "1", "order": "desc", "orderBy": "_count", "size": "10"}, "type": "terms"}],
+        "metrics": [{"id": "1", "type": "count"}],
+        "query": "decoder.name:suricata",
+        "queryType": "lucene",
+        "refId": "A",
+        "timeField": "@timestamp"
+      }],
+      "title": "Top 10 dst.ip",
+      "type": "table"
+    },
+    {
+      "datasource": {"type": "grafana-opensearch-datasource", "uid": "wazuh-opensearch"},
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}}},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 18},
+      "id": 5,
+      "options": {"legend": {"placement": "right", "showLegend": true}, "pieType": "donut"},
+      "targets": [{
+        "alias": "",
+        "bucketAggs": [{"field": "rule.level", "id": "2", "settings": {"min_doc_count": "1", "order": "desc", "orderBy": "_count", "size": "10"}, "type": "terms"}],
+        "metrics": [{"id": "1", "type": "count"}],
+        "query": "decoder.name:suricata",
+        "queryType": "lucene",
+        "refId": "A",
+        "timeField": "@timestamp"
+      }],
+      "title": "Distribution severite (rule.level)",
+      "type": "piechart"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["wazuh", "security", "nova-syndicate", "ids", "suricata"],
+  "templating": {
+    "list": [{
+      "current": {"selected": true, "text": ["All"], "value": ["$__all"]},
+      "includeAll": true,
+      "label": "Capteur",
+      "multi": true,
+      "name": "capteur",
+      "options": [
+        {"selected": true, "text": "All", "value": "$__all"},
+        {"selected": false, "text": "FW-EXT-LYON", "value": "FW-EXT-LYON"},
+        {"selected": false, "text": "FW-INT-LYON", "value": "FW-INT-LYON"},
+        {"selected": false, "text": "FW-EXT-MRS", "value": "FW-EXT-MRS"}
+      ],
+      "query": "FW-EXT-LYON,FW-INT-LYON,FW-EXT-MRS",
+      "type": "custom"
+    }]
+  },
+  "time": {"from": "now-24h", "to": "now"},
+  "title": "Nova Syndicate -- IDS Multi-capteurs",
+  "uid": "nova-ids-multi-capteurs",
+  "version": 1
+}

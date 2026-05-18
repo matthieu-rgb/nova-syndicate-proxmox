@@ -1,0 +1,21 @@
+# T-DASHBOARD-WAZUH-2026-05-18 -- Wazuh OpenSearch datasource
+apiVersion: 1
+
+datasources:
+  - name: Wazuh-OpenSearch
+    uid: wazuh-opensearch
+    type: grafana-opensearch-datasource
+    access: proxy
+    url: https://127.0.0.1:9200
+    basicAuth: true
+    basicAuthUser: admin
+    secureJsonData:
+      basicAuthPassword: '${WAZUH_INDEXER_PASSWORD}'
+    jsonData:
+      database: 'wazuh-alerts-*'
+      flavor: opensearch
+      version: 2.10.0
+      timeField: '@timestamp'
+      tlsSkipVerify: true
+      maxConcurrentShardRequests: 5
+    editable: true

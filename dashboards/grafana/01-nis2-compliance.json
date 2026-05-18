@@ -1,0 +1,94 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": {"type": "grafana-opensearch-datasource", "uid": "wazuh-opensearch"},
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "mappings": []}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "id": 1,
+      "options": {"legend": {"displayMode": "table", "placement": "right", "showLegend": true, "values": ["value"]}, "pieType": "pie", "tooltip": {"mode": "single"}},
+      "targets": [{
+        "alias": "",
+        "bucketAggs": [{"field": "rule.groups", "id": "2", "settings": {"min_doc_count": "1", "order": "desc", "orderBy": "_count", "size": "10"}, "type": "terms"}],
+        "metrics": [{"id": "1", "type": "count"}],
+        "query": "rule.groups:*nis2*",
+        "queryType": "lucene",
+        "refId": "A",
+        "timeField": "@timestamp"
+      }],
+      "title": "Alertes NIS2 par rule_groups",
+      "type": "piechart"
+    },
+    {
+      "datasource": {"type": "grafana-opensearch-datasource", "uid": "wazuh-opensearch"},
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 5}, {"color": "red", "value": 10}]}}},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "id": 2,
+      "options": {"showHeader": true},
+      "targets": [{
+        "alias": "",
+        "bucketAggs": [{"field": "rule.id", "id": "2", "settings": {"min_doc_count": "1", "order": "desc", "orderBy": "_count", "size": "10"}, "type": "terms"}],
+        "metrics": [{"id": "1", "type": "count"}],
+        "query": "rule.groups:*nis2* AND rule.level:>=10",
+        "queryType": "lucene",
+        "refId": "A",
+        "timeField": "@timestamp"
+      }],
+      "title": "Top 10 rule.id NIS2 level>=10",
+      "type": "table"
+    },
+    {
+      "datasource": {"type": "grafana-opensearch-datasource", "uid": "wazuh-opensearch"},
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "bars", "fillOpacity": 70, "lineInterpolation": "linear", "lineWidth": 1, "showPoints": "never", "stacking": {"group": "A", "mode": "normal"}}, "unit": "short"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 18, "x": 0, "y": 8},
+      "id": 3,
+      "options": {"legend": {"calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "single"}},
+      "targets": [{
+        "alias": "",
+        "bucketAggs": [{"field": "@timestamp", "id": "2", "settings": {"interval": "1h", "min_doc_count": "0", "trimEdges": "0"}, "type": "date_histogram"}],
+        "metrics": [{"id": "1", "type": "count"}],
+        "query": "rule.groups:*nis2*",
+        "queryType": "lucene",
+        "refId": "A",
+        "timeField": "@timestamp"
+      }],
+      "title": "Timeline alertes NIS2 (24h)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "grafana-opensearch-datasource", "uid": "wazuh-opensearch"},
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 0.3}, {"color": "red", "value": 0.5}]}, "unit": "percentunit"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 6, "x": 18, "y": 8},
+      "id": 4,
+      "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+      "targets": [{
+        "alias": "",
+        "bucketAggs": [],
+        "metrics": [{"id": "1", "type": "count"}],
+        "query": "rule.groups:*nis2*",
+        "queryType": "lucene",
+        "refId": "A",
+        "timeField": "@timestamp"
+      }],
+      "title": "Total alertes NIS2 (window)",
+      "type": "stat"
+    }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 39,
+  "tags": ["wazuh", "security", "nova-syndicate", "nis2"],
+  "templating": {"list": []},
+  "time": {"from": "now-24h", "to": "now"},
+  "timepicker": {},
+  "timezone": "",
+  "title": "Nova Syndicate -- NIS2 Compliance",
+  "uid": "nova-nis2-compliance",
+  "version": 1,
+  "weekStart": ""
+}

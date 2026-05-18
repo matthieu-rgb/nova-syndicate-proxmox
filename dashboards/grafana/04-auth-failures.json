@@ -1,0 +1,94 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {"type": "grafana-opensearch-datasource", "uid": "wazuh-opensearch"},
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}}},
+      "gridPos": {"h": 9, "w": 12, "x": 0, "y": 0},
+      "id": 1,
+      "options": {"legend": {"placement": "right", "showLegend": true, "values": ["value", "percent"]}, "pieType": "donut"},
+      "targets": [{
+        "alias": "",
+        "bucketAggs": [{"field": "decoder.name", "id": "2", "settings": {"min_doc_count": "1", "order": "desc", "orderBy": "_count", "size": "10"}, "type": "terms"}],
+        "metrics": [{"id": "1", "type": "count"}],
+        "query": "rule.groups:*authentication_failed* OR rule.groups:*authentication_failure*",
+        "queryType": "lucene",
+        "refId": "A",
+        "timeField": "@timestamp"
+      }],
+      "title": "Echecs auth par service (sshd / authelia / smtpd / dovecot)",
+      "type": "piechart"
+    },
+    {
+      "datasource": {"type": "grafana-opensearch-datasource", "uid": "wazuh-opensearch"},
+      "gridPos": {"h": 9, "w": 12, "x": 12, "y": 0},
+      "id": 2,
+      "options": {"showHeader": true},
+      "targets": [{
+        "alias": "",
+        "bucketAggs": [{"field": "data.srcuser.keyword", "id": "2", "settings": {"min_doc_count": "1", "order": "desc", "orderBy": "_count", "size": "20"}, "type": "terms"}],
+        "metrics": [{"id": "1", "type": "count"}],
+        "query": "rule.groups:*authentication_failed* OR rule.groups:*authentication_failure*",
+        "queryType": "lucene",
+        "refId": "A",
+        "timeField": "@timestamp"
+      }],
+      "title": "Top usernames cibles",
+      "type": "table"
+    },
+    {
+      "datasource": {"type": "grafana-opensearch-datasource", "uid": "wazuh-opensearch"},
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green"}, {"color": "yellow", "value": 5}, {"color": "red", "value": 10}]}, "unit": "short"}},
+      "gridPos": {"h": 9, "w": 8, "x": 0, "y": 9},
+      "id": 3,
+      "options": {"colorMode": "background", "graphMode": "area", "reduceOptions": {"calcs": ["max"], "fields": "", "values": false}, "textMode": "auto"},
+      "targets": [{
+        "alias": "max/min",
+        "bucketAggs": [
+          {"field": "@timestamp", "id": "2", "settings": {"interval": "1m", "min_doc_count": "0"}, "type": "date_histogram"},
+          {"field": "data.srcip.keyword", "id": "3", "settings": {"min_doc_count": "1", "order": "desc", "orderBy": "_count", "size": "1"}, "type": "terms"}
+        ],
+        "metrics": [{"id": "1", "type": "count"}],
+        "query": "rule.groups:*authentication_failed* OR rule.groups:*authentication_failure*",
+        "queryType": "lucene",
+        "refId": "A",
+        "timeField": "@timestamp"
+      }],
+      "title": "Max echecs >5/min meme src.ip (brute force indicator)",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "grafana-opensearch-datasource", "uid": "wazuh-opensearch"},
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 30, "lineWidth": 2}, "unit": "short"}},
+      "gridPos": {"h": 9, "w": 16, "x": 8, "y": 9},
+      "id": 4,
+      "options": {"legend": {"placement": "bottom", "showLegend": true}, "tooltip": {"mode": "single"}},
+      "targets": [{
+        "alias": "{{decoder.name}}",
+        "bucketAggs": [
+          {"field": "@timestamp", "id": "2", "settings": {"interval": "5m", "min_doc_count": "0"}, "type": "date_histogram"},
+          {"field": "decoder.name", "id": "3", "settings": {"min_doc_count": "1", "order": "desc", "orderBy": "_count", "size": "10"}, "type": "terms"}
+        ],
+        "metrics": [{"id": "1", "type": "count"}],
+        "query": "rule.groups:*authentication_failed* OR rule.groups:*authentication_failure*",
+        "queryType": "lucene",
+        "refId": "A",
+        "timeField": "@timestamp"
+      }],
+      "title": "Timeline echecs auth (24h)",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["wazuh", "security", "nova-syndicate", "auth"],
+  "templating": {"list": []},
+  "time": {"from": "now-24h", "to": "now"},
+  "title": "Nova Syndicate -- Auth Failures",
+  "uid": "nova-auth-failures",
+  "version": 1
+}
