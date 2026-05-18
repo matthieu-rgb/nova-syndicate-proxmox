@@ -18,7 +18,7 @@ Site internet exposé : `nova.0xmatthieu.dev` via Cloudflare Tunnel (cf. [ADR-00
 | VMID | Hostname | Role | IP | RAM | OS | Statut |
 |---|---|---|---|---|---|---|
 | 100 | web01 | (legacy, non utilise) | - | 1 GB | Debian 12 | running |
-| 101 | mail01 | Postfix relay (future) | 172.16.1.3 (DMZ) | 1 GB | Debian 12 | running |
+| 101 | mail01 | Postfix + Dovecot + OpenDKIM (T-MAIL-PROD) | 172.16.1.3 (DMZ) | 2 GB (1G effectif tant que pas reboot) | Debian 12 | running |
 | 102 | bastion01 | Bastion SSH + MFA TOTP | 192.168.15.2 | 1 GB | Debian 12 | running |
 | 103 | dc01 | Samba AD DC (nova-syndicate.local) | 192.168.20.10 | 2 GB | Debian 12 | running |
 | 104 | fs01 | File server SMB | 192.168.20.11 | 2 GB | Debian 12 | running |
