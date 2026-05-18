@@ -44,3 +44,15 @@ _certs-LOCAL-DO-NOT-COMMIT/
 # Vault rotation backups (T-VAULT-PLAINTEXT-FIX-2026-05-18)
 *.PLAINTEXT-BACKUP-*
 *.OLDENC-BACKUP-*
+
+
+# Secrets safety nets (T-VAULT-PLAINTEXT-FIX-2026-05-18 follow-up)
+*.key
+*.pem
+*.token
+*.psk
+apikey-*.txt
+*vault_pass*
+.ansible/nova_vault_pass
+**/nova-iac-secrets/**
+
