@@ -161,11 +161,20 @@ dans `/var/log/nova-iam/audit.log`.
   dans alerts.log app01 (rules 100401 + 100402). Snapshots pre-modif :
   `pre-dette-012-2026-05-18` sur VMID 103 (dc01) et VMID 106 (app01).
 
-### DETTE-013 -- Playbooks symetriques (P3)
-- `user_revoke_privilege.yml` (symmetric to grant)
-- `user_reset_password.yml` (rotation a la demande)
-- `user_enable.yml` (reactivation apres disable)
-Priorite : P3.
+### DETTE-013 -- Playbooks symetriques (**RESOLUE 2026-05-18**)
+3 playbooks symetriques ajoutes dans `playbooks/iam/` :
+- `user_revoke_privilege.yml` (symmetric to grant, verify post-remove)
+- `user_reset_password.yml` (admin-initiated reset, openssl rand -base64 16
+  + must-change-at-next-login defaut, optional output_password=true)
+- `user_enable.yml` (re-enable disabled user, verify uAC=512)
+
+Suite IAM **complete** = **7 playbooks** : create, delete, enable,
+grant, revoke, reset, rotate_bulk. Pretes pour Job Templates AWX
+(DETTE-014).
+
+Test lifecycle 7-steps PASS (snapshot `pre-dette-013-2026-05-18` sur dc01) :
+CREATE -> GRANT -> REVOKE -> DISABLE -> ENABLE -> ADMIN_RESET -> HARD_DELETE.
+7 entrees audit.log + propagation Wazuh dc01 -> app01 (4 alertes generees).
 
 ### DETTE-014 -- Migration AWX self-service (P3)
 Deploiement AWX (community edition) sur app01 ou container Proxmox, avec :
