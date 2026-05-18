@@ -5,7 +5,7 @@
   gather_facts: false
   vars:
     csv_file: "{{ playbook_dir }}/../files/new_users.csv"
-    default_password: "[REDACTED-OLD-PASSWORD]"
+    default_password: "{{ vault_default_user_password }}"
   tasks:
     - name: Lire le fichier CSV
       read_csv:

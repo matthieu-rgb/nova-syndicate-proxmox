@@ -75,7 +75,7 @@ Raison : Restriction macOS TCC a bloque l'acces ansible au projet depuis le proc
          Les roles ne peuvent etre executes qu'en session interactive depuis le terminal.
 Action requise :
   cd /Users/matthieu/Documents/Nova-syndicate-Code/nova-syndicate-proxmox
-  ansible-playbook site.yml --vault-password-file <(echo '[REDACTED-OLD-PASSWORD]')
+  ansible-playbook site.yml --vault-password-file <(echo '[REDACTED]')
 
 ### DEFERRED-2 : ISO OPNsense non uploade
 Concerne : FW-EXT-LYON01, FW-INT-LYON01, FW-EXT-MRS01, WAN-SIMULATOR (4 VMs Terraform)
