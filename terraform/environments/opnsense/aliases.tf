@@ -27,6 +27,7 @@ locals {
     host_app01        = { content = ["192.168.20.13"], description = "APP01 - Wazuh manager + Vault" }
     host_bastion01    = { content = ["192.168.15.2"],  description = "BASTION01 - SSH bastion" }
     host_backup01     = { content = ["192.168.50.2"],  description = "BACKUP01 - BorgBackup" }
+    host_mail01       = { content = ["172.16.1.3"],    description = "MAIL01 - Postfix/Dovecot DMZ (T-MAIL-LDAP-FW-RULE)" }
   }
 
   fwint_aliases_port = {

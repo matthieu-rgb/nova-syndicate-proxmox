@@ -287,6 +287,23 @@ resource "opnsense_firewall_filter" "fwint_admin_to_app01_https" {
   }
 }
 
+resource "opnsense_firewall_filter" "fwint_mail01_to_dc01_ldaps" {
+  provider    = opnsense.fw_int
+  enabled     = true
+  sequence    = 1
+  description = "T-MAIL-LDAP-FW-RULE: mail01 -> dc01 LDAPS only"
+  interface   = { interface = ["wan"] }
+  filter = {
+    action    = "pass"
+    direction = "in"
+    quick     = true
+    protocol  = "TCP"
+    log       = true
+    source      = { net = "host_mail01" }
+    destination = { net = "host_dc01", port = "636" }
+  }
+}
+
 resource "opnsense_firewall_filter" "fwint_wan_block_all" {
   provider    = opnsense.fw_int
   enabled     = true

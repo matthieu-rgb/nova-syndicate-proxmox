@@ -93,6 +93,83 @@ integre dans `site.yml` etape 8bis. Idempotent.
 | 4 | SPF TXT visible dans DNS Samba | PASS (`v=spf1 ip4:172.16.1.3 -all`) |
 | 5 | Dovecot IMAPS login + SELECT INBOX | PASS (1 EXISTS, 1 RECENT) |
 
+## Bascule LDAP/AD -- Trade-off et mitigations (T-MAIL-LDAP-FW-RULE-2026-05-18)
+
+### Constat (apres deploiement initial T-MAIL-PROD)
+
+L'isolation DMZ stricte (aucun flux vers VLAN20) etait parfaite du point de
+vue NIS2 art. 21.2.e (segmentation), mais empechait les 85 utilisateurs AD
+d'utiliser leur boite mail : seuls les 3 users provisionnes en local
+(`fabien.bonnet`, `alexandre.gautier`, `postmaster`) pouvaient s'authentifier.
+La valeur metier du mail server etait donc proche de zero tant que le canal
+LDAP/AD restait ferme.
+
+### Decision (acceptee)
+
+**Ouvrir un flux unique et restrictif** sur FW-INT-LYON :
+`pf pass in proto tcp from host_mail01 to host_dc01 port 636 (log)` (sequence 1).
+Toute autre tentative `mail01 -> VLAN20` reste bloquee par la regle par defaut
+`block any any` (sequence 2 sur l'interface WAN).
+
+### Mitigations en place
+
+1. **Service account dedie read-only** : `svc-mail-ldap` (CN=svc-mail-ldap,
+   OU=Service-Accounts) avec mot de passe random 28 chars stocke en vault
+   (`vault_svc_mail_ldap_password`). Compte `--noexpiry` mais flag par defaut
+   = pas de permissions Modify.
+2. **DENY explicite sur Tier0_Admins** : ACE `(D;CI;RP;;;<svc-mail-ldap-SID>)`
+   ajoute sur `OU=Tier0_Admins`. Verifie par `ldapsearch` -> retourne empty.
+3. **LDAPS uniquement (port 636 direct, pas STARTTLS)** : `tls_require_cert =
+   demand` cote Dovecot/Postfix, CA Samba (`/etc/ssl/certs/nova-CA.crt`)
+   verifiee. Connexion par hostname (`dc01.nova-syndicate.local` resolu via
+   `/etc/hosts` mail01) pour validation CN.
+4. **Logging firewall actif** : tous les paquets matchant la regle sont
+   logges (`log=1`). Ingest possible par Wazuh via parser pfsense.
+5. **Detection pivot mail01** : rules Wazuh custom :
+   - `100013` (level 8) : tentative `src=172.16.1.3` vers autre que
+     `dst=192.168.20.10:636` -> compromise/pivot suspect.
+   - `100014` (level 5) : echec bind LDAP depuis mail01 -> creds
+     `svc-mail-ldap` compromis ou brute force.
+
+### Risque residuel
+
+Si mail01 est compromis (ex. RCE Postfix), l'attaquant peut :
+- ENUMERER l'annuaire (sAMAccountName, mail) des OUs Lyon/Marseille
+  (read-only via svc-mail-ldap). PAS d'acces a Tier0_Admins (DENY ACE).
+- NE PEUT PAS modifier de comptes (insufficient access).
+- NE PEUT PAS pivot vers d'autres serveurs (FW reste bloquant).
+
+Plan de detection : rule 100013 alerte dans la minute (level 8) toute
+connexion mail01 sortante hors flux autorise.
+
+### Tests valides (Bascule LDAP, T-MAIL-LDAP-FW-RULE Phase 5)
+
+| # | Test | Resultat |
+|---|------|----------|
+| 1 | swaks SMTP AUTH 587 + TLS avec creds AD `fabien.bonnet` | PASS (queued) |
+| 2 | IMAPS login + LIST avec creds AD `fabien.bonnet` | PASS (Logged in) |
+| 3 | mail01 -> dc01:22 / dc01:389 / fs01:445 / app01:1514 | BLOCKED (4/4) |
+| 4 | mail01 -> app01:443 | PASS pre-existant (NAT public Authelia, non regression) |
+
+`doveadm auth test fabien.bonnet` -> `passdb auth succeeded`. Idem
+`alexandre.gautier`. `postmap -q .. ldap:/etc/postfix/ldap-aliases.cf`
+retourne le sAMAccountName.
+
+### Dettes resolues
+
+- ~~T-MAIL-LDAP-FW-RULE~~ : ferme par cette ADR.
+- T-MAIL-WAZUH-ENROLL : reste ouverte (necessite regle equivalente
+  mail01 -> app01:1514/1515, hors scope T-MAIL-LDAP-FW-RULE).
+
+### Dette ajoutee
+
+- **T-MAIL-LDAP-FW-RULE-TF-DRIFT** : la regle FW-INT et l'alias
+  `host_mail01` ont ete ajoutes via API OPNsense directement (pas via
+  Terraform). Un `terraform plan` sur
+  `nova-syndicate-proxmox/terraform/environments/opnsense/` les detectera
+  comme drift. A codifier dans `aliases.tf` + `fw_int.tf` avant prochain
+  `terraform apply`.
+
 ## Consequences
 
 Positives :

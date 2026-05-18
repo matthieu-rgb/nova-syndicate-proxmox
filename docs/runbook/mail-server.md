@@ -76,22 +76,37 @@ postmap /etc/postfix/vmailbox
 doveadm auth test alice.dupont@nova-syndicate.local "$PW"
 ```
 
-### Bascule auth LDAP/AD (apres ouverture FW-INT)
+### Bascule auth LDAP/AD (DONE T-MAIL-LDAP-FW-RULE-2026-05-18)
 
-Pre-requis : regle FW-INT autorisant mail01 (172.16.1.3) -> dc01
-(192.168.20.10) sur TCP/636 (LDAPS).
+Mode par defaut : `mail_auth_backend: ldap`. Service account
+`svc-mail-ldap` (OU=Service-Accounts, vault `vault_svc_mail_ldap_password`)
+bind LDAPS sur dc01:636 via la regle FW-INT
+`fwint_mail01_to_dc01_ldaps` (sequence 1, log=true).
 
 ```sh
-# 1. Verifier la connectivite
+# Verifier connectivite
 ssh mail01 'timeout 3 bash -c "echo > /dev/tcp/192.168.20.10/636" && echo OK'
 
-# 2. Replay du role avec le bon backend
-cd ~/nova-syndicate-ansible
-ansible-playbook playbooks/deploy_mail.yml \
-  -e mail_auth_backend=ldap
+# Verifier auth d'un user AD (sans deployer)
+ssh mail01 'doveadm auth test fabien.bonnet <pwd-AD>'
 
-# 3. Verifier auth d'un user AD
-ssh mail01 'doveadm auth test fabien.bonnet@nova-syndicate.local <pwd-AD>'
+# Forcer fallback temporaire passwd-file (debug)
+ansible-playbook playbooks/deploy_mail.yml -e mail_auth_backend=passwdfile
+```
+
+### Rotation password svc-mail-ldap
+
+```sh
+# 1. Generer nouveau pwd + set sur dc01
+NEWPW=$(openssl rand -base64 24 | tr -d '/+=' | head -c 28)
+ssh dc01 "samba-tool user setpassword svc-mail-ldap --newpassword='$NEWPW'"
+
+# 2. Mettre a jour vault
+ansible-vault edit inventory/group_vars/all/vault.yml
+# -> remplacer vault_svc_mail_ldap_password
+
+# 3. Replay role (regenere dovecot-ldap.conf.ext + ldap-aliases.cf)
+ansible-playbook playbooks/deploy_mail.yml
 ```
 
 ## Tests fonctionnels (replay Phase 6)
