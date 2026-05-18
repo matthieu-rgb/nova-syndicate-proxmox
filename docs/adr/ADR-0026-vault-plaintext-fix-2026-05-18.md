@@ -176,17 +176,22 @@ ADR-0026 (ce document) + mise a jour INFRA-FULL-TEST-2026-05-18.md (FAIL 10.02
 
 ## Dettes ouvertes apres remediation
 
-### DETTE-009 -- Rotation passwords des 92 users AD (PARTIELLEMENT RESOLUE)
-- **Option B chirurgicale traitee le 2026-05-18 via T-IAM-PLAYBOOKS-2026-05-18** :
-  4 demo users (fabien.bonnet, alexandre.gautier, lucie.lefevre, matthieu.gerard)
-  rotates vers `vault_default_user_password`. Validation
-  `wbinfo --authenticate` : ancien pwd Nova**** FAIL, nouveau pwd PASS.
-- 3 playbooks IAM industrialises crees pour la suite : user_create.yml,
-  user_delete.yml, user_grant_privilege.yml + audit log
-  `/var/log/nova-iam/audit.log`. Cf. [ADR-0027](ADR-0027-iam-industrialise-ansible.md).
-- **DETTE-009-bis** (P1) -- les 88 users restants gardent toujours leur password
-  initial "Nova****". Traiter via playbook `users_rotate_bulk.yml` iterant sur
-  samba-tool user list (excluant 5 service accounts + 4 demo deja faits).
+### DETTE-009 -- Rotation passwords des 92 users AD (**RESOLUE 2026-05-18**)
+- **Option B chirurgicale (4 demo users)** -- T-IAM-PLAYBOOKS-2026-05-18 Phase 2 :
+  fabien.bonnet, alexandre.gautier, lucie.lefevre, matthieu.gerard rotates
+  vers `vault_default_user_password`. Validation `wbinfo --authenticate` :
+  ancien pwd Nova**** FAIL + nouveau pwd PASS.
+- **Bulk rotation 81 users restants** -- T-IAM-PLAYBOOKS-2026-05-18 DETTE-009-bis :
+  playbook `playbooks/iam/users_rotate_bulk.yml` cree, snapshot
+  `pre-dette-009-bis-2026-05-18` sur dc01, 81/81 users rotates avec
+  must-change-at-next-login (pwdLastSet=0 verifie sur 3 samples).
+  Privileges INCHANGES : Administrator, krbtgt, Guest, admin-t0/t1/t2,
+  svc-authelia (pwdLastSet != 0, Administrator wbinfo PASS).
+- 4 playbooks IAM industrialises au total dans `playbooks/iam/` :
+  user_create.yml, user_delete.yml, user_grant_privilege.yml,
+  users_rotate_bulk.yml + audit log `/var/log/nova-iam/audit.log`
+  (89 entrees BULK_ROTATE + CREATE + GRANT + DISABLE + HARD_DELETE).
+  Cf. [ADR-0027](ADR-0027-iam-industrialise-ansible.md).
 
 ### DETTE-010 -- WireGuard road-warriors a reconfigurer
 Distribuer la nouvelle pubkey serveur `9ExSPQD6PWsFChdoX3SDEkY8ZppRnvXmH78SKM0vvy4=`

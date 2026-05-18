@@ -140,11 +140,13 @@ sur les 88 restants, via playbook one-shot iterant sur la CSV).
 
 ## Dettes ouvertes apres ADR-0027
 
-### DETTE-009-bis -- Rotation des 88 users AD restants (P1)
-Playbook `playbooks/iam/users_rotate_bulk.yml` iterant sur la liste samba-tool
-user list (exclure Administrator, admin-t0/1/2, krbtgt, svc-authelia, et les
-4 demo deja faits). Setpassword + must-change-at-next-login.
-Priorite : P1.
+### DETTE-009-bis -- Rotation des 81 users AD restants (**RESOLUE 2026-05-18**)
+Playbook `playbooks/iam/users_rotate_bulk.yml` cree et execute. 81 users
+rotates vers `vault_default_user_password` + must-change-at-next-login
+(pwdLastSet=0 verifie). Exclusions actives : Administrator, Guest, krbtgt,
+admin-t0/t1/t2, svc-authelia, et les 4 demo deja faits en Option B.
+Snapshot `pre-dette-009-bis-2026-05-18` sur dc01. 81 entrees BULK_ROTATE
+dans `/var/log/nova-iam/audit.log`.
 
 ### DETTE-012 -- Ingestion Wazuh de l'audit.log IAM (P2)
 Ajouter dans `/var/ossec/etc/ossec.conf` sur dc01 :
