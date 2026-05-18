@@ -148,16 +148,18 @@ admin-t0/t1/t2, svc-authelia, et les 4 demo deja faits en Option B.
 Snapshot `pre-dette-009-bis-2026-05-18` sur dc01. 81 entrees BULK_ROTATE
 dans `/var/log/nova-iam/audit.log`.
 
-### DETTE-012 -- Ingestion Wazuh de l'audit.log IAM (P2)
-Ajouter dans `/var/ossec/etc/ossec.conf` sur dc01 :
-```xml
-<localfile>
-  <log_format>syslog</log_format>
-  <location>/var/log/nova-iam/audit.log</location>
-</localfile>
-```
-Plus regle Wazuh custom pour HARD_DELETE -> alerte severite 12.
-Priorite : P2.
+### DETTE-012 -- Ingestion Wazuh de l'audit.log IAM (**RESOLUE 2026-05-18**)
+- Agent dc01 : `<localfile>` syslog ajoute dans `/var/ossec/etc/ossec.conf`
+  (snippet versionne : `roles/wazuh_agent/templates/iam_localfile.snippet.xml`)
+- Manager app01 : `/var/ossec/etc/rules/nova-iam_rules.xml` cree avec 3
+  regles custom IDs 100400-100402 (template versionne
+  `roles/wazuh_manager/templates/nova-iam_rules.xml.j2`) :
+  - 100400 level 3  -- catch-all CREATE/GRANT/DISABLE/HARD_DELETE/BULK_ROTATE
+  - 100401 level 10 -- ALERT HARD_DELETE irreversible (NIS2 art.30)
+  - 100402 level 8  -- ALERT GRANT privilege escalation (NIS2)
+- Test E2E : injection 3 events dans audit.log dc01 -> 2 alertes propages
+  dans alerts.log app01 (rules 100401 + 100402). Snapshots pre-modif :
+  `pre-dette-012-2026-05-18` sur VMID 103 (dc01) et VMID 106 (app01).
 
 ### DETTE-013 -- Playbooks symetriques (P3)
 - `user_revoke_privilege.yml` (symmetric to grant)
