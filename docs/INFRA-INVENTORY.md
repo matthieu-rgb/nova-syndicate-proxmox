@@ -1,6 +1,6 @@
 # Nova Syndicate -- Inventaire infrastructure
 
-Dernière mise à jour : 2026-05-19 (T-WAZUH-INDEXER-INSTALL)
+Dernière mise à jour : 2026-05-19 (T-WAZUH-INDEXER-INSTALL + T-WAZUH-SURICATA-INTEGRATION)
 
 Document de référence pour l'infra Nova Syndicate. Pour les détails de design et les choix d'architecture, voir `docs/adr/`. Pour les procédures opérationnelles, voir `docs/runbook/`.
 
@@ -40,6 +40,7 @@ Snapshots conservés comme références (rollback rapide) :
 - `pre-suricata-fw-ext-mrs-2026-05-18` (VMID 203)
 - `post-incident-recovery-2026-05-09` (IPsec 4 SAs baseline)
 - `pre-t-wazuh-indexer-install-2026-05-18` (VMID 106 -- avant install indexer)
+- `pre-t-wazuh-suricata-integ-2026-05-18` (VMID 201, 202, 203, 106 -- avant Suricata integration)
 
 ## Réseaux & VLANs
 
@@ -98,6 +99,17 @@ Packages tenus en hold (`dpkg --set-selections`) pour eviter upgrade automatique
 Pipeline data flow : `agents -> wazuh-manager -> alerts.json -> filebeat (module wazuh)
 -> wazuh-indexer https://127.0.0.1:9200 -> index wazuh-alerts-4.x-YYYY.MM.DD
 -> grafana datasource grafana-opensearch-datasource (uid wazuh-opensearch) -> 4 dashboards`.
+
+Pipeline IDS Suricata (T-WAZUH-SURICATA-INTEGRATION 2026-05-19) :
+`Suricata 3 OPNsense -> eve.json local -> /usr/local/sbin/suricata-eve-forwarder.sh
+(tail -F + nc -u) -> app01:5141/UDP -> /usr/local/sbin/udp-log-receiver.py (User=wazuh)
+-> /var/log/suricata-fw.log -> wazuh-logcollector (log_format=json) -> decoder json
+-> rules 86600-86699 -> alerts.json -> indexer -> dashboard nova-ids-multi-capteurs`.
+
+Composants additionnels sur app01 : `udp-log-receiver.py` (systemd unit `suricata-fw-receiver`),
+nftables rule autorisant UDP 5141 et 514 depuis les 3 sources FW
+(`/etc/nftables.d/suricata-syslog.nft`), `net.ipv4.conf.all.rp_filter=2`
+(`/etc/sysctl.d/99-rp-filter.conf`).
 
 ### FW-EXT-LYON (OPNsense 25.1)
 
@@ -259,12 +271,15 @@ Snapshots de référence permanents :
 - `pre-suricata-fw-int-2026-05-18` (VMID 202 -- avant J2)
 - `pre-suricata-fw-ext-mrs-2026-05-18` (VMID 203 -- avant J2)
 - `pre-t-wazuh-indexer-install-2026-05-18` (VMID 106 -- avant install wazuh-indexer + filebeat)
+- `pre-t-wazuh-suricata-integ-2026-05-18` (VMID 201, 202, 203, 106 -- avant integration Suricata 3 capteurs)
 
 ## Dettes ouvertes (post T-WAZUH-INDEXER-INSTALL)
 
-- **T-WAZUH-SURICATA-INTEGRATION** : ramener les alertes Suricata des 3 OPNsense
-  vers wazuh-manager (agent FreeBSD ou syslog forward). Cible : populer
-  `nova-ids-multi-capteurs` dashboard.
+- ~~**T-WAZUH-SURICATA-INTEGRATION**~~ : RESOLUE 2026-05-19. Les 3 Suricata
+  OPNsense forward leur eve.json en JSON pur via UDP 5141 vers un receiver
+  Python sur app01 qui ecrit dans `/var/log/suricata-fw.log`. Wazuh
+  logcollector decode (json + rules 86600-86699). 4/4 dashboards OK. Voir
+  ADR-0030 section "Integration Suricata 3 capteurs".
 - **T-SPLIT-MONITORING-VM** : si la charge monte, deplacer
   wazuh-indexer + grafana + prometheus sur une VM dediee (107 ou nouvelle).
   Aujourd'hui app01 6 GB OK pour le labo.

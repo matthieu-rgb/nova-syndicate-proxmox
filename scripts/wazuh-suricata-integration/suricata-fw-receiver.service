@@ -1,0 +1,18 @@
+[Unit]
+Description=Suricata FW JSON UDP receiver (5141 -> /var/log/suricata-fw.log)
+Documentation=ADR-0030 -- T-WAZUH-SURICATA-INTEGRATION
+After=network.target wazuh-manager.service
+
+[Service]
+Type=simple
+Environment="RECV_PORT=5141"
+Environment="RECV_LOG=/var/log/suricata-fw.log"
+ExecStart=/usr/bin/python3 /usr/local/sbin/udp-log-receiver.py
+User=wazuh
+Group=wazuh
+Restart=always
+RestartSec=3
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

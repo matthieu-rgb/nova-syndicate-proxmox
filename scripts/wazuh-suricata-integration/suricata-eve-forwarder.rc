@@ -1,0 +1,35 @@
+#!/bin/sh
+#
+# PROVIDE: suricata_eve_forwarder
+# REQUIRE: NETWORKING suricata syslog-ng
+# KEYWORD: shutdown
+#
+# T-WAZUH-SURICATA-INTEGRATION : rc.d service pour OPNsense (FreeBSD)
+# Deploy : /usr/local/etc/rc.d/suricata_eve_forwarder
+# Enable via : sysrc suricata_eve_forwarder_enable=YES
+# Override par-FW :
+#   /etc/rc.conf.d/suricata_eve_forwarder
+#     suricata_eve_forwarder_sensor=FW-EXT-LYON
+#     suricata_eve_forwarder_src=192.168.40.1   # MRS only
+
+. /etc/rc.subr
+
+name="suricata_eve_forwarder"
+rcvar="${name}_enable"
+command="/usr/local/sbin/suricata-eve-forwarder.sh"
+command_args="start"
+start_cmd="${command} start"
+stop_cmd="${command} stop"
+status_cmd="${command} status"
+
+load_rc_config $name
+: ${suricata_eve_forwarder_enable:=YES}
+
+if [ -n "${suricata_eve_forwarder_src:-}" ]; then
+  export NC_SRC="$suricata_eve_forwarder_src"
+fi
+if [ -n "${suricata_eve_forwarder_sensor:-}" ]; then
+  export NOVA_SENSOR="$suricata_eve_forwarder_sensor"
+fi
+
+run_rc_command "$1"

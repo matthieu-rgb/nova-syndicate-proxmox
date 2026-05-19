@@ -1,9 +1,9 @@
 # ADR-0030 : Grafana + Wazuh single-pane-of-glass securite
 
-- Statut : Accepte (deploiement complet : indexer + filebeat + 3/4 dashboards data-populated)
-- Date : 2026-05-18 / mis a jour 2026-05-19
+- Statut : Accepte (deploiement complet : indexer + filebeat + 4/4 dashboards data-populated)
+- Date : 2026-05-18 / mis a jour 2026-05-19 (T-WAZUH-INDEXER-INSTALL + T-WAZUH-SURICATA-INTEGRATION)
 - Auteur : matthieu-rgb
-- Tickets : T-DASHBOARD-WAZUH-2026-05-18, T-WAZUH-INDEXER-INSTALL-2026-05-19
+- Tickets : T-DASHBOARD-WAZUH-2026-05-18, T-WAZUH-INDEXER-INSTALL-2026-05-19, T-WAZUH-SURICATA-INTEGRATION-2026-05-19
 - Lien : voir [`dashboards/README.md`](../../dashboards/README.md)
 
 ## Contexte
@@ -119,6 +119,62 @@ Pipeline E2E confirme : `agents -> wazuh-manager -> /var/ossec/logs/alerts/alert
    de versions (incident detecte pendant la mission : apt voulait upgrader manager
    4.11.2 -> 4.14.5 -- mismatch avec agents 4.11.2).
 
+## Integration Suricata 3 capteurs (T-WAZUH-SURICATA-INTEGRATION -- 2026-05-19)
+
+### Architecture du flow
+
+`Suricata sur 3 OPNsense -> eve.json local -> forwarder shell (tail -F + nc -u) -> UDP receiver Python sur app01:5141 -> /var/log/suricata-fw.log -> wazuh-logcollector (log_format=json) -> decoder json -> rules 86600-86699 -> alerts.json -> filebeat -> wazuh-indexer -> Grafana nova-ids-multi-capteurs`
+
+### Pourquoi ce chemin et pas un autre
+
+- **Wazuh agent FreeBSD-pkg sur OPNsense** : ecarte (compilation lourde, casse OPNsense package management).
+- **OPNsense Suricata `syslog`/`syslog_eve` toggle** : active dans les settings mais
+  produit RIEN de visible dans /var/log/suricata/eve.json -> syslog (bug ou config interne
+  qui ne s'applique pas). On contourne en tailant directement eve.json.
+- **syslog-ng OPNsense remote destination (port 514)** : marche mais syslog-ng wrappe
+  en RFC5424 avec structured-data `[meta sequenceId="N"]` qui casse le decoder json
+  Wazuh (predecoder n'extrait pas le body JSON). Donc on bypass syslog-ng et on
+  envoie du JSON pur via `nc -u` direct, vers un port custom 5141.
+- **Wazuh `<remote><connection>syslog>` UDP 514** : la reception fonctionne (allowed-ips,
+  port en ecoute) mais les datagrammes envoyes n'apparaissent ni dans archives.log
+  ni dans alerts.json -- probablement parce que wazuh-remoted 4.11 traite l'entree
+  syslog dans un thread distinct dont les logs ne s'affichent pas en debug. Pattern
+  trop opaque pour le labo -> on prefere localfile.
+- **Solution retenue** : `localfile log_format=json` sur `/var/log/suricata-fw.log`,
+  alimente par un small Python UDP receiver (port 5141) qui ecrit chaque datagramme
+  en une ligne. Decodeur `json` Wazuh + rules 86600-86699 livrees standard.
+
+### Composants deployes
+
+1. **Sur chaque OPNsense** :
+   - `/usr/local/sbin/suricata-eve-forwarder.sh` : tail -F eve.json -> nc -u app01:5141, ajoute `"sensor":"FW-XXX"` au debut de chaque JSON line.
+   - `/usr/local/etc/rc.d/suricata_eve_forwarder` : rc.d unit FreeBSD, enabled YES via sysrc.
+   - `/etc/rc.conf.d/suricata_eve_forwarder` : `suricata_eve_forwarder_sensor=FW-EXT-LYON` (per-FW). Sur FW-EXT-MRS, ajoute `suricata_eve_forwarder_src=192.168.40.1` pour forcer la source IP (sinon kernel choisit 10.0.2.2 qui n'est PAS dans la policy IPsec MRS<->Lyon).
+
+2. **Sur app01** :
+   - `/usr/local/sbin/udp-log-receiver.py` : Python UDP receiver (User=wazuh), bind 0.0.0.0:5141, append datagrammes a `/var/log/suricata-fw.log` (mode "ab", unbuffered).
+   - `/etc/systemd/system/suricata-fw-receiver.service` : systemd unit, Restart=always.
+   - `/etc/nftables.d/suricata-syslog.nft` : autorise UDP 5141 + 514 depuis les 3 sources FW (10.0.1.1, 192.168.20.1, 192.168.99.0/24, 192.168.40.0/26).
+   - `/etc/sysctl.d/99-rp-filter.conf` : `net.ipv4.conf.all.rp_filter=2` (loose) sinon strict mode drop le UDP entrant de 10.0.1.1.
+   - `<localfile>` block dans `ossec.conf` : `<location>/var/log/suricata-fw.log</location>` + `<log_format>json</log_format>`.
+
+3. **FW rule sur FW-INT-LYON** : ajoute pass UDP 5141 (et 514) de 10.0.1.1 vers 192.168.20.13 (FW-EXT-LYON doit traverser FW-INT pour atteindre app01).
+
+### Mis a jour dashboard `nova-ids-multi-capteurs`
+
+- Query origin `decoder.name:suricata AND agent.name:/$capteur/` ne marche pas :
+  - `decoder.name` vaut `json` (pas `suricata`) car on utilise le decoder generique.
+  - `agent.name` vaut `app01` (l'agent 000 lit le fichier) pour les 3 capteurs.
+- Query mise a jour : `decoder.name:json AND rule.groups:suricata AND data.sensor:/$capteur/`.
+- Field `data.sensor` est en mapping `keyword` (template dynamique Wazuh), donc utiliser `data.sensor` directement (pas `data.sensor.keyword`).
+- Aggregations / src_ip / dest_ip basculent sur `rule.groups:suricata` au lieu de `decoder.name:suricata`.
+
+### Validation
+
+- 21 docs `rule.groups:suricata` indexes apres injection de tests.
+- Aggregation `data.sensor` : 11 docs FW-EXT-LYON, 4 FW-INT-LYON, 3 FW-EXT-MRS (3 capteurs distinguables).
+- Wazuh logtest : decoded by `json` decoder, rule 86601 (Suricata: Alert) tire.
+
 ### Validation flow E2E (Phase 4)
 
 - Indices presents : `wazuh-alerts-4.x-2026.05.18` (1 doc), `wazuh-alerts-4.x-2026.05.19` (1646+ docs et croissant).
@@ -133,13 +189,9 @@ Pipeline E2E confirme : `agents -> wazuh-manager -> /var/ossec/logs/alerts/alert
 | `nova-nis2-compliance` | **OK** | `rule.groups:*nis2*` | 186 docs |
 | `nova-iam-audit` | **OK** | `rule.id:100008` (account mgmt) | 55 docs |
 | `nova-auth-failures` | **OK** | `rule.groups:authentication_failed OR brute_force` | 15+ docs |
-| `nova-ids-multi-capteurs` | **VIDE** | `rule.groups:suricata` | 0 docs |
+| `nova-ids-multi-capteurs` | **OK** (post T-WAZUH-SURICATA-INTEGRATION) | `rule.groups:suricata` | 21+ docs, 3 capteurs (FW-EXT-LYON / FW-INT-LYON / FW-EXT-MRS) distinguables via `data.sensor` |
 
-Pourquoi IDS vide : Suricata tourne sur OPNsense (3 FW) et n'envoie pas
-ses alertes au wazuh-manager. Integration possible via :
-- (a) Wazuh agent sur OPNsense (FreeBSD pkg) lisant `/var/log/suricata/eve.json`.
-- (b) Forward syslog OPNsense -> wazuh-manager (decoder syslog).
-**Dette ouverte** : `T-WAZUH-SURICATA-INTEGRATION`.
+**T-WAZUH-SURICATA-INTEGRATION resolue 2026-05-19** : 4/4 dashboards data-populated.
 
 ### RAM cible vs realite
 

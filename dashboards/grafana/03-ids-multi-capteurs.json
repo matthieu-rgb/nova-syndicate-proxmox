@@ -12,13 +12,13 @@
       "id": 1,
       "options": {"legend": {"displayMode": "list", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "single"}},
       "targets": [{
-        "alias": "{{agent.name}}",
+        "alias": "{{data.sensor}}",
         "bucketAggs": [
           {"field": "@timestamp", "id": "2", "settings": {"interval": "10m", "min_doc_count": "0"}, "type": "date_histogram"},
-          {"field": "agent.name", "id": "3", "settings": {"min_doc_count": "1", "order": "desc", "orderBy": "_count", "size": "10"}, "type": "terms"}
+          {"field": "data.sensor", "id": "3", "settings": {"min_doc_count": "1", "order": "desc", "orderBy": "_count", "size": "10"}, "type": "terms"}
         ],
         "metrics": [{"id": "1", "type": "count"}],
-        "query": "decoder.name:suricata AND agent.name:/$capteur/",
+        "query": "decoder.name:json AND rule.groups:suricata AND data.sensor:/$capteur/",
         "queryType": "lucene",
         "refId": "A",
         "timeField": "@timestamp"
@@ -33,9 +33,9 @@
       "options": {"showHeader": true},
       "targets": [{
         "alias": "",
-        "bucketAggs": [{"field": "data.alert.signature.keyword", "id": "2", "settings": {"min_doc_count": "1", "order": "desc", "orderBy": "_count", "size": "20"}, "type": "terms"}],
+        "bucketAggs": [{"field": "data.alert.signature", "id": "2", "settings": {"min_doc_count": "1", "order": "desc", "orderBy": "_count", "size": "20"}, "type": "terms"}],
         "metrics": [{"id": "1", "type": "count"}],
-        "query": "decoder.name:suricata",
+        "query": "rule.groups:suricata",
         "queryType": "lucene",
         "refId": "A",
         "timeField": "@timestamp"
@@ -50,9 +50,9 @@
       "options": {"showHeader": true},
       "targets": [{
         "alias": "",
-        "bucketAggs": [{"field": "data.src_ip.keyword", "id": "2", "settings": {"min_doc_count": "1", "order": "desc", "orderBy": "_count", "size": "10"}, "type": "terms"}],
+        "bucketAggs": [{"field": "data.src_ip", "id": "2", "settings": {"min_doc_count": "1", "order": "desc", "orderBy": "_count", "size": "10"}, "type": "terms"}],
         "metrics": [{"id": "1", "type": "count"}],
-        "query": "decoder.name:suricata",
+        "query": "rule.groups:suricata",
         "queryType": "lucene",
         "refId": "A",
         "timeField": "@timestamp"
@@ -67,9 +67,9 @@
       "options": {"showHeader": true},
       "targets": [{
         "alias": "",
-        "bucketAggs": [{"field": "data.dest_ip.keyword", "id": "2", "settings": {"min_doc_count": "1", "order": "desc", "orderBy": "_count", "size": "10"}, "type": "terms"}],
+        "bucketAggs": [{"field": "data.dest_ip", "id": "2", "settings": {"min_doc_count": "1", "order": "desc", "orderBy": "_count", "size": "10"}, "type": "terms"}],
         "metrics": [{"id": "1", "type": "count"}],
-        "query": "decoder.name:suricata",
+        "query": "rule.groups:suricata",
         "queryType": "lucene",
         "refId": "A",
         "timeField": "@timestamp"
@@ -87,7 +87,7 @@
         "alias": "",
         "bucketAggs": [{"field": "rule.level", "id": "2", "settings": {"min_doc_count": "1", "order": "desc", "orderBy": "_count", "size": "10"}, "type": "terms"}],
         "metrics": [{"id": "1", "type": "count"}],
-        "query": "decoder.name:suricata",
+        "query": "rule.groups:suricata",
         "queryType": "lucene",
         "refId": "A",
         "timeField": "@timestamp"

@@ -1,0 +1,19 @@
+#!/usr/sbin/nft -f
+# T-WAZUH-SURICATA-INTEGRATION : nft rules sur app01
+# Deploy : /etc/nftables.d/suricata-syslog.nft + include depuis /etc/nftables.conf
+#
+# Autorise UDP 5141 (receiver Python) et 514 (wazuh-remoted syslog)
+# depuis les 3 sources FW :
+#   - 10.0.1.1/32          : FW-EXT-LYON peering interface
+#   - 192.168.20.1/32      : FW-INT-LYON gateway IP sur le VLAN servers
+#   - 192.168.99.0/24      : FW-INT-LYON management
+#   - 192.168.40.0/26      : LAN MRS (FW-EXT-MRS 192.168.40.1 via IPsec)
+#
+# Ces rules doivent etre INSEREES avant le default "drop" du chain input.
+
+table inet filter {
+    chain input {
+        ip saddr {10.0.1.1/32, 192.168.99.0/24, 192.168.20.1/32, 192.168.40.0/26} udp dport 5141 accept comment "suricata-fw-receiver"
+        ip saddr {10.0.1.1/32, 192.168.99.0/24, 192.168.20.1/32, 192.168.40.0/26} udp dport 514 accept comment "wazuh-syslog"
+    }
+}
