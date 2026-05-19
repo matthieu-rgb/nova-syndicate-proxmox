@@ -1,6 +1,6 @@
 # Nova Syndicate -- Inventaire infrastructure
 
-Dernière mise à jour : 2026-05-18 (T-INVENTORY-DOC / Combo J2)
+Dernière mise à jour : 2026-05-19 (T-WAZUH-INDEXER-INSTALL)
 
 Document de référence pour l'infra Nova Syndicate. Pour les détails de design et les choix d'architecture, voir `docs/adr/`. Pour les procédures opérationnelles, voir `docs/runbook/`.
 
@@ -23,7 +23,7 @@ Site internet exposé : `nova.0xmatthieu.dev` via Cloudflare Tunnel (cf. [ADR-00
 | 103 | dc01 | Samba AD DC (nova-syndicate.local) | 192.168.20.10 | 2 GB | Debian 12 | running |
 | 104 | fs01 | File server SMB | 192.168.20.11 | 2 GB | Debian 12 | running |
 | 105 | db01 | MariaDB | 192.168.20.12 | 2 GB | Debian 12 | running |
-| 106 | app01 | Web stack (nginx, Authelia, Grafana, Wazuh manager, portail metier, cloudflared) | 192.168.20.13 | 4 GB | Debian 12 | running |
+| 106 | app01 | Web stack (nginx, Authelia, Grafana, Wazuh manager + indexer + filebeat, portail metier, cloudflared) | 192.168.20.13 | 6 GB | Debian 12 | running |
 | 107 | proxy-lyon01 | (reserve future) | - | 1 GB | Debian 12 | running |
 | 108 | proxy-mrs01 | (reserve future MRS) | - | 1 GB | Debian 12 | running |
 | 109 | backup01 | Borg backup repo | 192.168.50.2 | 2 GB | Debian 12 | running |
@@ -39,6 +39,7 @@ Snapshots conservés comme références (rollback rapide) :
 - `pre-suricata-fw-int-2026-05-18` (VMID 202)
 - `pre-suricata-fw-ext-mrs-2026-05-18` (VMID 203)
 - `post-incident-recovery-2026-05-09` (IPsec 4 SAs baseline)
+- `pre-t-wazuh-indexer-install-2026-05-18` (VMID 106 -- avant install indexer)
 
 ## Réseaux & VLANs
 
@@ -76,7 +77,7 @@ Snapshots conservés comme références (rollback rapide) :
 - ~30 tarifs/services enregistres dans `nova_portail.tarifs`
 - Verification : `mysql -u root -e "SHOW DATABASES;"`
 
-### APP01 (Web stack)
+### APP01 (Web stack -- 6 GB RAM)
 
 - `nginx` : Reverse proxy + sites statiques + vhosts
   - `website.conf` : www.nova-syndicate.local (cert wildcard mkcert)
@@ -85,9 +86,18 @@ Snapshots conservés comme références (rollback rapide) :
 - `authelia` : Auth + MFA TOTP, backend LDAP DC01
 - `grafana-server` : Monitoring frontend (port 3000)
 - `prometheus` : Metrics collector (port 9090)
-- `wazuh-manager` : SIEM manager (7 agents Active)
+- `wazuh-manager` 4.11.2 : SIEM manager (7 agents Active)
+- `wazuh-indexer` 4.11.2 : OpenSearch 2.16.0 single-node, bound 127.0.0.1:9200, JVM 1G heap, cluster `wazuh-cluster-local`
+- `filebeat` 7.10.2 : module Wazuh, ship `/var/ossec/logs/alerts/alerts.json` -> indexer
 - `nova-portail.service` : Flask gunicorn 4 workers (port 8000)
 - `cloudflared` : Tunnel Zero Trust vers Cloudflare (sortie QUIC, no port entrant)
+
+Packages tenus en hold (`dpkg --set-selections`) pour eviter upgrade automatique :
+`wazuh-manager`, `wazuh-indexer`, `filebeat` (alignement strict des versions).
+
+Pipeline data flow : `agents -> wazuh-manager -> alerts.json -> filebeat (module wazuh)
+-> wazuh-indexer https://127.0.0.1:9200 -> index wazuh-alerts-4.x-YYYY.MM.DD
+-> grafana datasource grafana-opensearch-datasource (uid wazuh-opensearch) -> 4 dashboards`.
 
 ### FW-EXT-LYON (OPNsense 25.1)
 
@@ -248,6 +258,26 @@ Snapshots de référence permanents :
 - `pre-exposition-publique-2026-05-18` (VMID 201, 106 -- avant J2 Combo)
 - `pre-suricata-fw-int-2026-05-18` (VMID 202 -- avant J2)
 - `pre-suricata-fw-ext-mrs-2026-05-18` (VMID 203 -- avant J2)
+- `pre-t-wazuh-indexer-install-2026-05-18` (VMID 106 -- avant install wazuh-indexer + filebeat)
+
+## Dettes ouvertes (post T-WAZUH-INDEXER-INSTALL)
+
+- **T-WAZUH-SURICATA-INTEGRATION** : ramener les alertes Suricata des 3 OPNsense
+  vers wazuh-manager (agent FreeBSD ou syslog forward). Cible : populer
+  `nova-ids-multi-capteurs` dashboard.
+- **T-SPLIT-MONITORING-VM** : si la charge monte, deplacer
+  wazuh-indexer + grafana + prometheus sur une VM dediee (107 ou nouvelle).
+  Aujourd'hui app01 6 GB OK pour le labo.
+- **T-WAZUH-INDEXER-ALIAS-DAILY** : creer un alias rollover
+  `wazuh-alerts -> wazuh-alerts-4.x-*` pour faire taire le health check
+  Grafana qui renvoie "Index not found" (cosmetique, queries fonctionnent).
+- **T-WAZUH-VAULT-INDEXER-PWD** : ajouter `vault_wazuh_indexer_admin_password`
+  au vault Ansible (chiffre) au lieu du fichier env Grafana en clair.
+- **T-GRAFANA-AUTHELIA-SSO** : OAuth/OIDC contre Authelia, permissions par
+  groupe AD (`Lyon-Staff` viewer, `Lyon-Admins` editor).
+- **T-GRAFANA-13-ADMIN-RESET-BUG** : `grafana-cli admin reset-admin-password`
+  ne met pas a jour le bon backend en Grafana 13 unified-storage.
+  Contournement : update direct du hash PBKDF2 dans `user.password`.
 
 ## Roles Ansible (deployés)
 
