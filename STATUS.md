@@ -72,6 +72,10 @@ Terraform.
 ### 3. Management FW-INT-LYON sur 192.168.99.0/29 (hors VLSM)
 Choix temporaire pour faciliter la phase IaC (acces preserve pendant le
 deploiement). A aligner sur le plan VLSM en Phase VI (bootstrap idempotent).
+**MAJ 2026-05-21 (T-AWX-DEPLOY)** : acces mgmt (`192.168.99.5/29` sur `vmbr1`
+cote Proxmox) desormais **persiste** dans `/etc/network/interfaces` (etait
+runtime-only, wipe par un `ifreload` -- cf ADR-0031 sec.2). Reste l'alignement
+VLSM du subnet.
 
 ### 4. Tunnel IPsec FW-EXT-LYON <-> FW-EXT-MRS non configure
 strongSwan present mais daemon non demarre (config heritee de GNS3 obsolete).
@@ -84,6 +88,15 @@ manuelles. Phase VI = scripter ces operations one-shot.
 
 ### 6. tls_disable=true Vault APP01
 Choix lab uniquement -- a documenter explicitement dans le rapport Phase II.
+
+### 7. T-AWX-DEPLOY -- 6 dettes filles (detail dans ADR-0031)
+- **T-AWX-NFT-ALLOWLIST** : nft host de chaque VM geree doit autoriser VLAN 60 -> :22 (fait sur dc01 seulement).
+- **T-AWX-VAULT-INVENTORY** : `vault_default_user_password` non charge dans les jobs AWX (inventory DB-backed).
+- **T-AWX-BULK-ROTATE-DRY-RUN** : variante `users_rotate_test.yml` filtre `OU=Test`.
+- **T-AWX-IAM-SPACES-FIX** : bug playbooks grant/revoke sur groupes avec espace (repo nova-syndicate-ansible, session dediee).
+- **T-WAZUH-LOGCOLLECTOR-DC01** : logcollector etait arrete sur dc01 (redemarre) -- investiguer la cause.
+- **T-AWX-AUDIT-ATTRIBUTION** : audit "by root" au lieu de l'utilisateur AWX/AD.
+- **T-AWX-RBAC** (Phase 8) : Teams IT-Officers/IT-Admins + LDAP team mapping + workflow onboarding.
 
 ---
 

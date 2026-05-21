@@ -16,6 +16,7 @@ locals {
     net_lyon_servers   = { content = ["192.168.20.0/28"], description = "VLAN 20 - Servers subnet" }
     net_lyon_users     = { content = ["192.168.30.0/26"], description = "VLAN 30 - Users subnet" }
     net_lyon_backup    = { content = ["192.168.50.0/29"], description = "VLAN 50 - Backup subnet" }
+    net_lyon_admin     = { content = ["192.168.60.0/29"], description = "VLAN 60 - Admin/Automation subnet (AWX, plan ops)" }
     net_lyon_internal  = { content = ["192.168.15.0/29", "192.168.20.0/28", "192.168.30.0/26", "192.168.50.0/29"], description = "Tous les VLANs internes Lyon" }
     net_lan_mrs        = { content = ["192.168.40.0/26"], description = "LAN Marseille (cross-site)" }
     net_proxmox_admin  = { content = ["192.168.18.0/24"], description = "Reseau admin Proxmox (poste admin Mac)" }
@@ -28,12 +29,14 @@ locals {
     host_bastion01    = { content = ["192.168.15.2"],  description = "BASTION01 - SSH bastion" }
     host_backup01     = { content = ["192.168.50.2"],  description = "BACKUP01 - BorgBackup" }
     host_mail01       = { content = ["172.16.1.3"],    description = "MAIL01 - Postfix/Dovecot DMZ (T-MAIL-LDAP-FW-RULE)" }
+    host_awx01        = { content = ["192.168.60.2"],  description = "AWX01 - Ansible Tower OSS sur K3s (VLAN 60 ADMIN)" }
   }
 
   fwint_aliases_port = {
     ports_ad_tcp = { content = ["88", "135", "389", "445", "464", "636", "3268", "3269"], description = "Active Directory TCP (Samba)" }
     ports_ad_udp = { content = ["53", "88", "123", "137", "138", "389", "464"], description = "Active Directory UDP (Samba)" }
     ports_smb    = { content = ["139", "445"], description = "SMB / CIFS file sharing" }
+    ports_web_out = { content = ["80", "443"], description = "Web egress HTTP/HTTPS (K3s, Helm, registries, apt, git-HTTPS) - VLAN 60 ADMIN" }
   }
 }
 

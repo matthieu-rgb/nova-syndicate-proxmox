@@ -1,0 +1,18 @@
+---
+apiVersion: awx.ansible.com/v1beta1
+kind: AWX
+metadata:
+  name: awx
+  namespace: awx
+spec:
+  service_type: nodeport
+  nodeport_port: 30080
+  ingress_type: none
+  replicas: 1
+  postgres_storage_class: local-path
+  postgres_storage_requirements:
+    requests:
+      storage: 8Gi
+  extra_settings:
+    - setting: CSRF_TRUSTED_ORIGINS
+      value: "['https://awx.nova-syndicate.local']"

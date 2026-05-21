@@ -13,7 +13,7 @@ Deux sites interconnectés via tunnel IPsec IKEv2 (4 SAs) :
 
 Site internet exposé : `nova.0xmatthieu.dev` via Cloudflare Tunnel (cf. [ADR-0024](adr/ADR-0024-exposition-publique-cloudflare.md)).
 
-## VMs Proxmox (10 running)
+## VMs Proxmox (11 running)
 
 | VMID | Hostname | Role | IP | RAM | OS | Statut |
 |---|---|---|---|---|---|---|
@@ -28,6 +28,7 @@ Site internet exposé : `nova.0xmatthieu.dev` via Cloudflare Tunnel (cf. [ADR-00
 | 108 | proxy-mrs01 | (reserve future MRS) | - | 1 GB | Debian 12 | running |
 | 109 | backup01 | Borg backup repo | 192.168.50.2 | 2 GB | Debian 12 | running |
 | 110 | vpn-gw01 | WireGuard road-warriors | 192.168.30.2 | 1 GB | Debian 12 | running |
+| 111 | awx01 | AWX (Ansible Tower OSS) sur K3s -- automation IAM (T-AWX-DEPLOY) | 192.168.60.2 | 8 GB | Debian 12 (cpu:host, NUMA) | running |
 | 200 | wan-simulator | Simule Internet Lyon-MRS (peering 10.0.x.x) | (interne) | 512 MB | tinycore | running |
 | 201 | fw-ext-lyon01 | OPNsense WAN Lyon + IPsec + Suricata #1 | 10.0.0.2 / 192.168.18.51 / 10.0.1.1 / 172.16.1.1 | 4 GB | OPNsense 25.1 | running |
 | 202 | fw-int-lyon01 | OPNsense FW interne Lyon + Suricata #2 | 10.0.1.2 / 192.168.99.1 / 192.168.{20,30,50}.1 / 192.168.15.1 | 4 GB | OPNsense 25.1 | running |
@@ -41,6 +42,10 @@ Snapshots conservés comme références (rollback rapide) :
 - `post-incident-recovery-2026-05-09` (IPsec 4 SAs baseline)
 - `pre-t-wazuh-indexer-install-2026-05-18` (VMID 106 -- avant install indexer)
 - `pre-t-wazuh-suricata-integ-2026-05-18` (VMID 201, 202, 203, 106 -- avant Suricata integration)
+- `pre-awx-vlan60-2026-05-19` (VMID 202 -- avant VLAN 60 ADMIN)
+- `pre-k3s-2026-05-20` (VMID 111 -- avant install K3s/AWX)
+- `pre-awx-nginx-2026-05-20` (VMID 106 -- avant server block nginx awx)
+- `pre-awx-ldap-2026-05-20` / `post-checkpoint-8-batch-2026-05-20` (VMID 103 -- svc-awx-ldap + tests IAM E2E)
 
 ## Réseaux & VLANs
 
@@ -56,7 +61,8 @@ Snapshots conservés comme références (rollback rapide) :
 | 192.168.30.0/26 | Users Lyon | 192.168.30.1 (FW-INT-LYON) | Lyon | 30 | vmbr1.30 |
 | 192.168.40.0/26 | LAN Marseille | 192.168.40.1 (FW-EXT-MRS) | Marseille | - | vmbr2 |
 | 192.168.50.0/29 | Backup | 192.168.50.1 (FW-INT-LYON) | Lyon | 50 | vmbr1.50 |
-| 192.168.99.0/29 | Management OPNsense (FW-INT) | 192.168.99.1 (FW-INT-LYON) | Inter-FW | - | vmbr1 |
+| 192.168.60.0/29 | Admin / automation (AWX, plan ops) | 192.168.60.1 (FW-INT-LYON opt5) | Lyon | 60 | vmbr1.60 (Proxmox leg .60.3) |
+| 192.168.99.0/29 | Management OPNsense (FW-INT) | 192.168.99.1 (FW-INT-LYON) | Inter-FW | - | vmbr1 (Proxmox leg **.99.5/29 persiste** -- cf ADR-0031, cloture dette mgmt) |
 
 **Conflit IP connu** : Proxmox a une IP secondary `192.168.20.1/28` sur `vmbr1.20`, en doublon avec FW-INT-LYON vlan03. Origine historique (J0 bootstrap). Pas de symptôme observé : ARP race tolère car les hosts (APP01 etc) utilisent toujours le FW-INT-LYON comme gateway effective. À nettoyer en Phase IV (T-PROXMOX-IP-CLEANUP).
 

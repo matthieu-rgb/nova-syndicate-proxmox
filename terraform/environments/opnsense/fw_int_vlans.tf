@@ -42,3 +42,11 @@ resource "opnsense_interfaces_vlan" "fwint_vlan50_backup" {
   tag         = 50
   priority    = 0
 }
+
+resource "opnsense_interfaces_vlan" "fwint_vlan60_admin" {
+  provider    = opnsense.fw_int
+  description = "VLAN 60 - Admin"
+  parent      = "vtnet1"
+  tag         = 60
+  priority    = 0
+}

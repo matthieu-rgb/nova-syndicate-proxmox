@@ -251,6 +251,95 @@ resource "opnsense_firewall_filter" "fwint_backup_block_all" {
 }
 
 # ============================================================
+# ADMIN (VLAN 60 / opt5) -- AWX01 + futurs outils d'orchestration
+# Plan d'administration segregue du plan SERVERS (NIS2 art.21).
+# AWX accede en SSH direct aux VMs cibles (bypass bastion) : trust
+# boundary documente dans ADR-0031 (mitigations RBAC + cle dediee
+# svc-awx-ssh + audit Wazuh). Pattern : pass specifiques + block/log.
+# ============================================================
+
+resource "opnsense_firewall_filter" "fwint_admin_to_dc_ad_tcp" {
+  provider    = opnsense.fw_int
+  enabled     = true
+  sequence    = 10
+  description = "ADMIN (VLAN60) -> DC01 AD TCP (LDAPS 636 auth AWX, LDAP)"
+  interface   = { interface = ["opt5"] }
+  filter = {
+    action    = "pass"
+    direction = "in"
+    quick     = true
+    protocol  = "TCP"
+    source      = { net = "net_lyon_admin" }
+    destination = { net = "host_dc01", port = "ports_ad_tcp" }
+  }
+}
+
+resource "opnsense_firewall_filter" "fwint_admin_to_dc_ad_udp" {
+  provider    = opnsense.fw_int
+  enabled     = true
+  sequence    = 11
+  description = "ADMIN (VLAN60) -> DC01 AD UDP (DNS 53, NTP 123, Kerberos)"
+  interface   = { interface = ["opt5"] }
+  filter = {
+    action    = "pass"
+    direction = "in"
+    quick     = true
+    protocol  = "UDP"
+    source      = { net = "net_lyon_admin" }
+    destination = { net = "host_dc01", port = "ports_ad_udp" }
+  }
+}
+
+resource "opnsense_firewall_filter" "fwint_admin_to_internal_ssh" {
+  provider    = opnsense.fw_int
+  enabled     = true
+  sequence    = 12
+  description = "ADMIN (VLAN60) -> VMs internes SSH 22 (AWX orchestration, bypass bastion - cf ADR-0031)"
+  interface   = { interface = ["opt5"] }
+  filter = {
+    action    = "pass"
+    direction = "in"
+    quick     = true
+    protocol  = "TCP"
+    source      = { net = "net_lyon_admin" }
+    destination = { net = "net_lyon_internal", port = "22" }
+  }
+}
+
+resource "opnsense_firewall_filter" "fwint_admin_to_internet_web" {
+  provider    = opnsense.fw_int
+  enabled     = true
+  sequence    = 13
+  description = "ADMIN (VLAN60) -> internet HTTP/HTTPS (K3s install, Helm, registries, apt, git-HTTPS)"
+  interface   = { interface = ["opt5"] }
+  filter = {
+    action    = "pass"
+    direction = "in"
+    quick     = true
+    protocol  = "TCP"
+    source      = { net = "net_lyon_admin" }
+    destination = { net = "any", port = "ports_web_out" }
+  }
+}
+
+resource "opnsense_firewall_filter" "fwint_admin_block_all" {
+  provider    = opnsense.fw_int
+  enabled     = true
+  sequence    = 90
+  description = "Block + log tout autre trafic depuis ADMIN (VLAN60) - audit NIS2"
+  interface   = { interface = ["opt5"] }
+  filter = {
+    action    = "block"
+    direction = "in"
+    quick     = true
+    protocol  = "any"
+    log       = true
+    source      = { net = "any" }
+    destination = { net = "any" }
+  }
+}
+
+# ============================================================
 # WAN (transit depuis FW-EXT) -- block les entrants non sollicites
 # Le stateful firewall gere automatiquement les retours.
 # ============================================================
