@@ -90,10 +90,10 @@ manuelles. Phase VI = scripter ces operations one-shot.
 Choix lab uniquement -- a documenter explicitement dans le rapport Phase II.
 
 ### 7. T-AWX-DEPLOY -- 6 dettes filles (detail dans ADR-0031)
-- **T-AWX-NFT-ALLOWLIST** : nft host de chaque VM geree doit autoriser VLAN 60 -> :22 (fait sur dc01 seulement).
+- **T-AWX-NFT-ALLOWLIST** : ABORTED 2026-05-20 (T-AFK-DETTES) -- voir Dettes resolues/abandonnees. Reste a faire en session supervisee.
 - **T-AWX-VAULT-INVENTORY** : `vault_default_user_password` non charge dans les jobs AWX (inventory DB-backed).
 - **T-AWX-BULK-ROTATE-DRY-RUN** : variante `users_rotate_test.yml` filtre `OU=Test`.
-- **T-AWX-IAM-SPACES-FIX** : bug playbooks grant/revoke sur groupes avec espace (repo nova-syndicate-ansible, session dediee).
+- **T-AWX-IAM-SPACES-FIX** : RESOLU 2026-05-21 (commit ansible 86fc623) -- voir Dettes resolues.
 - **T-WAZUH-LOGCOLLECTOR-DC01** : INVESTIGUEE 2026-05-21 -- root cause INDETERMINEE (voir Dettes resolues).
 - **T-AWX-AUDIT-ATTRIBUTION** : audit "by root" au lieu de l'utilisateur AWX/AD.
 - **T-AWX-RBAC** (Phase 8) : Teams IT-Officers/IT-Admins + LDAP team mapping + workflow onboarding.
@@ -105,6 +105,13 @@ Choix lab uniquement -- a documenter explicitement dans le rapport Phase II.
   - Sous-findings (nouvelles dettes filles) :
     - **T-WAZUH-AUDIT-LOCALFILE-DEDUP** : `/var/log/nova-iam/audit.log` declare 2x dans ossec.conf (2 blocs `<ossec_config>`) -> WARNING "duplicated" benin. Dedupe a faire (config manuelle, pas Ansible).
     - **T-WAZUH-LOGCOLLECTOR-HEALTHCHECK** : ajouter un healthcheck (timer systemd / cron) qui restart `wazuh-agent` si un daemon (logcollector) est down -- la mort n'a pas ete auto-recuperee.
+- **T-AWX-IAM-SPACES-FIX** : RESOLU 2026-05-21. Repo nova-syndicate-ansible commit `86fc623` : 20 appels `cmd: samba-tool ...` -> `argv:` dans les 7 playbooks IAM. Valide E2E via AWX (grant/revoke `test.spacesfix` sur "Domain Admins" -- le groupe avec espace qui echouait avant -- jobs successful, membership verifiee, cleanup count=94). AWX project synced a 86fc623.
+
+### Dette ABANDONNEE en AFK (a reprendre supervise)
+- **T-AWX-NFT-ALLOWLIST** : ABORTED 2026-05-20. Objectif : autoriser `192.168.60.0/29 -> :22` sur les 6 VMs (fs01, db01, app01, backup01, vpn-gw01, bastion01) via le role hardening.
+  - **Blocage** : l'execution `ansible-playbook depuis le Mac` n'est PAS viable ici -- (1) le ProxyJump `~/.ssh/config` via bastion exige MFA TOTP (echoue en non-interactif), (2) le contournement ProxyJump via proxmox declenche le bug macOS ansible "worker found in a dead state" (fork safety). Lancer un role qui REMPLACE `/etc/nftables.conf` sur 6 VMs prod, en AFK, via double-contournement instable = decision non triviale -> STOP par regle AFK.
+  - **Changement exact a appliquer** (session supervisee) : dans `nova-syndicate-ansible/inventory/group_vars/all/vars.yml`, ajouter `"192.168.60.0/29"` a `hardening_allowed_ssh_nets` (template `roles/hardening/templates/nftables.conf.j2`). Puis `ansible-playbook site.yml --tags hardening:firewall --limit fs01,db01,app01,backup01,vpn-gw01,bastion01` depuis un point qui joint les VMs en non-interactif. Verifier depuis awx01 : `ssh debian@<vm> hostname`. Snapshots `pre-awx-nftallowlist-2026-05-20` PAS pris (abort avant la phase destructive).
+  - NB : dc01 a deja la regle VLAN 60 (ajoutee manuellement en T-AWX-DEPLOY, hors role).
 
 ---
 
