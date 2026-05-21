@@ -14,7 +14,7 @@ Ticket : T-AWX-DEPLOY. ADR : [`ADR-0031`](adr/ADR-0031-awx-operator-k3s-iam-auto
 ## Architecture
 
 - VM `awx01` (VMID 111), VLAN 60 ADMIN 192.168.60.2/29, 8 GB / 4 vCPU / 50 GB, `cpu: host`.
-- K3s v1.35 single-node (traefik present mais INUTILISE -- `ingress_type: none`).
+- K3s v1.35 single-node (traefik **DESACTIVE** -- `disable: [traefik]` dans `/etc/rancher/k3s/config.yaml`, cf `files/awx/k3s-config.yaml` ; le RP est nginx app01, `ingress_type: none`. ~190 MB RAM economises, T-K3S-DISABLE-TRAEFIK).
 - AWX Operator 3.2.1 (helm release `awx-operator`, ns `awx`) -> AWX 24.6.1.
 - Pods (ns `awx`) :
   - `awx-operator-controller-manager` (operateur, 2 conteneurs)

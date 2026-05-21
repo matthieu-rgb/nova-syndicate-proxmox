@@ -98,6 +98,9 @@ Choix lab uniquement -- a documenter explicitement dans le rapport Phase II.
 - **T-AWX-AUDIT-ATTRIBUTION** : audit "by root" au lieu de l'utilisateur AWX/AD.
 - **T-AWX-RBAC** (Phase 8) : Teams IT-Officers/IT-Admins + LDAP team mapping + workflow onboarding.
 
+### Dettes resolues (T-AFK-DETTES-2026-05-20)
+- **T-K3S-DISABLE-TRAEFIK** : RESOLU 2026-05-21. traefik desactive sur K3s awx01 (`disable: [traefik]`, cf `files/awx/k3s-config.yaml`). ~190 MB RAM economises. nginx app01 reste le reverse proxy.
+
 ---
 
 ## Roadmap
