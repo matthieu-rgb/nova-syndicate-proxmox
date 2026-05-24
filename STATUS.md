@@ -107,6 +107,9 @@ Choix lab uniquement -- a documenter explicitement dans le rapport Phase II.
 - **T-AWX-KEY-DEPLOY** : **RESOLU 2026-05-24** (T-AFK-MEGA) -- cle publique `awx-runner` (fp `5PnAWh…`, identique a dc01) deployee sur les 5 VMs (fs01, db01, app01, backup01, vpn-gw01) via playbook `deploy_awx_runner_key.yml` + `group_vars/all/awx.yml` (nova-syndicate-ansible). Idempotence OK (0 changed au re-run), cle presente 1x/host verifiee. Acces AWX 6/6 (5 VMs + dc01).
 - **T-SSH-CONFIG-DEDUP** : nettoyer le doublon dans le `~/.ssh/config` du Mac (heritage session T2 BASTION).
 
+### Dettes resolues (T-AFK-MEGA-2026-05-24)
+- **T-MAIL-TLS-WILDCARD** : **RESOLU 2026-05-24** -- mail01 (Postfix+Dovecot) sert le cert wildcard mkcert `*.nova-syndicate.local` (partage avec nginx app01) au lieu du self-signed. STARTTLS SMTP :587 + IMAP :143 = `Verify return code: 0 (ok)` (issuer mkcert CA, verify_hostname mail.nova-syndicate.local OK). Modelise dans role `mail_server` (`mail_tls_use_wildcard` + copy depuis `files/_certs-LOCAL/` gitignore) + host_vars/mail01.yml (+ symlink `inventory/host_vars/mail01.yml`). Snapshot `pre-mail-tls-wildcard-2026-05-24` (VMID 101).
+
 ### Dettes resolues (T-AFK-DETTES-2026-05-20)
 - **T-AWX-NFT-ALLOWLIST** : RESOLU 2026-05-23/24 puis **host-allowlist 6/6 le 2026-05-24** (T-AFK-MEGA, vpn-gw01 via T-AWX-VPNGW-NFT-MODEL). Les 6 VMs (fs01, db01, app01, backup01, bastion01, vpn-gw01) ont `/60` dans leur nft host. **E2E :22 OPEN depuis awx01 confirme 5/6** ; vpn-gw01 reste BLOCKED au perimetre OPNsense (DMZ isolee) -> dette `T-FW-VLAN60-DMZ-VPNGW-OPEN`. Host nft du 6e pret.
 - **T-K3S-DISABLE-TRAEFIK** : RESOLU 2026-05-21. traefik desactive sur K3s awx01 (`disable: [traefik]`, cf `files/awx/k3s-config.yaml`). ~190 MB RAM economises. nginx app01 reste le reverse proxy.
