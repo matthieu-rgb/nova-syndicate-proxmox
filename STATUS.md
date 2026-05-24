@@ -1,6 +1,40 @@
 # Nova Syndicate -- STATUS
 
-Derniere mise a jour : 8 mai 2026
+Derniere mise a jour : 24 mai 2026 (T-AFK-MEGA)
+
+## AFK 2026-05-24 (T-AFK-MEGA) -- Recap
+
+### Resolues cette session (7 taches traitees, 6 DONE + 1 ABORTED justifie)
+- **T1 T-AWX-KEY-DEPLOY** -- cle pub `awx-runner` deployee sur 5 VMs (+ dc01 = 6/6) via playbook idempotent. CI green.
+- **T2 T-APP01-SWAP-ADD** -- 2 GB swap app01 + role `swap_file` (gate `enable_swap`). OOM mitige. CI green.
+- **T3 T-AWX-VPNGW-NFT-MODEL** -- `/60` applique sur vpn-gw01 sans wiper mangle/MSS/ct-state (flush chirurgical `hardening_nft_filter_only` + fix handler restart->reload). T-AWX-NFT-ALLOWLIST host 6/6. CI green. *Nouvelle dette perimetre : T-FW-VLAN60-DMZ-VPNGW-OPEN.*
+- **T4 T-MAIL-TLS-WILDCARD** -- mail01 sert le cert wildcard mkcert (STARTTLS 587/143 verify=0). Role `mail_server` + `mail_tls_use_wildcard`. CI green.
+- **T5 T-MAIL-WAZUH-ENROLL** -- **ABORTED** (R4) : path DMZ->SERVERS:1514/1515 bloque au perimetre. *Nouvelle dette : T-FW-DMZ-WAZUH-OPEN* (+ T-MAIL-WAZUH-ENROLL reste ouverte).
+- **T6 T-BASTION-TAILSCALE-CLEANUP** -- **SKIP** (sudo MFA bastion01, session supervisee).
+- **T7 T-WAZUH-AUDIT-DEDUP + T-WAZUH-LOGCOLLECTOR-HEALTHCHECK** -- dedup nova-iam audit.log sur dc01 + watchdog timer (Restart=always insuffisant car unit fire-and-forget). E2E auto-recovery OK. CI green.
+- **T8 T-AWX-RBAC (Phase 8)** -- 4 groupes AD + 4 Teams AWX + `AUTH_LDAP_TEAM_MAP` (via API, no downtime) + perms. E2E dual-role OK. ADR-0033. CI green.
+
+### Dettes ouvertes apres ce AFK
+- **T-BASTION-TAILSCALE-CLEANUP** -- sudo MFA bastion01, session supervisee.
+- **T-WIREGUARD-POC** -- 1 agent demo + test client (non adresse en AFK).
+- **T-SPLIT-MONITORING-VM** -- **URGENT** : sortir wazuh-indexer + stack lourde d'app01 (OOM confirme).
+- **T-SQUID-PROXY** -- proxy filtrant non deploye.
+- **T-GRAFANA-AUTHELIA-SSO** -- SSO Grafana via Authelia.
+- **T-AWX-VAULT-INVENTORY** -- inventaire AWX peuple + `vault_default_user_password` dans les jobs (+ inventaire Nova-MRS).
+- **T-AWX-TEMPLATES-IAC** -- Config-as-Code AWX (Teams/TEAM_MAP/JT non versionnes).
+- **T-SSH-CONFIG-DEDUP** -- doublon `~/.ssh/config` Mac.
+- **MFA TOTP bastion** -- finalisation.
+- **T-FW-VLAN60-DMZ-VPNGW-OPEN** (NOUVELLE) -- perimetre VLAN60->DMZ:22 pour AWX->vpn-gw01.
+- **T-FW-DMZ-WAZUH-OPEN** (NOUVELLE) -- perimetre DMZ->SERVERS:1514/1515 pour wazuh mail01.
+- **T-MAIL-WAZUH-ENROLL** -- a finaliser post-FW (+ verifier install wazuh-agent incomplete sur mail01).
+
+### Snapshots Proxmox a nettoyer (apres validation)
+- VMID 106 (app01) : `pre-app01-swap-add-2026-05-24`
+- VMID 110 (vpn-gw01) : `pre-awx-vpngw-nft-2026-05-24`
+- VMID 101 (mail01) : `pre-mail-tls-wildcard-2026-05-24`
+- VMID 103 (dc01) : `pre-wazuh-audit-dedup-2026-05-24`, `pre-awx-rbac-2026-05-24`
+- VMID 111 (awx01) : `pre-awx-rbac-2026-05-24`
+- dc01 : fichier `/var/ossec/etc/ossec.conf.bak-prededup-2026-05-24`
 
 ## Etat infra Proxmox
 

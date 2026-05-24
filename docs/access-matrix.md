@@ -15,7 +15,7 @@
 | **db01** (105) | eth0 192.168.20.12/28 | `192.168.15.0/29`, `192.168.20.0/28` + `@addr-set-sshd reject` | `5iKWFr…` jedha-lab | 192.168.15.2 (bastion) | ⚠️ pas de `/60` · drift · mysql 3306 · 1 seule clé · set dynamique anti-bruteforce |
 | **app01** (106) | eth0 192.168.20.13/28 | `192.168.15.0/29`, `192.168.20.0/28` | `5iKWFr…` jedha-lab · `55x6DF…` bastion01@nova · `+vYdyY…` root@proxmox (RSA) | 192.168.15.2 (bastion) | ⚠️ pas de `/60` · drift · serveur monitoring (wazuh/suricata, nombreux ports) · **clé Proxmox présente** (d'où l'accès Proxmox→app01) |
 | **backup01** (109) | eth0 192.168.50.2/29 · wg0 10.30.0.2/24 | `192.168.15.0/29`, `192.168.20.0/28` + `@addr-set-sshd reject` | `5iKWFr…` jedha-lab · `HGEnjO…` root@db01 · `55x6DF…` bastion01@nova | 192.168.15.2 (bastion) | ⚠️ pas de `/60` · drift · clé `root@db01` (backup rsync db01→backup01) · injoignable direct depuis Proxmox (src 192.168.50.6 non allowlistée) |
-| **vpn-gw01** (110) | eth0 172.16.1.4/29 · wg0 10.20.0.1/24 | `10.0.0.0/8`, `192.168.10.0/24`, `192.168.15.0/24`, `192.168.18.0/24`, `192.168.20.0/28` | `+vYdyY…` root@proxmox (RSA) · `5iKWFr…` jedha-lab | **10.0.1.2** (transit DMZ) | ⚠️ pas de `/60` · allowlist = `host_vars/vpn-gw01.yml` (large, distincte) · DMZ, injoignable direct depuis Proxmox |
+| **vpn-gw01** (110) | eth0 172.16.1.4/29 · wg0 10.20.0.1/24 | `10.0.0.0/8`, `192.168.10.0/24`, `192.168.15.0/24`, `192.168.18.0/24`, `192.168.20.0/28`, **`192.168.60.0/29`** ✅ | `+vYdyY…` root@proxmox (RSA) · `5iKWFr…` jedha-lab · `5PnAWh…` awx-runner@nova | **10.0.1.2** (transit DMZ) | ✅ `/60` host applique (T-AWX-VPNGW-NFT-MODEL, flush filter-only, mangle/MSS preserves) + clé awx-runner · **mais AWX bloque au PERIMETRE** (DMZ isolee, dette T-FW-VLAN60-DMZ-VPNGW-OPEN) |
 | **bastion01** (102) | eth0 192.168.15.2/29 | `192.168.15.0/29`, `192.168.18.0/24`, `192.168.20.0/28`, `100.64.0.0/10` | `5iKWFr…` jedha-lab | 192.168.15.6 (Mac via SNAT Proxmox/Tailscale) | ⚠️ pas de `/60` · **allowlist atypique** (Tailscale `100.64/10`) · ports Teleport 443/3023/3024/3025 · **non dérivable de group_vars** → géré hors rôle hardening ? (à vérifier) |
 | **dc01** (—) | eth0 192.168.20.10/28 | `192.168.15.0/29`, `192.168.20.0/28`, **`192.168.60.0/29`** ✅ | `5iKWFr…` jedha-lab · `55x6DF…` bastion01@nova · `5PnAWh…` awx-runner@nova | 192.168.15.2 (bastion) | ✅ **déjà `/60`** (seul AWX-managed) · DC AD (kerberos/ldap/dns nombreux ports) · clé `awx-runner` présente |
 
@@ -33,7 +33,7 @@
 | app01 | `15.0/29, 20.0/28` | idem | ❌ | idem drift |
 | backup01 | `15.0/29, 20.0/28` | idem | ❌ | idem drift |
 | bastion01 | `15.0/29, 18.0/24, 20.0/28, 100.64/10` | idem group_vars | ❌ | **atypique** : a `100.64/10`, manque 10/24+15/24+60/29 → source non tracée |
-| vpn-gw01 | `10/8, 10/24, 15/24, 18/24, 20/28` | + `60/29` | ❌ | manque seulement `60/29` (le reste matche host_vars) |
+| vpn-gw01 | `10/8, 10/24, 15/24, 18/24, 20/28` | + `60/29` | ✅ | `/60` host applique 2026-05-24 (T-AWX-VPNGW-NFT-MODEL) ; reste perimetre (T-FW-VLAN60-DMZ-VPNGW-OPEN) |
 | dc01 | `15.0/29, 20.0/28, 60.0/29` | idem group_vars | ✅ | a déjà `/60` mais 15 en /29 + manque 10/24,18/24 |
 
 ## 3. Inventaire des clés `authorized_keys`

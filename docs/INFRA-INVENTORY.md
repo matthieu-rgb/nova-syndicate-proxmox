@@ -1,8 +1,14 @@
 # Nova Syndicate -- Inventaire infrastructure
 
-Dernière mise à jour : 2026-05-19 (T-WAZUH-INDEXER-INSTALL + T-WAZUH-SURICATA-INTEGRATION)
+Dernière mise à jour : 2026-05-24 (T-AFK-MEGA)
 
-Document de référence pour l'infra Nova Syndicate. Pour les détails de design et les choix d'architecture, voir `docs/adr/`. Pour les procédures opérationnelles, voir `docs/runbook/`.
+Document de référence pour l'infra Nova Syndicate. Pour les détails de design et les choix d'architecture, voir `docs/adr/` (index : [`docs/adr/INDEX.md`](adr/INDEX.md)). Pour les procédures opérationnelles, voir `docs/runbook/`. Matrice d'accès SSH/clés : [`docs/access-matrix.md`](access-matrix.md).
+
+> **Changements T-AFK-MEGA (2026-05-24)** — détail dans `STATUS.md` (recap en tête) :
+> app01 (106) +2 GB swap (OOM) ; mail01 (101) TLS wildcard mkcert (Postfix+Dovecot) ;
+> vpn-gw01 (110) nft `/60` host + flush filter-only ; dc01 (103) dedup audit.log + watchdog
+> wazuh-agent ; awx01 (111) RBAC 4 Teams + LDAP TEAM_MAP (ADR-0033) ; clé `awx-runner` sur
+> 6 VMs. Dettes périmètre ouvertes : T-FW-VLAN60-DMZ-VPNGW-OPEN, T-FW-DMZ-WAZUH-OPEN.
 
 ## Vue d'ensemble
 
@@ -27,7 +33,7 @@ Site internet exposé : `nova.0xmatthieu.dev` via Cloudflare Tunnel (cf. [ADR-00
 | 107 | proxy-lyon01 | (reserve future) | - | 1 GB | Debian 12 | running |
 | 108 | proxy-mrs01 | (reserve future MRS) | - | 1 GB | Debian 12 | running |
 | 109 | backup01 | Borg backup repo | 192.168.50.2 | 2 GB | Debian 12 | running |
-| 110 | vpn-gw01 | WireGuard road-warriors | 192.168.30.2 | 1 GB | Debian 12 | running |
+| 110 | vpn-gw01 | WireGuard road-warriors (DMZ) | 172.16.1.4 (eth0) · 10.20.0.1/24 (wg0) | 1 GB | Debian 12 | running |
 | 111 | awx01 | AWX (Ansible Tower OSS) sur K3s -- automation IAM (T-AWX-DEPLOY) | 192.168.60.2 | 8 GB | Debian 12 (cpu:host, NUMA) | running |
 | 200 | wan-simulator | Simule Internet Lyon-MRS (peering 10.0.x.x) | (interne) | 512 MB | tinycore | running |
 | 201 | fw-ext-lyon01 | OPNsense WAN Lyon + IPsec + Suricata #1 | 10.0.0.2 / 192.168.18.51 / 10.0.1.1 / 172.16.1.1 | 4 GB | OPNsense 25.1 | running |
