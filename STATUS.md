@@ -90,7 +90,6 @@ manuelles. Phase VI = scripter ces operations one-shot.
 Choix lab uniquement -- a documenter explicitement dans le rapport Phase II.
 
 ### 7. T-AWX-DEPLOY -- 6 dettes filles (detail dans ADR-0031)
-- **T-AWX-NFT-ALLOWLIST** : ABORTED 2026-05-20 (T-AFK-DETTES) -- voir Dettes resolues/abandonnees. Reste a faire en session supervisee.
 - **T-AWX-VAULT-INVENTORY** : `vault_default_user_password` non charge dans les jobs AWX (inventory DB-backed).
 - **T-AWX-BULK-ROTATE-DRY-RUN** : variante `users_rotate_test.yml` filtre `OU=Test`.
 - **T-AWX-IAM-SPACES-FIX** : RESOLU 2026-05-21 (commit ansible 86fc623) -- voir Dettes resolues.
@@ -98,7 +97,17 @@ Choix lab uniquement -- a documenter explicitement dans le rapport Phase II.
 - **T-AWX-AUDIT-ATTRIBUTION** : audit "by root" au lieu de l'utilisateur AWX/AD.
 - **T-AWX-RBAC** (Phase 8) : Teams IT-Officers/IT-Admins + LDAP team mapping + workflow onboarding.
 
+### 8. T-AWX-NFT-ALLOWLIST -- 7 dettes filles (session 2026-05-23/24)
+- **T-AWX-VPNGW-NFT-MODEL** : etendre le role hardening avec `hardening_extra_nft_tables` pour appliquer l'allowlist `/60` sur vpn-gw01 sans wiper la table `ip mangle` (chain OUTPUT WG policy routing, ADR-0017) ni les forward MSS clamp / `ct state`. Bloque le run vpn-gw01 (cf ADR-0032).
+- **T-APP01-OOM-INVESTIGATION** : OOM CONFIRME (`journalctl -k -b -1` : Grafana killee par OOM-killer le 19/05 ; hang 23-24/05 cause analogue ; `Swap: 0B` sur app01).
+- **T-APP01-SWAP-ADD** : mitigation rapide OOM -- creer 2 GB de swap + persister dans `/etc/fstab`.
+- **T-SPLIT-MONITORING-VM** : **URGENT** -- sortir wazuh-indexer + la stack lourde (nginx/Authelia/Grafana/portail/wazuh-manager/filebeat/cloudflared) hors d'app01 (declenche par l'OOM confirme -- stabilite SIEM).
+- **T-BASTION-TAILSCALE-CLEANUP** : retirer `100.64/10` de `host_vars/bastion01.yml` OU installer Tailscale (decision pending ; sudo MFA -> session supervisee requise).
+- **T-AWX-KEY-DEPLOY** : deployer la cle publique `awx-runner` sur les 5 VMs (presente sur dc01 uniquement) pour l'auth SSH non-interactive d'AWX.
+- **T-SSH-CONFIG-DEDUP** : nettoyer le doublon dans le `~/.ssh/config` du Mac (heritage session T2 BASTION).
+
 ### Dettes resolues (T-AFK-DETTES-2026-05-20)
+- **T-AWX-NFT-ALLOWLIST** : RESOLU 2026-05-23/24 -- 5/6 (fs01, db01, app01, backup01, bastion01) + 1 HOLD justifie (vpn-gw01, voir T-AWX-VPNGW-NFT-MODEL). E2E :22 OPEN depuis awx01 confirme. 5 commits sur les 2 repos.
 - **T-K3S-DISABLE-TRAEFIK** : RESOLU 2026-05-21. traefik desactive sur K3s awx01 (`disable: [traefik]`, cf `files/awx/k3s-config.yaml`). ~190 MB RAM economises. nginx app01 reste le reverse proxy.
 - **T-WAZUH-LOGCOLLECTOR-DC01** : INVESTIGUEE 2026-05-21, **root cause INDETERMINEE**. Remediee (restart, logcollector stable 6h+, pipeline audit valide CHECKPOINT 8).
   - Evidence : dernier evenement systemd = restart du 18/05 19:44 (changement ossec.conf, logcollector demarre OK alors). Mort ulterieure SANS trace : daemons independants du unit `active(exited)`, pas de reboot (uptime depuis 07/05), pas d'OOM, `ossec.log` pre-crash tronque au restart (non rotate/preserve).
@@ -107,11 +116,18 @@ Choix lab uniquement -- a documenter explicitement dans le rapport Phase II.
     - **T-WAZUH-LOGCOLLECTOR-HEALTHCHECK** : ajouter un healthcheck (timer systemd / cron) qui restart `wazuh-agent` si un daemon (logcollector) est down -- la mort n'a pas ete auto-recuperee.
 - **T-AWX-IAM-SPACES-FIX** : RESOLU 2026-05-21. Repo nova-syndicate-ansible commit `86fc623` : 20 appels `cmd: samba-tool ...` -> `argv:` dans les 7 playbooks IAM. Valide E2E via AWX (grant/revoke `test.spacesfix` sur "Domain Admins" -- le groupe avec espace qui echouait avant -- jobs successful, membership verifiee, cleanup count=94). AWX project synced a 86fc623.
 
-### Dette ABANDONNEE en AFK (a reprendre supervise)
-- **T-AWX-NFT-ALLOWLIST** : ABORTED 2026-05-20. Objectif : autoriser `192.168.60.0/29 -> :22` sur les 6 VMs (fs01, db01, app01, backup01, vpn-gw01, bastion01) via le role hardening.
-  - **Blocage** : l'execution `ansible-playbook depuis le Mac` n'est PAS viable ici -- (1) le ProxyJump `~/.ssh/config` via bastion exige MFA TOTP (echoue en non-interactif), (2) le contournement ProxyJump via proxmox declenche le bug macOS ansible "worker found in a dead state" (fork safety). Lancer un role qui REMPLACE `/etc/nftables.conf` sur 6 VMs prod, en AFK, via double-contournement instable = decision non triviale -> STOP par regle AFK.
-  - **Changement exact a appliquer** (session supervisee) : dans `nova-syndicate-ansible/inventory/group_vars/all/vars.yml`, ajouter `"192.168.60.0/29"` a `hardening_allowed_ssh_nets` (template `roles/hardening/templates/nftables.conf.j2`). Puis `ansible-playbook site.yml --tags hardening:firewall --limit fs01,db01,app01,backup01,vpn-gw01,bastion01` depuis un point qui joint les VMs en non-interactif. Verifier depuis awx01 : `ssh debian@<vm> hostname`. Snapshots `pre-awx-nftallowlist-2026-05-20` PAS pris (abort avant la phase destructive).
-  - NB : dc01 a deja la regle VLAN 60 (ajoutee manuellement en T-AWX-DEPLOY, hors role).
+---
+
+## Snapshots a nettoyer (post-validation)
+
+Snapshots Proxmox a supprimer apres validation des modifications (T-AWX-NFT-ALLOWLIST) :
+- VMID 104 (fs01) : `pre-awx-nftallowlist-2026-05-23`
+- VMID 105 (db01) : `pre-awx-nftallowlist-2026-05-23`
+- VMID 106 (app01) : `pre-awx-nftallowlist-2026-05-23`
+- VMID 109 (backup01) : `pre-awx-nftallowlist-2026-05-23`
+- VMID 110 (vpn-gw01) : `pre-awx-nftallowlist-2026-05-23`
+- VMID 102 (bastion01) : `pre-awx-nftallowlist-2026-05-23` (intervention manuelle)
+- VMID 106 (app01) : tout snapshot precedent (`pre-awx-nftallowlist-2026-05-21` du 12:02, etc.)
 
 ---
 

@@ -93,11 +93,30 @@ done'
 Verifier : `ssh proxmox-hypervisor 'for v in 104 105 106 109 110; do qm listsnapshot $v; done'`.
 
 ### 2.4 DRY-RUN diff -- le check critique
+
+> **ATTENTION ansible-core 2.19** : `--tags hardening:firewall` ne lance PLUS rien (le tag
+> matche l'`include_tasks` mais ne propage plus aux taches internes -> `ok=1 changed=0`, aucun
+> diff). On passe par un playbook ad-hoc `import_role` + `tasks_from: firewall.yml`. Les env
+> vars de routing (`ANSIBLE_SSH_ARGS` + `-e`) sont expliquees en **section 2.5**.
+
 ```
+cat > /tmp/nft-dryrun.yml <<'EOF'
+---
+- hosts: all
+  become: true
+  tasks:
+    - import_role:
+        name: hardening
+        tasks_from: firewall.yml
+EOF
+
 cd ~/dev/Nova-syndicate-Code/nova-syndicate-ansible
-ansible-playbook site.yml --tags hardening:firewall \
-  --limit fs01,db01,app01,backup01,vpn-gw01 \
-  --check --diff
+ANSIBLE_SSH_ARGS='-o ProxyJump=bastion-nova -o ControlMaster=no -o ControlPath=none -o ConnectTimeout=15' \
+  ansible-playbook /tmp/nft-dryrun.yml \
+    --limit <VMs> \
+    -f 1 \
+    -e '{"ansible_ssh_common_args":""}' \
+    --check --diff
 ```
 **Inspecter le diff de `/etc/nftables.conf` hote par hote** :
 - app01 / vpn-gw01 : diff attendu = **uniquement l'ajout de la ligne `/60`** (allowlist
@@ -107,8 +126,32 @@ ansible-playbook site.yml --tags hardening:firewall \
   ajout `10/24` + `18/24` + `/60`). Acte (resorption drift). Pas de suppression de service.
 - Aucun hote ne doit perdre une regle non prevue.
 
-> Si `--check` ne montre aucune tache firewall executee, verifier que le tag selectionne est
-> bien `hardening:firewall` (defini sur l'include dans `roles/hardening/tasks/main.yml`).
+> Le run reel (section 3) reutilise EXACTEMENT ce playbook `/tmp/nft-dryrun.yml` (sans
+> `--check --diff`). Si `--check` ne montre aucune tache, c'est le bug de tags 2.19 ci-dessus.
+
+### 2.5 Override env vars routing (pourquoi, et ou l'appliquer)
+
+Le `~/.ssh/config` du Mac contient un `Host`-glob catch-all (`Host 192.168.20.* ... 172.16.1.*`)
+dont le `ProxyJump`/`ControlPath` ne pointe PAS sur le master nomme `bastion-nova`. Ansible
+connecte les VMs **par IP** (`ansible_host`) -> il matche ce catch-all -> (1) ouvre une nouvelle
+connexion bastion qui redemande le **MFA TOTP** (echec non-interactif), et (2) sous forks
+paralleles, les sockets de mux entrent en collision et **toutes les connexions peuvent atterrir
+sur le MEME hote** (observe 2026-05-23 : 5 cibles toutes routees vers vpn-gw01). D'ou l'override
+**obligatoire pour TOUTES les commandes `ansible`/`ansible-playbook` de ce runbook** (sections
+2.x, 3, 4, 6) :
+
+```
+ANSIBLE_SSH_ARGS='-o ProxyJump=bastion-nova -o ControlMaster=no -o ControlPath=none -o ConnectTimeout=15'
+ansible[-playbook] ... -f 1 -e '{"ansible_ssh_common_args":""}'
+```
+- `ProxyJump=bastion-nova` : force le passage par le master NOMME (TOTP deja saisi, persist 4 h).
+- `ControlMaster=no -o ControlPath=none` : desactive le mux externe -> pas de collision de sockets.
+- `-f 1` : serie (anti-race). `-e ansible_ssh_common_args=""` : neutralise les ProxyCommand
+  par-hote (vpn-gw01, backup01) qui re-declencheraient le MFA.
+- **Toujours verifier l'identite des hotes** (`hostname; ip -4 -br addr`) avant un run destructif.
+- Les commandes `site.yml --tags hardening:firewall` encore presentes ci-dessous (sections 3, 4,
+  6) sont **a remplacer** par le playbook `/tmp/nft-dryrun.yml` (cf 2.4) -- le tag ne propage
+  plus en 2.19.
 
 ## 3. Run reel (batch 5 VMs)
 
@@ -196,12 +239,11 @@ l'allowlist atypique (Tailscale `100.64/10` + Teleport) est a fort enjeu. La con
    ```
    Garder cette session **ouverte** comme filet de securite jusqu'a la fin.
 
-2. **Backup + snapshot** :
+2. **Backup + snapshot** (Tailscale/Teleport NON deployes sur bastion01 -> pas de capture de
+   ces etats) :
    ```
    # dans le shell root bastion01 :
    nft list ruleset > /root/nft-pre-awx-$(date +%F).bak
-   tailscale status > /root/tailscale-pre-awx.txt
-   ss -lntp | grep -E ':(443|3023|3024|3025)\b' > /root/teleport-pre-awx.txt
    # depuis le Mac :
    ssh proxmox-hypervisor 'qm snapshot 102 pre-awx-nftallowlist-2026-05-23 \
      --description "T-AWX-NFT-ALLOWLIST bastion01 manuel"'
@@ -224,18 +266,35 @@ l'allowlist atypique (Tailscale `100.64/10` + Teleport) est a fort enjeu. La con
    Le diff attendu = ajout `/60` uniquement (l'allowlist Tailscale + le reste sont preserves
    par host_vars ; les regles Teleport viennent de `group_vars/bastions`).
 
-4. **Verifications CRITIQUES avant de fermer la session root** :
+4. **Verifications CRITIQUES avant de fermer la session root** (Teleport non deploye -> verif
+   simplifiee, pas de check Teleport) :
    ```
-   nft list ruleset | grep -E '60.0/29|100.64'          # /60 present ET Tailscale conserve
-   tailscale status                                      # tailnet OK (diff vs pre-awx)
-   ss -lntp | grep -E ':(443|3023|3024|3025)\b'          # ports Teleport ecoutent
+   nft list ruleset | grep -E '60.0/29|100.64'          # /60 present ET allowlist Tailscale conservee
    ```
-   - Depuis une **2e fenetre** (Mac), valider un SSH NEUF vers bastion01 ET un login Teleport
-     **avant** de liberer la session root. Si KO -> `nft -f /root/nft-pre-awx-*.bak` (5.1) /
-     `qm rollback 102 ...` (5.2).
+   - (1) Depuis une **2e fenetre** (Mac) : **SSH NEUF** vers bastion01 (`ssh bastion-nova true
+     && echo NEW_OK`) **avant** de liberer la session root.
+   - (2) `ssh fs01 hostname` depuis le Mac -> doit repondre `fs01` (preuve que le **ProxyJump**
+     via bastion traverse toujours).
+   - (3) **Si** Tailscale est installe (`command -v tailscale`) : `tailscale status` ; sinon
+     **skip** (cas actuel : non installe sur bastion01).
+   - Si KO -> `nft -f /root/nft-pre-awx-*.bak` (5.1) / `qm rollback 102 ...` (5.2).
    - `systemctl restart fail2ban` (reconstruire le set apres `flush ruleset`).
 
 5. **E2E** : depuis awx01, `timeout 5 bash -c "echo > /dev/tcp/192.168.15.2/22"` -> OPEN.
+
+## 7. Notes post-run
+
+- **Lock apt/dpkg post-reboot** : si une cible vient d'etre redemarree, `unattended-upgrades`
+  (apt-daily) peut tenir le lock dpkg ~5-10 min et **bloquer la tache `apt` d'ansible** (run qui
+  hang sans output, ni echec). Attendre la liberation du lock, ou utiliser `ansible.builtin.apt`
+  avec `lock_timeout`. Verif rapide : `ssh <host> 'pgrep -lf unattended-upgrade'` (vide quand
+  libere) / `sudo fuser /var/lib/dpkg/lock-frontend` (silencieux = libre).
+- **Rollback nft atomique** : `nft -f /root/nft-pre-awx-2026-05-23.bak` (le `-f` applique
+  `flush ruleset` + load en UNE transaction -> gap minimal, connexions etablies preservees).
+  NE PAS `systemctl stop nftables` (laisse l'hote sans table -> politique implicite accept).
+- **vpn-gw01 HOLD** : ne PAS appliquer ce runbook sur vpn-gw01 tant que T-AWX-VPNGW-NFT-MODEL
+  n'est pas faite -- le `flush ruleset` wipe-rait la table `ip mangle` (WG policy routing,
+  ADR-0017) + les forward MSS clamp / `ct state`.
 
 ## Checklist de cloture
 
@@ -243,7 +302,7 @@ l'allowlist atypique (Tailscale `100.64/10` + Teleport) est a fort enjeu. La con
 - [ ] E2E awx01 : fs01/db01/app01 OPEN (backup01/vpn-gw01 OPEN ou finding chemin FW note).
 - [ ] Run idempotent (`--check` -> 0 changed).
 - [ ] fail2ban actif sur les 5 (+ bastion01).
-- [ ] bastion01 : `/60` ajoute, Tailscale + Teleport intacts (verifies en 2e session).
+- [ ] bastion01 : `/60` ajoute, allowlist Tailscale conservee + SSH neuf OK (verifies en 2e session ; Teleport non deploye).
 - [ ] Snapshots conserves jusqu'a validation stable, puis supprimes (5.4).
 - [ ] Companion notes : T-AWX-KEY-DEPLOY (cle awx-runner sur les 5) + eventuel ticket
       chemin firewall VLAN60->VLAN50/DMZ -> STATUS.md / ADR-0031 dettes.

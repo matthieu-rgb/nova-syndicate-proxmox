@@ -139,6 +139,12 @@ Ajouter a la main la regle `ip saddr 192.168.60.0/29 tcp dport 22 accept` sur ch
    `:22` par VM (le run change le **nft host** ; l'auth SSH effective d'AWX exige en plus la
    cle `awx-runner` -- companion, hors scope nft).
 
+**Note Teleport (clarification, MAJ 2026-05-24)** : les ports Teleport (443/3023/3024/3025)
+sont definis dans `group_vars/bastions/vars.yml` et injectes via `hardening_extra_nft_rules`.
+Ce sont des regles preparatoires IaC pour un futur deploiement Teleport (Phase III roadmap) ;
+au moment du run du 24/05, AUCUN service Teleport ne tourne sur bastion01 (verifie via
+`ss -lntp` -> aucun port en ecoute).
+
 ## bastion01 -- cas particulier (intervention manuelle dediee)
 
 bastion01 est **exclu du batch non-interactif** pour deux raisons cumulatives :
@@ -147,14 +153,16 @@ bastion01 est **exclu du batch non-interactif** pour deux raisons cumulatives :
    `hardening:firewall` exige `become` (ecrire `/etc/nftables.conf`, restart nftables).
    En non-interactif, ce `become` declenche le **challenge TOTP sudo** -> echec. Aucun
    mot de passe statique ne le contourne (c'est un OTP).
-2. **Allowlist atypique a fort enjeu** : Tailscale `100.64/10` + ports Teleport. Une
-   application maladroite couperait l'acces admin/zero-trust du bastion lui-meme.
+2. **Allowlist atypique a fort enjeu** : Tailscale `100.64/10` + ports Teleport (regles
+   preparatoires IaC, aucun service Teleport en ecoute -- cf note Decision). Une application
+   maladroite couperait l'allowlist Tailscale / l'acces SSH d'admin du bastion lui-meme.
 
 Procedure : session **interactive** sur bastion01 (MFA SSH), passage root via `sudo -i`
 (TOTP saisi **une fois** -> shell deja privilegie, plus de `become` ansible requis),
 application de la conf **deja modelisee** (`host_vars/bastion01.yml`), reload, **puis
-verification que Tailscale ET Teleport survivent AVANT de fermer la session** (la session
-root reste le filet de securite). Detail dans le runbook.
+verification que l'allowlist Tailscale + un SSH neuf survivent AVANT de fermer la session**
+(la session root reste le filet de securite ; les ports Teleport sont des regles nft
+preparatoires, pas un service a tester). Detail dans le runbook.
 
 ## Risques et mitigations
 
@@ -165,9 +173,11 @@ root reste le filet de securite). Detail dans le runbook.
 | Perte d'une regle de service (ex. monitoring app01) | Regles capturees en host_vars AVANT le run (pre-flight) ; dry-run diff verifie l'absence de suppression |
 | Etat instable / regression non rattrapable | **Snapshots Proxmox** `pre-awx-nftallowlist-2026-05-23` sur les 5 VMs (104/105/106/109/110) avant le run ; rollback `qm rollback` |
 | Set dynamique anti-bruteforce `@addr-set-sshd` (db01, backup01) wipe par `flush ruleset` | Benin pour l'objectif (ADR access-matrix sec.6) ; `systemctl restart fail2ban` post-run reconstruit le set |
-| bastion01 (Tailscale/Teleport) casse | Hors batch ; intervention manuelle supervisee + verif Tailscale/Teleport avant fermeture session |
+| bastion01 (allowlist Tailscale / acces SSH) casse | Hors batch ; intervention manuelle supervisee + verif allowlist Tailscale & SSH neuf avant fermeture session (Teleport = regles nft preparatoires, pas de service a tester) |
 | Scope trop large / aveugle | Scope reduit a 5 VMs ; dc01 reference exclue ; `--limit` strict |
 | Reachability FW-INT/FW-EXT (backup01 VLAN 50, vpn-gw01 DMZ) | Le ticket ouvre le **nft host** ; si l'E2E depuis awx01 echoue au niveau **chemin firewall** (et non nft host), c'est un finding pour un ticket companion (regle de path VLAN60->VLAN50/DMZ), pas une regression du run |
+| **vpn-gw01** : appliquer l'allowlist `/60` wipe-rait la table `ip mangle` (chain OUTPUT WG policy routing, ADR-0017) car le template `flush ruleset` reecrit TOUT. Decouvert en pre-flight Phase 2.4 (l'audit access-matrix etait incomplet : SSH/input seulement, pas forward/mangle). | **HOLD vpn-gw01** ; dette fille **T-AWX-VPNGW-NFT-MODEL** : etendre le role avec `hardening_extra_nft_tables` (support tables custom) |
+| **OOM app01** (decouvert post-run) : OOM historique (Grafana killee 19/05) + hang 23-24/05 de signature OOM convergente (qga timeout via virtio-serial = noyau wedge ; pile lourde sur 6 GB + `Swap=0B`). Independant de l'allowlist (nft sain en Phase 4). | **T-APP01-SWAP-ADD** (rapide : 2 GB swap) + **T-SPLIT-MONITORING-VM** (structurelle : sortir wazuh-indexer d'app01) |
 
 ## Lesson learned -- discovery-first
 
@@ -186,6 +196,26 @@ prod, (4) reduit le scope de 6 a 5 VMs + 1 cas manuel. L'IaC ne dispense pas de 
 l'etat reel ; sur une flotte ayant derive, **on modelise le live avant de re-appliquer le
 desire**.
 
+**Autres lecons (run 2026-05-23/24) :**
+- **Routing ssh_config + ControlMaster (catch-all wildcard Mac)** : ansible connectant par IP
+  peut matcher un `Host`-glob catch-all dont le `ControlPath` n'est PAS le master nomme ->
+  collapse de toutes les connexions sur le mauvais hote (observe : 5 cibles toutes routees
+  vers vpn-gw01). Fix : `ANSIBLE_SSH_ARGS='-o ProxyJump=bastion-nova -o ControlMaster=no -o
+  ControlPath=none -o ConnectTimeout=15'` + `-f 1` + `-e ansible_ssh_common_args=""` pour
+  forcer le passage par le master nomme et desactiver le mux externe.
+- **Bug ansible-core 2.19 (propagation de tags)** : `--tags hardening:firewall` matche
+  l'`include_tasks` mais ne propage plus aux taches internes (regression depuis 2.18) -> run
+  vide (`ok=1 changed=0`). Workaround : playbook ad-hoc avec `import_role` + `tasks_from:
+  firewall.yml`, ou ajouter `apply: tags:` dans le role.
+- **Discovery-first AVANT execution** : le pre-flight access-matrix a evite 4 incidents
+  (suppression des regles monitoring app01 ; ecrasement de l'allowlist Tailscale bastion ;
+  option B "Proxmox controleur" infaisable ; drift forward/mangle vpn-gw01).
+- **Lock apt/dpkg post-boot** : `unattended-upgrades` peut tenir le lock dpkg ~5-10 min apres
+  un reboot et bloquer la tache `apt` d'ansible. Attendre la liberation du lock ou utiliser
+  `ansible.builtin.apt: lock_timeout`.
+- **backup01 VLAN60 -> VLAN50** : chemin firewall deja ouvert (E2E :22 OPEN) -> pas de
+  companion FW rule a creer (bonus).
+
 ## Consequences
 
 **Positives** : AWX (VLAN 60) pourra atteindre les VMs gerables une fois `/60` ouvert ;
@@ -202,6 +232,15 @@ repo") ; le pattern "pre-flight access-matrix avant run destructif" est reutilis
   control plane d'orchestration).
 - bastion01 reste un point de friction operationnel (toute reconfig nft passe par une
   intervention manuelle MFA).
+
+**Etat final (cloture 2026-05-24) :**
+- **5/6 VMs RESOLU** : fs01, db01, app01, backup01, bastion01 (E2E `:22` OPEN depuis awx01).
+- **1 HOLD justifie** : vpn-gw01 (T-AWX-VPNGW-NFT-MODEL).
+- **Decouverte collaterale** : OOM app01 confirme + sous-finding `Swap=0B`.
+- **4 nouvelles dettes filles** : T-AWX-VPNGW-NFT-MODEL, T-APP01-OOM-INVESTIGATION (confirme),
+  T-APP01-SWAP-ADD, T-SPLIT-MONITORING-VM (URGENT).
+- AWX peut joindre 5 des 6 VMs cibles via VLAN 60 (E2E `:22` OPEN x5) ; reste
+  **T-AWX-KEY-DEPLOY** (cle `awx-runner`) pour l'auth SSH non-interactive.
 
 ## References
 
