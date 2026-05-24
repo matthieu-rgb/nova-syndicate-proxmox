@@ -43,7 +43,7 @@
 | `5iKWFrbJCaWlqRXjItnIUQRaU27WzRjlI6CsoRllvkE` | **jedha-lab** (= `id_ansible` Mac de Matthieu) | ED25519 | **toutes (7/7)** |
 | `55x6DFsTZ9owpAUJqRAaDxBDwwtEwgHyJc7mDWZlb3A` | bastion01@nova-syndicate.local | ED25519 | fs01, app01, backup01, dc01 |
 | `+vYdyYedLdfnWe1yo4Q7FHI5pRDOpPEGPnaRqMQqTtM` | **root@proxmox** | RSA | app01, vpn-gw01 |
-| `5PnAWhFvxeVypwK+SbB6omyng+UwY/+cBkE+sY8xNRU` | **awx-runner@nova-syndicate.local** | ED25519 | **dc01 uniquement** |
+| `5PnAWhFvxeVypwK+SbB6omyng+UwY/+cBkE+sY8xNRU` | **awx-runner@nova-syndicate.local** | ED25519 | **fs01, db01, app01, backup01, vpn-gw01 + dc01 (6/7)** ✅ T-AWX-KEY-DEPLOY |
 | `HGEnjOwOsHFnd+FhRn0fLqtyCaAbNyAf9YJitAkEr8M` | root@db01 | ED25519 | backup01 (rsync de sauvegarde) |
 
 ## 4. Sources de connexion connues
@@ -61,9 +61,9 @@
 - ⇒ Proxmox ne pilote réellement que **app01**. **C'est pourquoi l'Option B (Proxmox contrôleur) a été abandonnée.**
 
 ### AWX (`awx-runner@nova-syndicate.local`, fp `5PnAWh…`)
-- Clé autorisée uniquement sur **dc01**.
-- `dc01` est la **seule** VM dont l'allowlist contient déjà `192.168.60.0/29`.
-- ⇒ AWX (192.168.60.2) n'atteint aujourd'hui que **dc01**. **C'est exactement la dette T-AWX-NFT-ALLOWLIST** : ouvrir `/60` sur les 6 autres + déployer la clé `awx-runner` dessus.
+- Clé déployée sur **6 VMs** : fs01, db01, app01, backup01, vpn-gw01 **+ dc01** (T-AWX-KEY-DEPLOY, 2026-05-24 — playbook `deploy_awx_runner_key.yml`, idempotent vérifié).
+- Allowlist `192.168.60.0/29` ouverte sur dc01 + fs01, db01, app01, backup01 (T-AWX-NFT-ALLOWLIST, 5/6) ; **vpn-gw01 en attente de T-AWX-VPNGW-NFT-MODEL** (clé déjà présente, `/60` réseau à finaliser).
+- ⇒ AWX (192.168.60.2) authentifie désormais en SSH sur les 6 VMs cibles (même clé/fingerprint que celle validée sur dc01).
 
 ### Bastion (`bastion01@nova-syndicate.local`, fp `55x6DF…`)
 - En tant que **transport** (ProxyJump) : tout passe — sa source `192.168.15.2` est allowlistée partout (`15.0/29` ou `15.0/24`). C'est le pivot du control plane Mac.

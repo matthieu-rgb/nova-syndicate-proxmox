@@ -103,7 +103,7 @@ Choix lab uniquement -- a documenter explicitement dans le rapport Phase II.
 - **T-APP01-SWAP-ADD** : mitigation rapide OOM -- creer 2 GB de swap + persister dans `/etc/fstab`.
 - **T-SPLIT-MONITORING-VM** : **URGENT** -- sortir wazuh-indexer + la stack lourde (nginx/Authelia/Grafana/portail/wazuh-manager/filebeat/cloudflared) hors d'app01 (declenche par l'OOM confirme -- stabilite SIEM).
 - **T-BASTION-TAILSCALE-CLEANUP** : retirer `100.64/10` de `host_vars/bastion01.yml` OU installer Tailscale (decision pending ; sudo MFA -> session supervisee requise).
-- **T-AWX-KEY-DEPLOY** : deployer la cle publique `awx-runner` sur les 5 VMs (presente sur dc01 uniquement) pour l'auth SSH non-interactive d'AWX.
+- **T-AWX-KEY-DEPLOY** : **RESOLU 2026-05-24** (T-AFK-MEGA) -- cle publique `awx-runner` (fp `5PnAWh…`, identique a dc01) deployee sur les 5 VMs (fs01, db01, app01, backup01, vpn-gw01) via playbook `deploy_awx_runner_key.yml` + `group_vars/all/awx.yml` (nova-syndicate-ansible). Idempotence OK (0 changed au re-run), cle presente 1x/host verifiee. Acces AWX 6/6 (5 VMs + dc01).
 - **T-SSH-CONFIG-DEDUP** : nettoyer le doublon dans le `~/.ssh/config` du Mac (heritage session T2 BASTION).
 
 ### Dettes resolues (T-AFK-DETTES-2026-05-20)
