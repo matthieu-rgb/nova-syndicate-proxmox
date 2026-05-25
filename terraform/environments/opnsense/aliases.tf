@@ -20,6 +20,7 @@ locals {
     net_lyon_internal  = { content = ["192.168.15.0/29", "192.168.20.0/28", "192.168.30.0/26", "192.168.50.0/29"], description = "Tous les VLANs internes Lyon" }
     net_lan_mrs        = { content = ["192.168.40.0/26"], description = "LAN Marseille (cross-site)" }
     net_proxmox_admin  = { content = ["192.168.18.0/24"], description = "Reseau admin Proxmox (poste admin Mac)" }
+    net_dmz_lyon       = { content = ["172.16.1.0/29"], description = "DMZ Lyon (web, mail, vpn-gw 172.16.1.4) - cible regle VLAN60->DMZ:22 (T-FW-VLAN60-DMZ-VPNGW-OPEN)" }
   }
 
   fwint_aliases_host = {

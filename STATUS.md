@@ -1,6 +1,25 @@
 # Nova Syndicate -- STATUS
 
-Derniere mise a jour : 24 mai 2026 (T-AFK-MEGA)
+Derniere mise a jour : 25 mai 2026 (T-FW-PERIMETER-CLOSE)
+
+## Session supervisee 2026-05-25 (T-FW-PERIMETER-CLOSE) -- 4 dettes RESOLU
+
+Cloture des 3 dettes perimetre OPNsense heritees de l'AFK (toutes sur FW-INT-LYON)
++ 1 dette fille decouverte en passant.
+
+| Dette | Resolution | Verif E2E |
+|-------|------------|-----------|
+| T-FW-VLAN60-DMZ-VPNGW-OPEN | regle FW-INT `opt5` : `net_lyon_admin -> net_dmz_lyon:22` (+ alias `net_dmz_lyon`) | awx01 -> `172.16.1.4:22` = **OPEN** |
+| T-FW-DMZ-WAZUH-OPEN | 2 regles FW-INT `wan` : `host_mail01 -> host_app01:1514` + `:1515` (pattern LDAP existant) | enrollment mail01 OK |
+| T-MAIL-WAZUH-ENROLL | rôle ansible `wazuh_agent` rejoue sur mail01 (auto-enroll via 1515 desormais ouvert) | `agent_control -ls` = `007,mail01,any,Active` |
+| T-MAIL-LDAP (dette fille) | drift detecte au plan : regle `fwint_mail01_to_dc01_ldaps` + alias `host_mail01` codes mais jamais appliques -> crees ; alias preexistant importe dans le state | state FW-INT : **0 drift** |
+
+Notes techniques :
+- Modeling Terraform : reutilisation des aliases existants (`net_lyon_admin`, `net_dmz_lyon`, `net_lyon_servers`, `host_app01`). Least-privilege NIS2 : wazuh cible `host_app01` (192.168.20.13) et non tout le /28 ; source `host_mail01` seul ; `log=true`.
+- `host_mail01` existait dans OPNsense mais absent du state -> `terraform import` (UUID `cc3810e5-...`) + alignement description (in-place).
+- **Hypothese NAT validee** : la regle FW-INT seule suffit pour VLAN60->DMZ (double-firewall transparent en NAT auto) -> AUCUNE regle FW-EXT necessaire.
+- Fix rôle ansible `wazuh_agent` : garde `agent-auth` corrigee (le paquet livre un `client.keys` VIDE -> ancienne garde `creates:` skippait l'enrollment a tort ; nouvelle garde teste le contenu reel).
+- Connectivite ce jour : seul FW-INT-LYON (192.168.99.1, via Tailscale) joignable depuis le Mac -> plan/apply **cibles FW-INT** ; 3 autres providers en dette (voir ci-dessous).
 
 ## AFK 2026-05-24 (T-AFK-MEGA) -- Recap
 
@@ -24,9 +43,13 @@ Derniere mise a jour : 24 mai 2026 (T-AFK-MEGA)
 - **T-AWX-TEMPLATES-IAC** -- Config-as-Code AWX (Teams/TEAM_MAP/JT non versionnes).
 - **T-SSH-CONFIG-DEDUP** -- doublon `~/.ssh/config` Mac.
 - **MFA TOTP bastion** -- finalisation.
-- **T-FW-VLAN60-DMZ-VPNGW-OPEN** (NOUVELLE) -- perimetre VLAN60->DMZ:22 pour AWX->vpn-gw01.
-- **T-FW-DMZ-WAZUH-OPEN** (NOUVELLE) -- perimetre DMZ->SERVERS:1514/1515 pour wazuh mail01.
-- **T-MAIL-WAZUH-ENROLL** -- a finaliser post-FW (+ verifier install wazuh-agent incomplete sur mail01).
+- ~~**T-FW-VLAN60-DMZ-VPNGW-OPEN**~~ -- **RESOLU 2026-05-25** (regle FW-INT opt5 ; E2E `OPEN`).
+- ~~**T-FW-DMZ-WAZUH-OPEN**~~ -- **RESOLU 2026-05-25** (2 regles FW-INT wan, 1514/1515).
+- ~~**T-MAIL-WAZUH-ENROLL**~~ -- **RESOLU 2026-05-25** (mail01 agent `Active` sur manager ; note T5 "install incomplete" obsolete : /var/ossec present, seul l'enrollment manquait).
+- ~~**T-MAIL-LDAP**~~ -- **RESOLU 2026-05-25** (dette fille : drift regle LDAP `mail01->dc01:636` + alias host_mail01, appliques + importes).
+- **T-TF-WANSIM-CONNECTIVITY** (NOUVELLE) -- provider WAN-SIM (10.0.0.1) injoignable depuis le Mac -> plan/apply impossibles sur ce FW.
+- **T-TF-FWEXTMRS-CONNECTIVITY** (NOUVELLE) -- provider FW-EXT-MRS (192.168.40.1) injoignable depuis le Mac.
+- **T-TF-FWEXTLYON-CONNECTIVITY** (NOUVELLE) -- provider FW-EXT-LYON (172.16.1.1) injoignable depuis le Mac -> bloque toute future regle FW-EXT (ex. fallback DMZ->SERVERS si l'hypothese NAT cessait de tenir).
 
 ### Snapshots Proxmox a nettoyer (apres validation)
 - VMID 106 (app01) : `pre-app01-swap-add-2026-05-24`

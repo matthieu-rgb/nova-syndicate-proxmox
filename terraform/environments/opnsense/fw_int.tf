@@ -322,6 +322,22 @@ resource "opnsense_firewall_filter" "fwint_admin_to_internet_web" {
   }
 }
 
+resource "opnsense_firewall_filter" "fwint_admin_to_dmz_ssh" {
+  provider    = opnsense.fw_int
+  enabled     = true
+  sequence    = 14
+  description = "ADMIN (VLAN60) -> DMZ SSH 22 (AWX/vpn-gw01 mgmt - T-FW-VLAN60-DMZ-VPNGW-OPEN)"
+  interface   = { interface = ["opt5"] }
+  filter = {
+    action    = "pass"
+    direction = "in"
+    quick     = true
+    protocol  = "TCP"
+    source      = { net = "net_lyon_admin" }
+    destination = { net = "net_dmz_lyon", port = "22" }
+  }
+}
+
 resource "opnsense_firewall_filter" "fwint_admin_block_all" {
   provider    = opnsense.fw_int
   enabled     = true
@@ -390,6 +406,40 @@ resource "opnsense_firewall_filter" "fwint_mail01_to_dc01_ldaps" {
     log       = true
     source      = { net = "host_mail01" }
     destination = { net = "host_dc01", port = "636" }
+  }
+}
+
+resource "opnsense_firewall_filter" "fwint_mail01_to_app01_wazuh_data" {
+  provider    = opnsense.fw_int
+  enabled     = true
+  sequence    = 1
+  description = "T-FW-DMZ-WAZUH-OPEN: mail01 (DMZ) -> app01 Wazuh agent data 1514"
+  interface   = { interface = ["wan"] }
+  filter = {
+    action    = "pass"
+    direction = "in"
+    quick     = true
+    protocol  = "TCP"
+    log       = true
+    source      = { net = "host_mail01" }
+    destination = { net = "host_app01", port = "1514" }
+  }
+}
+
+resource "opnsense_firewall_filter" "fwint_mail01_to_app01_wazuh_auth" {
+  provider    = opnsense.fw_int
+  enabled     = true
+  sequence    = 1
+  description = "T-FW-DMZ-WAZUH-OPEN: mail01 (DMZ) -> app01 Wazuh enrollment 1515"
+  interface   = { interface = ["wan"] }
+  filter = {
+    action    = "pass"
+    direction = "in"
+    quick     = true
+    protocol  = "TCP"
+    log       = true
+    source      = { net = "host_mail01" }
+    destination = { net = "host_app01", port = "1515" }
   }
 }
 
