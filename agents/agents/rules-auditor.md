@@ -35,6 +35,11 @@ Pour chaque VM (5 VMs ssh-accessibles via inventaire ansible) :
 - `nft -j list ruleset` (output JSON)
 - Parser regles input / forward / output
 
+> NOTE (dette T-AGENTS-RULES-AUDITOR-VM-ACCESS) : la lecture nft par VM exige un
+> acces SSH aux VMs que le shell awx01 n'a PAS (cle awx-runner injectee uniquement
+> dans les jobs AWX). Pour le 1er run AFK-supervise : SKIP la Phase B, ne traiter
+> que le terraform state (Phase A). Voir la section "Dette technique".
+
 ### Phase C - Lecture ADR
 
 Lire `docs/adr/INDEX.md` + parser chaque ADR mentionnant FW (ADR-0017, 0032, etc.)
@@ -61,6 +66,22 @@ Structure attendue :
     ## Conformite NIS2 art.21 (scoring)
     ## Findings (drift, orphans, undocumented)
     ## Recommandations T-XX
+
+## Dette technique
+
+### T-AGENTS-RULES-AUDITOR-VM-ACCESS
+
+La Phase B (`nft list ruleset` par VM) necessite un acces SSH aux VMs Nova. Le
+shell de awx01 n'a pas de cle utilisable (la cle awx-runner reste chiffree dans
+le credential AWX, injectee seulement au runtime d'un job). Options envisagees :
+
+- **T-AGENTS-KEY-DEPLOY** : deployer une cle SSH dediee aux agents sur awx01,
+  autorisee en read-only sur les VMs.
+- **AWX Job Template** : executer rules-auditor comme job AWX (cle awx-runner
+  injectee automatiquement).
+
+En attendant : 1er run AFK-supervise = Phase A (terraform state) uniquement,
+Phase B SKIP.
 
 ## Garde-fous
 
