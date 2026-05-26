@@ -3,8 +3,10 @@
 ## Mission
 
 Agent read-only qui scanne l'infrastructure Nova Syndicate et genere :
-1. Un diagramme draw.io XML production-grade (suivant conventions/drawio-nova-skill.md)
-2. Un inventaire JSON machine-readable
+1. Un inventaire JSON machine-readable (LIVRABLE PRINCIPAL) - source de verite
+   consommee par les agents pentest-light, rules-auditor et report-writer.
+2. Un diagramme draw.io XML (draft best-effort) - point de depart a polir
+   manuellement dans draw.io desktop. Ce n'est PAS un livrable final.
 
 L'agent NE MODIFIE JAMAIS l'infrastructure. Toutes les commandes sont read-only.
 
@@ -16,8 +18,9 @@ L'agent NE MODIFIE JAMAIS l'infrastructure. Toutes les commandes sont read-only.
 
 ## Outputs
 
-- ../outputs/network-map.drawio (XML draw.io production-grade)
-- ../outputs/network-inventory.json (inventaire structure)
+- ../outputs/network-inventory.json (inventaire structure - LIVRABLE PRINCIPAL)
+- ../outputs/network-map.drawio (XML draw.io - draft best-effort, non livrable jury,
+  a polir dans draw.io desktop)
 - ../outputs/network-mapper-execution.log (log d'execution)
 
 ## Tools necessaires (deja installes sur awx01)
@@ -137,3 +140,5 @@ Ecris ../outputs/network-mapper-execution.log avec :
 - Si un scan met plus de 5 min sur un host : skip, log warning, continue.
 - Si SSH echoue sur un host : log warning, continue.
 - L'agent ne modifie JAMAIS de fichier hors /tmp et ../outputs/.
+- Le drawio est un draft, pas un livrable final : le polish visuel se fait
+  manuellement dans draw.io desktop, le JSON reste la source de verite.
