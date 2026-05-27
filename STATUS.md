@@ -1,6 +1,28 @@
 # Nova Syndicate -- STATUS
 
-Derniere mise a jour : 25 mai 2026 (T-FW-PERIMETER-CLOSE)
+Derniere mise a jour : 27 mai 2026 (T-AGENTS-KEY-DEPLOY)
+
+## Session 2026-05-27 (T-AGENTS-KEY-DEPLOY) -- PoC agents : phases intra-VM debloquees
+
+Deploiement d'une cle SSH dediee `nova-agents` (privee sur awx01 uniquement, JAMAIS
+dans le coffre AWX) pour debloquer les phases intra-VM des agents d'audit
+(network-mapper A3/A4, rules-auditor Phase B), via `ProxyJump=proxmox-hypervisor`.
+
+| Ticket | Statut | Detail |
+|--------|--------|--------|
+| T-AGENTS-KEY-DEPLOY | **RESOLU (partiel 4/9)** | cle deployee sur les 4 SERVERS (dc01/fs01/db01/app01) ; `authorized_keys` `from=192.168.60.0/29` + `restrict` ; sudoers NOPASSWD scoped nft. E2E OK (4 hostnames + 4 nft rulesets). |
+| T-AGENTS-RULES-AUDITOR-VM-ACCESS | **RESOLU (ferme)** | Phase B nft live debloquee pour les 4 SERVERS. Reliquat -> dettes filles. |
+
+Exclusions justifiees (security-by-design) :
+- **bastion01** : exclu - le MFA TOTP reste l'autorite d'acces, aucun bypass cle (defense-in-depth NIS2).
+- **DMZ (web01/mail01/vpn-gw01) + backup01** : non routables depuis le management Proxmox (seul VLAN 20 accessible) -> differe.
+
+Donnees intra-VM (4 SERVERS) : Debian 12 ; nft host input policy = **drop** (default-deny) sur les 4 ; dc01 AD = nova-syndicate.local, **94 users** ; services confirmes (samba-ad-dc, smbd/nmbd, mariadb, nginx/authelia/grafana/wazuh/suricata). NIS2 recalcule : segmentation **9.5** (host default-deny confirme), least-privilege **6** (R-006), global **7.9**.
+
+Nouvelles dettes (low prio) :
+- **T-AGENTS-DMZ-AUDIT** -- audit intra-VM DMZ via session bastion+TOTP supervisee.
+- **T-AGENTS-BACKUP-AUDIT** -- idem backup01.
+- **R-006 (debian NOPASSWD:ALL sur SERVERS)** -- la cle agents est root-capable de fait (mitige par source-lock VLAN60 + restrict) ; envisager un user d'audit dedie a privileges scopes.
 
 ## Session supervisee 2026-05-25 (T-FW-PERIMETER-CLOSE) -- 4 dettes RESOLU
 

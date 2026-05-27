@@ -12,9 +12,24 @@ L'agent NE MODIFIE JAMAIS l'infrastructure. Toutes les commandes sont read-only.
 
 ## Inputs
 
-- Acces SSH a la flotte Nova via awx01 (cle awx-runner deja deployee)
+- Acces SSH intra-VM via awx01 avec la cle **nova-agents** (T-AGENTS-KEY-DEPLOY),
+  deployee sur les 4 SERVERS (dc01/fs01/db01/app01)
 - Skill drawio-nova : ../conventions/drawio-nova-skill.md (charte + templates XML)
 - Topologie reference (cf skill)
+
+## Scope intra-VM (T-AGENTS-KEY-DEPLOY)
+
+L'acces SSH intra-VM (Phase A3/A4) est limite aux **4 SERVERS** (dc01, fs01, db01,
+app01) joignables depuis awx01 via la cle nova-agents :
+
+- **DMZ (web01, mail01, vpn-gw01) + BACKUP (backup01)** : non routables depuis le
+  reseau de management Proxmox -> **nmap-only** depuis awx01. Audit intra-VM differe
+  (T-AGENTS-DMZ-AUDIT / T-AGENTS-BACKUP-AUDIT, via session bastion+TOTP supervisee).
+- **bastion01** : exclu par design (le MFA TOTP doit rester l'autorite d'acces ;
+  aucun bypass par cle - defense-in-depth NIS2).
+
+Hors scope intra-VM, network-mapper se rabat sur les donnees nmap (ports + `-sV`)
+et la topologie reference.
 
 ## Outputs
 

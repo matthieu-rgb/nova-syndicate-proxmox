@@ -35,10 +35,10 @@ Pour chaque VM (5 VMs ssh-accessibles via inventaire ansible) :
 - `nft -j list ruleset` (output JSON)
 - Parser regles input / forward / output
 
-> NOTE (dette T-AGENTS-RULES-AUDITOR-VM-ACCESS) : la lecture nft par VM exige un
-> acces SSH aux VMs que le shell awx01 n'a PAS (cle awx-runner injectee uniquement
-> dans les jobs AWX). Pour le 1er run AFK-supervise : SKIP la Phase B, ne traiter
-> que le terraform state (Phase A). Voir la section "Dette technique".
+> NOTE (T-AGENTS-KEY-DEPLOY) : Phase B **debloquee pour les 4 SERVERS** (dc01, fs01,
+> db01, app01) via la cle nova-agents depuis awx01 (`sudo -n nft list ruleset`).
+> DMZ/BACKUP non routables depuis Proxmox + bastion01 MFA-exclu -> hors scope
+> (T-AGENTS-DMZ-AUDIT / T-AGENTS-BACKUP-AUDIT). Phase B = 4/9 hosts.
 
 ### Phase C - Lecture ADR
 
@@ -69,19 +69,21 @@ Structure attendue :
 
 ## Dette technique
 
-### T-AGENTS-RULES-AUDITOR-VM-ACCESS
+### T-AGENTS-RULES-AUDITOR-VM-ACCESS - RESOLU (partiel, ferme)
 
-La Phase B (`nft list ruleset` par VM) necessite un acces SSH aux VMs Nova. Le
-shell de awx01 n'a pas de cle utilisable (la cle awx-runner reste chiffree dans
-le credential AWX, injectee seulement au runtime d'un job). Options envisagees :
+Resolu via **T-AGENTS-KEY-DEPLOY** : la cle dediee `nova-agents` (privee sur awx01,
+source-locked `from=192.168.60.0/29` + `restrict`) debloque la Phase B pour les
+**4 SERVERS** (dc01/fs01/db01/app01). Resolution partielle (4/9) ; reliquat dans des
+dettes filles low-prio :
 
-- **T-AGENTS-KEY-DEPLOY** : deployer une cle SSH dediee aux agents sur awx01,
-  autorisee en read-only sur les VMs.
-- **AWX Job Template** : executer rules-auditor comme job AWX (cle awx-runner
-  injectee automatiquement).
+- **T-AGENTS-DMZ-AUDIT** : audit intra-VM DMZ (web01/mail01/vpn-gw01) via session
+  bastion+TOTP supervisee (non routable depuis Proxmox).
+- **T-AGENTS-BACKUP-AUDIT** : idem backup01.
+- **bastion01** : exclu par design (MFA gate, aucun bypass cle).
 
-En attendant : 1er run AFK-supervise = Phase A (terraform state) uniquement,
-Phase B SKIP.
+Note securite : sur les SERVERS, `debian` dispose de `(ALL) NOPASSWD: ALL` - la cle
+nova-agents (auth en debian) est donc root-capable de fait, pas read-only au sens
+strict ; le controle effectif est le source-lock VLAN60 + restrict (cf R-006).
 
 ## Garde-fous
 
