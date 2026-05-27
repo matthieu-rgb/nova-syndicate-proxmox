@@ -4,6 +4,64 @@ Etat factuel verifie a partir de STATUS.md, docs/INFRA-INVENTORY.md, docs/adr/IN
 des 33 ADRs et des outputs d'audit agents (agents/outputs/). Toute affirmation du
 dossier projet doit pouvoir se rattacher a une ligne de ce fichier ou a un fichier du repo.
 
+## Chiffres factuels verifies (source de verite - ne pas inventer)
+
+### Inventaire VMs Proxmox (verifie via 'qm list' le 27 mai 2026)
+
+VMs Linux de service (12 au total) :
+- 100 web01 (DMZ, 1 GB)
+- 101 mail01 (DMZ, 1 GB)
+- 102 bastion01 (BASTION, 1 GB)
+- 103 dc01 (SERVERS, 2 GB) - Active Directory Samba
+- 104 fs01 (SERVERS, 2 GB) - Serveur de fichiers
+- 105 db01 (SERVERS, 2 GB) - MariaDB
+- 106 app01 (SERVERS, 6 GB) - Authelia + Grafana + Wazuh + Prometheus
+- 107 proxy-lyon01 (1 GB) - [ROLE A CONFIRMER]
+- 108 proxy-mrs01 (1 GB) - [ROLE A CONFIRMER]
+- 109 backup01 (BACKUP, 2 GB) - Borg backup
+- 110 vpn-gw01 (DMZ, 1 GB)
+- 111 awx01 (ADMIN, 8 GB) - AWX K3s
+
+Pare-feux OPNsense (3, pas 4) :
+- 201 fw-ext-lyon01 - perimetre Lyon
+- 202 fw-int-lyon01 - interne Lyon (defense en profondeur)
+- 203 fw-ext-mrs01 - perimetre Marseille (pas d'interne car bureau regional)
+
+Simulation reseau :
+- 200 wan-simulator
+- 9000 debian-12-cloud-template-nova (template, stopped)
+
+### Roles Ansible (11 verifies)
+
+backup, bastion, common, database, dc, fileserver, hardening, proxy, vpn, 
+wazuh_agent, wazuh_manager
+
+### Audit auto - findings (12 au total)
+
+- 6 findings du pentest light (pentest-findings.json) dont 1 HIGH (LDAP anon 
+  bind dc01)
+- 6 findings de l'audit de regles (rules-conformity.json) dont R-006 MEDIUM 
+  (debian NOPASSWD:ALL = least-privilege)
+
+### Suricata
+
+0 sonde active. Prototype tente sur FW-EXT-LYON, retire apres incident OOM 
+(rollback Proxmox snapshot). Reintroduction sur VM dediee = roadmap residuelle.
+
+### Score NIS2 article 21
+
+Global : 7,9/10
+- Segmentation : 9,5/10
+- Access control : 8/10
+- Logging : 8/10
+- Least-privilege : 6/10
+
+---
+
+INSTRUCTION POUR LES FUTURES GENERATIONS : tout chiffre qui n'est pas dans cette 
+section "Chiffres factuels verifies" doit etre marque [A VERIFIER] dans le 
+draft plutot qu'invente.
+
 ## 1. Infrastructure deployee
 
 - Plateforme : Proxmox VE 8.x bare-metal (ADR-0001), un seul hyperviseur physique.
