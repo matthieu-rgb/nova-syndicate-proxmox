@@ -1,6 +1,55 @@
 # Nova Syndicate -- STATUS
 
-Derniere mise a jour : 2 juin 2026 (T-LDAPS-MIGRATION + Phase 6.6)
+Derniere mise a jour : 2 juin 2026 (T-LDAPS-MIGRATION ferme -- Phase 6.3 + 6.6 + 7a)
+
+## Session 2026-06-02 -- complement (Phase 7a) -- Strong auth applique, listener 389 conserve
+
+Pre-check tcpdump cote serveur dc01 (eth0 any, `tcp port 389 or udp port 389`,
+fenetre 90 s avec triggers : Authelia restart, mail01 doveadm, fs01 wbinfo,
+samba-tool user list) : **28 paquets capturees, source unique 192.168.20.11
+(fs01)** = `winbindd` (PID 12858, FD 24, ESTAB 39546->389) + CLDAP UDP.
+
+Analyse ASN.1 du premier payload : `searchRequest base="" filter=objectclass=*
+attr=currentTime` -- requete **anonyme au RootDSE** (decouverte AD standard).
+Apres : bind GSSAPI/Kerberos avec `client ldap sasl wrapping = seal` (chiffrement
++ integrite). Pas un cleartext simple bind.
+
+**Decision retenue** : decoupler Phase 7 en deux. **7a applique** (refus simple
+bind cleartext) ; **7b refusee** (fermeture listener 389) car casserait winbind
+fs01 jusqu'a migration sssd-ad ou Samba membre 636.
+
+| Action | Statut | Detail |
+|--------|--------|--------|
+| Pre-check tcpdump cote dc01 | **DONE** | pcap archive : `docs/evidence/389-incoming-pre-strong-auth-2026-06-02.pcap` (20855 octets). |
+| Snapshot `dc01-pre-strong-auth` | **DONE** | 2026-06-02 17:38:01 (VMID 103). |
+| Default Samba 4.15+ deja a `Yes` -- `testparm` confirme | **DONE** | Pin explicite necessaire pour survivre aux upgrades futurs. |
+| `inventory/group_vars/domain_controllers/vars.yml` : `samba_ldap_require_strong_auth: false -> true` | **DONE** | Aligne IaC (template `dc/templates/smb.conf.j2` avait deja le toggle conditionnel). |
+| Edition live `/etc/samba/smb.conf` + `ldap server require strong auth = yes` sous `[global]` | **DONE** | Backup `smb.conf.bak-prestrongauth-2026-06-02`. |
+| `systemctl restart samba-ad-dc` | **DONE** | `active` apres 6 s. `testparm` post-restart : `Yes`. Listeners 389 + 636 toujours presents (decision 7b assume). |
+| Cross-checks 8/8 | **DONE** | fs01 wbinfo -u (94 users), wbinfo -t (trust OK), getent passwd fabien.bonnet/marine.fleury (resolu), **wbinfo -a "svc-mail-ldap%..." = plaintext + challenge/response succeeded** ; Authelia HTTP 200 ; mail01 doveadm auth succeeded ; Wazuh 8 Active ; samba-tool user list 95 lignes. |
+| Phase 7b -- desactivation listener 389 | **REFUSEE (posture finale assumee)** | 389 reste ouvert, durci par strong-auth. Seuls binds GSSAPI-sealed l'empruntent (= winbind fs01). Detail ADR-0034. |
+
+Findings clos cette session **definitivement** :
+- **P-001** (bind LDAP anonyme HIGH) : **RESOLU** via `ldap server require strong auth = yes` pinne dans smb.conf. Refus simple bind cleartext applique cote dc01. Verifie effectif par testparm + cross-checks. Les binds GSSAPI-sealed (winbind) et LDAPS (Authelia + Dovecot) restent autorises.
+- **P-002** (mkcert non-PKI LOW) : **RESOLU** via step-ca. mail01 et Authelia chaines sur Nova Root + Intermediate CA.
+- **T-LDAPS-MIGRATION** : **CLOS**.
+
+Nouvelle dette filiale :
+- **T-FS01-LDAPS-OR-SSSD** (LOW, decision d'archi differee, hors scope certification) -- pour permettre une eventuelle fermeture future du listener 389 sur dc01 (Phase 7b), il faudrait au prealable basculer fs01 vers un client AD nativement LDAPS-capable. Trois options documentees, **aucune tranchee** :
+  1. **Migration winbind -> sssd-ad** : sssd supporte nativement `ldap_uri = ldaps://dc01.nova-syndicate.local`. Refonte complete du daemon d'auth + PAM + NSS sur fs01. Effort eleve, gain principal = chemin LDAPS pur.
+  2. **Reconfiguration Samba membre pour LDAPS 636** : ajuster `client ldap sasl wrapping`, `ldap server`, et resolution SRV `_ldap._tcp.NOVA-SYNDICATE.LOCAL.` pour forcer 636. Non trivial (Samba historique est cable 389+SASL), risque de regression silencieuse sur SMB join/trust.
+  3. **nft allowlist 389 sur dc01** : conserver le listener 389 mais filtrer en host nft pour n'accepter que `192.168.20.11/32` (fs01) + IPs admin legit. Conserve la posture actuelle avec un perimetre reseau plus etroit. Compatible avec Phase 7a (strong auth) deja en place.
+
+Posture finale assumee Phase 7 (a documenter dans ADR-0034) : **389 reste
+ouvert, hardened par strong-auth + chiffrement GSSAPI cote winbind + listeners
+distincts 389/636**. Surface d'attaque reduite a "simple bind cleartext refuse"
++ "anonymous bind limite au RootDSE". Mitigation conforme NIS2 art.21 §2 (e+i).
+
+Snapshots Proxmox a nettoyer post-validation finale :
+- VMID 101 (mail01) : `mail01-pre-ldaps-mail` (09:14:04)
+- VMID 103 (dc01) : `dc01-pre-mail-ldaps` (09:14:04), `dc01-pre-strong-auth` (17:38:01)
+
+ADR de cloture : [ADR-0034](docs/adr/ADR-0034-ldaps-migration-strong-auth.md).
 
 ## Session 2026-06-02 (T-LDAPS-MIGRATION) -- Bascule trust anchor Dovecot vers step-ca
 
