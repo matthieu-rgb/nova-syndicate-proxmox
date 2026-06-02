@@ -1,6 +1,44 @@
 # Nova Syndicate -- STATUS
 
-Derniere mise a jour : 27 mai 2026 (T-AGENTS-KEY-DEPLOY)
+Derniere mise a jour : 2 juin 2026 (T-LDAPS-MIGRATION + Phase 6.6)
+
+## Session 2026-06-02 (T-LDAPS-MIGRATION) -- Bascule trust anchor Dovecot vers step-ca
+
+Migration LDAPS de Dovecot (mail01) de l'ancienne CA mkcert vers la chaine
+PKI interne step-ca. Plan d'execution autoritatif :
+[runbook-ldaps-migration.md](docs/runbook-ldaps-migration.md) (versionne
+explicitement pour survivre a `/clear`). Rapport detaille :
+[ldaps-migration-report.md](docs/ldaps-migration-report.md).
+
+| Etape | Statut | Detail |
+|-------|--------|--------|
+| 6.3 (10 etapes) | **RESOLU** | Snapshots OK ; CA bundle deploye sur mail01 (nova-root + intermediate via `qm guest exec`) ; `update-ca-certificates` 2 added ; handshake `Verify return code: 0 (ok)` ; sed chirurgical 2 cles (`tls_require_cert demand->hard`, `tls_ca_cert_file nova-CA.crt -> ca-certificates.crt`) ; `doveadm auth test svc-mail-ldap` **AUTH SUCCEEDED** (etat AVANT : `temp_fail`, cause `Can't connect to server: ldaps://dc01:636` confirme dans dovecot.log) ; cross-checks tous verts. |
+| 6.6 | **RESOLU** | tcpdump 25 s `dst dc01:389` sur mail01 + 10 binds auth generes -> **0 packets captured**. Aucun fallback LDAP cleartext applicatif. |
+| Phase 7 | **STOP OBLIGATOIRE** | Desactivation listener 389 sur dc01 + `--ldap-require-strong-auth=yes` : validation manuelle requise (point de non-retour cross-clients). Snapshot dedie `dc01-pre-disable-389` a prevoir au moment de l'apply. |
+
+Findings clos cette session :
+- **P-001** (bind LDAP anonyme HIGH) : cote mail01 = plus de path 389 utilise ; cote AD = attend Phase 7.
+- **P-002** (mkcert non-PKI LOW) : step-ca operationnelle, trust anchor effectif sur mail01 + Authelia.
+- **T-PKI-INTERNE-CA** : root + intermediate dans system trust mail01 ; cert dc01:636 (validite 2026-06-01 -> 2027-06-01) valide.
+- **T-LDAPS-MIGRATION** : RESOLU.
+- **T-CLOUD-INIT-DNS** : RESOLU (pre-existant a cette session ; `/etc/hosts` statique mail01, `manage_etc_hosts: false`).
+
+Ecart vs plan reconstruit (transparence) : l'etat de depart etait deja `uris = ldaps://...`, le delta reel = trust anchor + `tls_require_cert`. Bloc `tls = yes` du runbook **omis volontairement** (redondant/conflictuel avec `ldaps://`). Edit chirurgical sed 2 lignes, autres cles preservees. Detail dans rapport, section "Ecart vs plan reconstruit".
+
+Snapshots Proxmox pre-changement (a nettoyer apres validation Phase 7) :
+- VMID 101 (mail01) : `mail01-pre-ldaps-mail` (2026-06-02 09:14:04)
+- VMID 103 (dc01) : `dc01-pre-mail-ldaps` (2026-06-02 09:14:04)
+
+Backups configs locales mail01 (rollback de proximite, sans toucher au snapshot LVM) :
+- `/etc/dovecot/conf.d/auth-ldap.conf.ext.bak-preldaps-2026-06-02`
+- `/etc/dovecot/dovecot-ldap.conf.ext.bak-preldaps-2026-06-02`
+- `/etc/dovecot/conf.d/10-auth.conf.bak-preldaps-2026-06-02`
+
+Dettes decouvertes en passant :
+- **T-ANSIBLE-MUX-CORRUPTION** : ControlMaster bastion-nova absent au demarrage de session (socket inexistant). Mitigation = execution via `proxmox-hypervisor` (Tailscale, pas de MFA), pattern documente en section "Voies d'acces" du runbook.
+- **TCP/53 DMZ follow-up (LOW)** : `manage_etc_hosts: false` + entree `/etc/hosts` mail01 marche, mais a repliquer si autre VM DMZ doit resoudre dc01. Alternative = regle FW-INT DMZ -> dc01:53, decision a documenter.
+
+NIS2 recalcule : auth LDAPS effectivement chainee PKI interne, `tls_require_cert = hard`, plus de mkcert dans le path d'auth -> renforce le pilier confidentialite/integrite des credentials. Wazuh = 8/8 Active (mise a jour : 8 et non 7 -- 000 app01 self-managed etait deja compte).
 
 ## Session 2026-05-27 (T-AGENTS-KEY-DEPLOY) -- PoC agents : phases intra-VM debloquees
 
