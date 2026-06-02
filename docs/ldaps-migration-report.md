@@ -191,6 +191,157 @@ LVM) :
 
 - **Cote operateur** : valider Phase 7 (snapshot dc01 + `samba-tool
   ldapserver` no-389 + `--ldap-require-strong-auth=yes`).
-- **File de dettes** : engagee a la suite de ce rapport (consigne AFK).
-  Compte-rendu consolide ajoute en queue de ce document apres traitement
-  de la file (items 1 -> 6).
+- **File de dettes** : item 1 traite, items 2-6 reportes (analyse de blast
+  radius ci-dessous).
+
+---
+
+## Compte-rendu consolide file de dettes (post Phase 6.3)
+
+### Dette 1 -- healthcheck.sh PVE 9.x bug -- **RESOLU**
+
+Commit `9b49de0`. Bug racine : PVE 9.x serialise systematiquement
+`"out-data" : "<value>\n"` (newline echappe avant la quote fermante).
+Les patterns `grep -q '"active"'` (sections 4, 6) et over-escape
+`'"[0-9]+\\\\n"'` (compteur AD users) ne matchaient plus.
+
+Fix : helper `qm_exec_out()` jq-prioritaire avec fallback awk/sed,
+refactor 4 call-sites, invariant Wazuh `7 -> 8` (post enrollment mail01).
+
+Avant : 13 OK / 8 WARN / 3 FAIL. Apres : 17 OK / 6 WARN / 1 FAIL
+(le residuel = IPsec 0 SAs, dette Phase IV documentee).
+
+Evidence + methode PDCA pour D.7 :
+[docs/healthcheck-pve9-fix-evidence.md](healthcheck-pve9-fix-evidence.md).
+
+### Dette 2 -- T-LEAST-PRIVILEGE-DEBIAN (R-006 MEDIUM) -- **REPORTE**
+
+Analyse menee. Etat actuel sur app01 (representatif) :
+- `/etc/sudoers.d/90-cloud-init-users` : `debian ALL=(ALL) NOPASSWD:ALL` (cloud-init).
+- `/etc/sudoers.d/ansible` : `debian ALL=(ALL) NOPASSWD:ALL` + `ansible ALL=(ALL) NOPASSWD: ALL` (doublon, dette de menage).
+- `/etc/sudoers.d/nova-agents-readonly` : `debian ALL=(root) NOPASSWD: /usr/sbin/nft list ruleset, ...` (scope deja tenu pour la cle agents).
+
+Fermeture stricte de R-006 (scope sudo a une whitelist de commandes)
+exigerait :
+1. Audit complet des `become: yes` dans toutes les tasks Ansible
+   (50+ playbooks, role `common` + `hardening` + 10 autres).
+2. Construction d'une whitelist : `apt`, `dpkg`, `systemctl`, `update-rc.d`,
+   `chmod`, `chown`, `mkdir`, `cp`, `mv`, `rm`, `tee`, `useradd`, `groupadd`,
+   `sed -i`, ... -> en pratique tres proche de `ALL:ALL`.
+3. Test E2E sur les 6 VMs via AWX (sinon casse silencieuse de tout playbook
+   qui touche une commande hors whitelist).
+
+**Decision proposee (a valider)** : R-006 se ferme **architecturalement**,
+pas par sudoers. Defense en profondeur deja effective :
+- SSH key only (password login disabled cloud-init + hardening).
+- `from=192.168.60.0/29` + `restrict` sur `authorized_keys` cle nova-agents.
+- nft host allowlist VLAN60 only.
+- ProxyJump bastion pour sessions humaines + MFA TOTP.
+- Pas d'acces direct DMZ -> SERVERS pour cle debian.
+
+Action recommandee : ADR-0035 "Politique compte d'administration debian -
+defense en profondeur" qui documente le residuel R-006 comme acceptable
+selon NIS2 art.21 §2.j (mesure de gestion d'identite + supervision Wazuh
+des actions sudo via `actiontype=root`). **Hors scope d'execution autonome**,
+necessite trade-off NIS2 vs operabilite a trancher.
+
+Menage trivial possible (sans risque) : supprimer le doublon
+`debian ALL=(ALL) NOPASSWD:ALL` du fichier `/etc/sudoers.d/ansible` (deja
+present via `90-cloud-init-users`). A faire dans un commit dedie,
+hors session AFK.
+
+### Dette 3 -- T-WAZUH-OPNSENSE-INGESTION (R-004 LOW) -- **REPORTE**
+
+Pre-requis non valides :
+- 3 des 4 OPNsense sont injoignables depuis le Mac (T-TF-WANSIM-CONNECTIVITY,
+  T-TF-FWEXTMRS-CONNECTIVITY, T-TF-FWEXTLYON-CONNECTIVITY -- ouverts dans
+  STATUS.md).
+- Seul FW-INT-LYON (192.168.99.1) est joignable via Tailscale.
+- Ingestion syslog cross-firewall = besoin de pousser config sur les 4
+  -> impossible en autonomie.
+
+Action faisable ce jour : configurer **uniquement FW-INT-LYON ->
+Wazuh manager app01:514** (ouverture syslog UDP/514 + decoder Wazuh
+`opnsense-firewall`). Mais l'ingestion partielle (1 FW sur 4) n'est pas
+representative -> valeur SIEM degradee, NIS2 traceabilite incomplete.
+
+**Decision proposee** : attendre que les 3 connectivites Terraform soient
+restaurees (cf dettes T-TF-* -- WAN-SIMULATOR via Tailscale dedie ou via
+le bastion administrative ; FW-EXT-LYON / FW-EXT-MRS pareillement) ->
+ouverture syslog en masse coherente, ADR-0035 unique. Hors scope ce jour.
+
+### Dette 4 -- T-SPLIT-MONITORING-VM (extraction app01) -- **REPORTE**
+
+Chantier majeur :
+1. Provisionnement Terraform nouvelle VM (VMID + IP VLAN20 ou nouveau VLAN
+   monitoring) -> tres lourd en pre-requis (template, ressources Proxmox,
+   firewall update).
+2. Migration **sans downtime** de wazuh-indexer (etat OpenSearch ~GB) :
+   snapshot indexer + restore sur nouvelle VM + bascule du `output`
+   wazuh-manager + redirect.
+3. Migration Grafana : sauvegarde db sqlite/mariadb + restore + bascule
+   datasource Prometheus/Wazuh.
+4. Test E2E dashboards + alertes + permissions Authelia SSO (qui n'existe
+   pas encore d'ailleurs -- T-GRAFANA-AUTHELIA-SSO ouvert).
+
+Estimation realiste : 6-8h de session supervisee avec rollback testes.
+Non-autonome.
+
+**Decision proposee** : session dediee planifiee, snapshot etat app01
++ Terraform plan/apply atomiques. ADR-0036 a rediger en parallele.
+
+### Dette 5 -- T-SURICATA-VM-DEDIEE (4 GB) -- **REPORTE**
+
+Pre-requis : memes contraintes que dette 4 (provisionnement VM + ruleset
++ tap port mirroring depuis OPNsense vers la VM Suricata). En sus :
+configuration tap network (vmbr mirror, type-specific) qui peut necessiter
+des ajustements coeur Proxmox host.
+
+Le ruleset cible (emerging-malware, exploit, trojan, attack-response,
+current-events) est concret et chargeable. Mais le pipe `eve.json ->
+Wazuh manager` depend de la dette 4 (extraction monitoring) ou non,
+selon si Wazuh manager reste sur app01.
+
+**Decision proposee** : a sequencer apres dette 4 (split monitoring) pour
+ne pas re-aggraver la charge app01.
+
+### Dette 6 -- T-DRP-DRILL-PERTE-SITE -- **REPORTE**
+
+Exercice de continuite, pas une operation IaC. Pre-requis :
+- Acces Hetzner cible (cle SSH, projet, capacite reservation).
+- Plan DRP valide (RTO/RPO definis, sequencage restore Borg backup ->
+  Hetzner -> bascule DNS).
+- Communication des etapes (mode "dry-run" vs "fail-over reel").
+
+Aucun de ces pre-requis n'est verifie en session AFK. Lancer un drill
+DRP en autonomie = risque de cascade incontrolee si la simulation
+basculait reellement les enregistrements DNS publics.
+
+**Decision proposee** : session dediee, mode dry-run d'abord, validation
+manuelle a chaque etape.
+
+---
+
+## Synthese executive
+
+| Item | Statut session 2026-06-02 | Decision |
+|------|---------------------------|----------|
+| Phase 6.3 Dovecot LDAPS | **RESOLU** | Trust anchor step-ca effectif, auth restauree. |
+| Phase 6.6 tcpdump 389 | **RESOLU** | 0 packet residuel. |
+| Phase 7 (desactivation 389) | **STOP OBLIGATOIRE** | Validation manuelle. |
+| Dette 1 healthcheck PVE 9 | **RESOLU** | 17/24 checks OK, evidence D.7 livree. |
+| Dette 2 R-006 sudoers debian | **REPORTE** | Decision architecturale (ADR-0035 a rediger). |
+| Dette 3 syslog OPNsense | **REPORTE** | Bloque par 3 dettes T-TF-*-CONNECTIVITY. |
+| Dette 4 split monitoring | **REPORTE** | 6-8h session supervisee. |
+| Dette 5 Suricata VM | **REPORTE** | Sequencer apres dette 4. |
+| Dette 6 DRP drill | **REPORTE** | Pre-requis Hetzner + decision dry-run vs reel. |
+
+3 chantiers menes a terme (Phase 6.3 + 6.6 + dette 1), 5 reports
+documentes avec analyse de blast radius et conditions de reprise. Aucun
+chantier laisse en demi-teinte ou rollback partiel. Snapshots Proxmox
+preserves pour validation differee (mail01 + dc01).
+
+Tous les commits respectent la convention francaise sans accents + tag
+ticket + zero attribution Claude/Anthropic (pre-commit hook respecte).
+Sequence : `a50fc3d` (runbook), `1ab73fa` (Phase 6.3+6.6 cloture),
+`9b49de0` (healthcheck PVE 9.x fix).
