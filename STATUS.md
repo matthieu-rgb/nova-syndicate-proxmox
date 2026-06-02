@@ -51,6 +51,8 @@ Snapshots Proxmox a nettoyer post-validation finale :
 
 ADR de cloture : [ADR-0034](docs/adr/ADR-0034-ldaps-migration-strong-auth.md).
 
+**Drift IaC ouvert (non commit ce soir)** : `nova-syndicate-ansible/inventory/group_vars/domain_controllers/vars.yml` doit passer `samba_ldap_require_strong_auth` a `true` pour aligner l'IaC avec l'etat live dc01. Non commit cette session : la branche actuellement checked-out (`fix/wazuh-agent-pin-411-adr0013`) contient 6 autres fichiers M WIP non lies a Phase 7a + 3 dossiers untracked (`group_vars/pki/`, `roles/pki_client/`, `roles/pki_server/`). A normaliser au prochain merge sur `main` (toggle + bloc `samba_ldaps_*` keys + commentaires Phase 7a).
+
 ## Session 2026-06-02 (T-LDAPS-MIGRATION) -- Bascule trust anchor Dovecot vers step-ca
 
 Migration LDAPS de Dovecot (mail01) de l'ancienne CA mkcert vers la chaine
