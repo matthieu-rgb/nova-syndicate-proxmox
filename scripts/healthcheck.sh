@@ -36,6 +36,22 @@ PROXMOX="root@100.112.113.2"
 SSH_O="-o ConnectTimeout=5 -o StrictHostKeyChecking=no"
 START=$(date +%s)
 
+# qm_exec_out -- run a command inside a VM via qm guest exec and return the
+# raw out-data string. Robust to PVE 9.x output framing (the out-data value
+# contains a literal "\n" trailer which broke grep patterns like '"active"').
+# Usage: qm_exec_out <vmid> <command-string>
+qm_exec_out() {
+  local vmid="$1"; shift
+  local raw
+  raw=$(ssh $SSH_O "$PROXMOX" "qm guest exec $vmid -- bash -c \"$*\"" 2>/dev/null)
+  if command -v jq >/dev/null 2>&1; then
+    printf '%s' "$raw" | jq -r '."out-data" // empty' 2>/dev/null | tr -d '\n'
+  else
+    # Fallback : extract content between "out-data" : " and the closing "
+    printf '%s' "$raw" | awk -F'"out-data" : "' 'NF>1{ print $2 }' | sed 's/\\n//g; s/",$//; s/"$//'
+  fi
+}
+
 printf "==========================================\n"
 printf "  Healthcheck Nova Syndicate\n"
 printf "  Date : %s\n" "$(date)"
@@ -97,14 +113,13 @@ fi
 # ============ 4. ACTIVE DIRECTORY ============
 section "4. ACTIVE DIRECTORY (DC01)"
 
-if ssh $SSH_O "$PROXMOX" 'qm guest exec 103 -- bash -c "systemctl is-active samba-ad-dc 2>/dev/null"' 2>/dev/null | grep -q '"active"'; then
+if [ "$(qm_exec_out 103 'systemctl is-active samba-ad-dc 2>/dev/null')" = "active" ]; then
   pass "Samba AD active on DC01"
 else
   fail "Samba AD inactive on DC01"
 fi
 
-USER_COUNT=$(ssh $SSH_O "$PROXMOX" 'qm guest exec 103 -- bash -c "samba-tool user list 2>/dev/null | wc -l"' 2>/dev/null \
-  | grep -oE '"[0-9]+\\\\n"' | head -1 | grep -oE '[0-9]+')
+USER_COUNT=$(qm_exec_out 103 'samba-tool user list 2>/dev/null | wc -l')
 USER_COUNT=${USER_COUNT:-0}
 if [ "$USER_COUNT" -ge 80 ]; then
   pass "AD users: $USER_COUNT"
@@ -128,7 +143,7 @@ done
 # ============ 6. DATABASE (DB01) ============
 section "6. DATABASE (DB01)"
 
-if ssh $SSH_O "$PROXMOX" 'qm guest exec 105 -- bash -c "systemctl is-active mariadb 2>/dev/null"' 2>/dev/null | grep -q '"active"'; then
+if [ "$(qm_exec_out 105 'systemctl is-active mariadb 2>/dev/null')" = "active" ]; then
   pass "MariaDB DB01 active"
 else
   fail "MariaDB DB01 inactive"
@@ -140,13 +155,14 @@ fi
 # ============ 7. WAZUH SIEM ============
 section "7. WAZUH SIEM"
 
-AGENTS_RAW=$(ssh $SSH_O "$PROXMOX" 'qm guest exec 106 -- bash -c "sudo /var/ossec/bin/agent_control -l 2>/dev/null | grep -c Active"' 2>/dev/null)
-AGENTS=$(echo "$AGENTS_RAW" | grep -oE '"[0-9]+' | grep -oE '[0-9]+' | head -1)
+AGENTS=$(qm_exec_out 106 'sudo /var/ossec/bin/agent_control -l 2>/dev/null | grep -c Active')
 AGENTS=${AGENTS:-0}
-if [ "$AGENTS" = "7" ]; then
-  pass "Wazuh agents Active: 7"
+# Invariant maj 2026-06-02 T-LDAPS-MIGRATION : mail01 enroll +
+# decompte inclut le manager 000 -> 8 agents au total.
+if [ "$AGENTS" = "8" ]; then
+  pass "Wazuh agents Active: 8"
 elif [ "$AGENTS" -gt 0 ]; then
-  warn "Wazuh agents Active: $AGENTS (attendu 7)"
+  warn "Wazuh agents Active: $AGENTS (attendu 8)"
 else
   fail "Wazuh: 0 agents Active ou inaccessible"
 fi
