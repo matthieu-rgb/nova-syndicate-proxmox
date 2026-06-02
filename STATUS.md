@@ -1,6 +1,49 @@
 # Nova Syndicate -- STATUS
 
-Derniere mise a jour : 2 juin 2026 (T-LDAPS-MIGRATION ferme -- Phase 6.3 + 6.6 + 7a)
+Derniere mise a jour : 2 juin 2026 (T-LDAPS-MIGRATION ferme + audit IaC couverture)
+
+## Session 2026-06-02 -- audit IaC READ-ONLY -- tickets ouverts
+
+Audit lecture seule de la couverture IaC vs runtime reel : 17 VMs + 4 OPNsense,
+3 dirs Terraform, 20 roles Ansible, 34 ADRs. Livrable :
+[docs/iac-coverage-audit-2026-06-02.md](docs/iac-coverage-audit-2026-06-02.md).
+
+Couverture mesuree : **~75 % en volume / ~30 % en sequencabilite** (chaine
+rebuild enchainable). 8 ruptures identifiees dont 5 manuels irreductibles
+(install PVE, OPNsense ISO+1er boot, OPNsense API keys, step-ca Root CA init,
+Vault un-sealing). Posture realiste = "une commande par phase" atteignable en
+4-6 semaines de chantiers M.
+
+Tickets ouverts a partir de l'audit, scindes en deux categories :
+
+### Categorie A -- CORRECTIONS (bugs reels a fixer)
+
+| Ticket | Severite | Description | Reference |
+|--------|----------|-------------|-----------|
+| **T-IAC-SITE-YML-ETAPE-7** | LOW | `nova-syndicate-ansible/site.yml` ligne 59 : ETAPE 7 ("VPN WireGuard + IPsec") cible `hosts: domain_controllers` au lieu de `vpn_gateways`. Probable copier-coller. Aucun apply recent n'a tourne cette etape (sinon dc01 aurait recu une config WireGuard). Trivial a corriger : changer une ligne + verifier en `--check`. | Audit §3.2 (anomalie ETAPE 7) |
+| **T-IAC-WIREGUARD-DRIFT** | MEDIUM | Source de verite WireGuard ambigue : 3 fichiers candidats hors `nova-syndicate-proxmox` -- `nova-syndicate-ansible/terraform/environments/lyon/wireguard.tf` (910 oct, contenu), `nova-syndicate-ansible/terraform/environments/lyon/ireguard.tf` (0 oct, **typo**), `terraform/environments/lyon/wireguard.tf` (888 oct, top-level). Aucun fichier dans le repo proxmox. Decision a prendre : consolider dans `nova-syndicate-proxmox/terraform/environments/opnsense/` ou ailleurs, supprimer les duplicats et la typo. | Audit §7.1 (decouverte 2) |
+| **T-IAC-CLEAN-LEGACY-TF** | LOW | Deux dirs `terraform/environments/lyon/` (sous `nova-syndicate-ansible/` et top-level) sont des orphelins Phase II pre-renommage en `opnsense/`. Pas de tfstate visible dans les deux. Recouvre partiellement T-IAC-WIREGUARD-DRIFT : nettoyer les 2 dirs ferme aussi le drift WireGuard si la source est migree avant. | Audit §3.1 (Repos legacy) |
+
+### Categorie B -- EVOLUTIONS post-certification (chantiers de couverture, non bloquants)
+
+Aucun de ces tickets n'est requis pour la certification. Ils ferment la dette
+"reproductibilite IaC" identifiee par l'audit. Ordre suggere = ordre du tableau.
+
+| Ticket | Effort | Valeur | Description | Reference |
+|--------|--------|--------|-------------|-----------|
+| **T-IAC-BRIDGES-PROXMOX-HOST** | S (~1 jour) | ELEVEE | Scripter `/etc/network/interfaces` Proxmox host (bridges vmbr0..5 + sub-VLAN .15/.20/.50/.60) via un mini-role Ansible ciblant un group `proxmox` (`ansible_user=root`). Ferme dette Phase II §5 partiellement. Risque bas (rollback `/etc/network/interfaces`). | Audit §4.1, §6.1 #1 |
+| **T-IAC-TEMPLATE-9000-BUILD** | M (~3-5 jours) | ELEVEE | Scripter la creation du template Debian 12 cloud-init VMID 9000 : download cloud image -> `qm create` -> `qm importdisk` -> `qm set --ide2 cloudinit` -> customisation (fix systemd-resolved DNS cf memory `nova-cloud-init-template-dns-issue`, `qm set --sshkeys`) -> `qm template`. Cle de voute Phase VI : sans ce script, terraform apply ne tourne pas. | Audit §4.2, §6.1 #2 |
+| **T-IAC-AWX01-K3S-AWX** | M (~5-10 jours) | MOYENNE | 3 sous-roles Ansible : (1) `k3s_server` (binaire + config `disable: [traefik]`, files presents dans `nova-syndicate-ansible/files/awx/k3s-config.yaml`) ; (2) `awx_operator` (helm + CR YAML) ; (3) `awx_objects` (Org + Credentials + Project + Inventory + JT + Teams + AUTH_LDAP_TEAM_MAP via API REST, cf ADR-0031/0033). Risque : objets crees a chaud, prevoir tests en sandbox. | Audit §4.9, §6.1 #3 |
+| **T-IAC-AUTHELIA-ROLE** | M (~3-5 jours) | MOYENNE | Role Ansible `authelia` (install + `configuration.yml` template + secrets vault + LDAP backend ldaps://dc01:636). Touche tout l'acces SSO (Grafana, futur Wazuh dashboard, portail metier). Faible risque, gros gain narratif NIS2. | Audit §4.5, §6.1 #4 |
+| **T-IAC-BORG-ROLE** | S-M (~3-5 jours) | MOYENNE | Roles `borg_repo` (backup01 cote serveur, init repo append-only) + `borg_client` (cles, exclusions, scheduling). Reference ADR-0008 (`repokey-append-only`) + ADR-0009 (3-2-1-1-0). Sans ca, le DRP est partiellement manuel. | Audit §4.6, §6.1 #5 |
+| **T-IAC-APP01-STACKS-NOT-CODED** | M (par stack, MEDIUM agrege) | HIGH (NIS2 reproductibilite) | Meta-ticket : Authelia (cf T-IAC-AUTHELIA-ROLE), Grafana, Vault, nginx reverse-proxy = pas de role Ansible. ADRs 0019 (Authelia), 0030 (Grafana), 0026 (Vault plaintext fix lab) existent mais le code IaC manque. Dette importante en termes de NIS2 "reproductibilite". A decomposer en 3 sous-tickets Grafana/Vault/nginx une fois T-IAC-AUTHELIA-ROLE clos (modele de reference). | Audit §4.5, §7.1 #4 |
+
+Chantiers explicitement **ECARTES** (effort eleve, gain nul ou anti-pattern,
+detail audit §6.2) :
+- step-ca Root CA init (decision humaine NIS2, irreductible)
+- OPNsense ISO bootstrap + 4 API keys (limite produit, pas de cloud-init OPNsense)
+- Install PVE sur le fer (pre-requis physique)
+- Vault APP01 un-sealing automatique (anti-pattern securite tant que `tls_disable=true` reste choix lab)
 
 ## Session 2026-06-02 -- complement (Phase 7a) -- Strong auth applique, listener 389 conserve
 
