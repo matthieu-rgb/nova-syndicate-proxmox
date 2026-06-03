@@ -399,3 +399,341 @@ Detailees dans STATUS.md (commit a part) :
 - `roles/vpn_gateway/defaults/main.yml` -- defaut `vpn_gw_proxmox_dmz_ip: "172.16.1.5"`
 - `/etc/wireguard/wg0.conf` vpn-gw01 -- annote Ansible-managed
 - `iptables -t nat -L PREROUTING -n -v` -- DNAT existant Proxmox host
+
+---
+
+## 11. Diagnostic data plane (2026-06-03 nuit, AFK READ-ONLY)
+
+**Etat post-fix P1+P4** : handshake WG OK (`Keypair 44 created`, endpoint
+`185.55.247.170:59081`, transfer `7.23 KiB rcv / 4.49 KiB sent`), **mais data
+plane KO** : ping Mac (`10.20.0.10`) vers `10.20.0.1` (passerelle wg0) ET vers
+`192.168.20.13` (app01) = timeout.
+
+Diagnostic exhaustif cote vpn-gw01 + croisements avec ADR-0017.
+
+### 11.1. Etat reseau vpn-gw01 (collecte 2026-06-03 nuit)
+
+```
+ip a:
+  wg0   UNKNOWN  10.20.0.1/24                                         ← interface UP
+  eth0  UP       172.16.1.4/29  fe80::be24:11ff:fef1:34e/64           ← DMZ
+
+ip route:
+  default via 172.16.1.1 dev eth0 proto static                        ← default = FW-EXT-LYON
+  10.20.0.0/24 dev wg0 proto kernel scope link src 10.20.0.1          ← reseau client WG
+  172.16.1.0/29 dev eth0 proto kernel scope link src 172.16.1.4       ← DMZ link
+  192.168.0.0/16 via 172.16.1.5 dev eth0                              ← PostUp wg0.conf, fonctionnel
+                                                                        depuis le fix P1 ce soir
+  192.168.20.0/24 via 172.16.1.1 dev eth0                             ← PostUp wg0.conf vers servers
+
+sysctl net.ipv4.ip_forward = 1                                        ← forwarding actif
+```
+
+### 11.2. nft INPUT/FORWARD (table inet filter)
+
+```
+chain input (policy drop):
+  iif "lo" accept
+  ct state established,related accept
+  ct state invalid drop
+  ip protocol icmp accept                                             ← ICMP entrant TOUTES interfaces
+  ip6 nexthdr ipv6-icmp accept
+  [SSH allowlists par source...]
+  udp dport 51820 ct state new accept comment "WireGuard"
+  ip saddr 192.168.20.13 tcp dport 9100 accept                        ← Wazuh node_exporter
+  log prefix "[NFT-DROP] " counter packets 24 bytes 1500 drop          ← drop final, compteur 24/1500
+
+chain forward (policy drop):
+  iifname "eth0" oifname "wg0" tcp flags syn tcp option maxseg size set 1360
+  iifname "wg0" oifname "eth0" tcp flags syn tcp option maxseg size set 1360
+  iifname "wg0" oifname "eth0" ct state { established, related, new } accept comment "WG road-warriors out"
+  iifname "eth0" oifname "wg0" ct state established,related accept comment "WG road-warriors return"
+```
+
+**Conclusion** : nft INPUT accepte ICMP global. Forward `wg0 <-> eth0` autorise
+en sortie (new + established) et en retour (established/related).
+
+### 11.3. iptables NAT (cle du diagnostic)
+
+```
+Chain PREROUTING (NAT) -- VIDE
+Chain POSTROUTING (NAT) -- VIDE                                       ← *** !!! ***
+```
+
+**Aucun MASQUERADE/SNAT** pour `10.20.0.0/24 -> eth0`. **C'est la cause #1 du
+timeout sur `192.168.20.13`** (cf section 11.5).
+
+### 11.4. Policy routing ADR-0017 (fwmark + table wg-reply)
+
+```
+ip rule show:
+  0:     from all lookup local
+  32765: from all fwmark 0x1 lookup wg-reply                          ← rule WG-reply OK
+  32766: from all lookup main
+  32767: from all lookup default
+
+ip route show table wg-reply:
+  default via 172.16.1.5 dev eth0                                     ← gateway = Proxmox vmbr3 (172.16.1.5 pose ce soir)
+
+iptables -t mangle -L OUTPUT -n -v:
+  359 46272 MARK 17 udp spt:51820 MARK set 0x1                        ← 359 paquets WG-protocole marques
+```
+
+**Policy routing FONCTIONNEL** (ADR-0017 entierement satisfait) : 359 paquets
+UDP sport=51820 (handshakes + keepalive cote serveur) sont marques 0x1 et
+routes via `172.16.1.5` (Proxmox vmbr3). Pas concerne par le data plane qui
+sort en clair (donc pas marque, route via table main).
+
+### 11.5. Cause racine identifiee -- decomposition par cible
+
+#### Cible 1 : ping `192.168.20.13` (app01) -- CAUSE CLAIRE
+
+Path emis :
+```
+Mac (10.20.0.10) --[chiffre]--> vpn-gw01 wg0
+  vpn-gw01 INPUT: ip dst 10.20.0.1? NON, dst=192.168.20.13 -> FORWARD
+  FORWARD wg0->eth0: accepte (new+established)
+  Sortie eth0, src=10.20.0.10 (PAS de MASQUERADE), dst=192.168.20.13
+  Route via 172.16.1.1 (FW-EXT-LYON)
+  
+FW-EXT-LYON: voit src=10.20.0.10 -> auto-NAT outbound vers WAN ? Ou bien
+            forward vers FW-INT-LYON ? Routage incertain pour 10.20.0.x.
+FW-INT-LYON: regles existantes road-warrior (TF) :
+  fwint_rw_to_dc01_dns        (DNS uniquement)
+  fwint_rw_to_fs01            (SMB ?)
+  fwint_rw_to_db01            (SSH ?)
+  fwint_roadwarriors_to_app01_https  (HTTPS uniquement, pas ICMP)
+  -> ICMP de 10.20.0.0/24 -> 192.168.20.0/28 PAS COUVERT
+
+Meme si forwarde, app01 (192.168.20.13) :
+  Recoit ICMP request src=10.20.0.10
+  Tente de generer reply
+  Route retour: 10.20.0.0/24 PAS dans la table de routage app01
+  -> reply tombe dans la default route (FW-INT) -> drop ou broadcast
+```
+
+**Causes #1 (combinees, toutes presentes)** :
+1. **Pas de SNAT/MASQUERADE** cote vpn-gw01 -> src=10.20.0.10 preservee
+2. **Pas de regle FW-INT-LYON pour ICMP** road-warrior -> servers
+3. **Pas de route retour** `10.20.0.0/24 via 172.16.1.4` sur app01 (ni sur FW-INT)
+
+#### Cible 2 : ping `10.20.0.1` (passerelle wg0) -- CAUSE INCERTAINE
+
+C'est le plus revelateur (cf user briefing). Si la passerelle ne repond pas
+a un ping sur sa propre IP wg0, ce n'est PAS un probleme de routing en aval.
+
+Path attendu :
+```
+Mac (10.20.0.10) --[chiffre]--> vpn-gw01 wg0
+  vpn-gw01 INPUT: dst=10.20.0.1 = wg0 local -> chain input
+  chain input: ip protocol icmp accept                       ← devrait accepter
+  Kernel genere ICMP echo reply src=10.20.0.1 dst=10.20.0.10
+  Routing: 10.20.0.10 -> 10.20.0.0/24 dev wg0
+  wg0 OUTPUT: chiffrement + envoi tunnel vers endpoint Mac
+```
+
+Theoriquement OK. nft `ip protocol icmp accept` est sans qualifier d'interface
+et avant le drop final, donc devrait matcher.
+
+**Hypotheses pour le timeout** :
+
+- **(a) Test trop precoce** : le user a peut-etre pingue immediatement apres
+  le `wg-quick up`, avant qu'un keypair stable soit installe + propage des
+  deux cotes. WireGuard rejette silencieusement les paquets data tant que la
+  keypair n'est pas confirmee bi-directionnellement (apres premier round-trip).
+  Le `transfer 7.23 KiB received` cote serveur peut etre du a 1-2 paquets
+  handshake confirmes + retries. Probabilite : MOYENNE.
+
+- **(b) Client Mac : route 10.20.0.0/24 mal posee** : si wg-quick cote Mac
+  n'a pas correctement ajoute la route `10.20.0.0/24 dev utunN`, le ping
+  Mac->10.20.0.1 part sur une autre interface (utun4 Tailscale residuelle,
+  ou default route physique) et meurt. Cote serveur, on verrait 0 paquet
+  data data-plane arriver -- ce qui est compatible avec un transfer
+  cote serveur qui est uniquement keepalive (~32 bytes/25s).
+  Probabilite : ELEVEE. Test demain : `route get 10.20.0.1` sur Mac doit
+  retourner `interface: utunN` (= WG Nova), pas autre chose.
+
+- **(c) MTU asymetrie** : par defaut wg0 = MTU 1420. Si client envoie payload
+  > 1392 bytes (1420 - 28 ICMP/IP), fragmentation requise. Probable IMPRO-
+  BABLE pour ping standard (56 bytes payload). Probabilite : FAIBLE.
+
+- **(d) Drop silencieux dans une rule conntrack** : `ct state invalid drop`
+  est juste avant `ip protocol icmp accept`. Si conntrack marque le ICMP
+  comme INVALID (par exemple pour un timing apres keypair rotation),
+  drop avant l'accept ICMP. Probabilite : FAIBLE mais a verifier.
+
+- **(e) Forward chain bug** : si le paquet est mal classe (forward au lieu
+  de input pour 10.20.0.1), il pourrait passer par FORWARD au lieu de INPUT.
+  Mais routing decision base sur dst=10.20.0.1 sur wg0 local. Probabilite :
+  TRES FAIBLE.
+
+**Conclusion cible 2** : tester (b) en priorite (cote Mac). Si (b) est
+confirme, le ping 10.20.0.1 marchera apres correction client -- aucun fix
+serveur necessaire pour cette cible.
+
+### 11.6. Fix propose -- vpn-gw01 (cible 1)
+
+#### Option A -- SNAT/MASQUERADE (recommande pour demo jury rapide)
+
+Une seule regle iptables sur vpn-gw01 :
+
+```sh
+sudo iptables -t nat -A POSTROUTING -s 10.20.0.0/24 -o eth0 -j MASQUERADE \
+  -m comment --comment "WG road-warrior SNAT to DMZ IP (T-WG-DEMO-ROADWARRIOR)"
+```
+
+**Effet** :
+- src=10.20.0.10 -> src=172.16.1.4 (DMZ IP vpn-gw01) avant sortie eth0
+- FW-INT voit du trafic DMZ standard (vpn-gw01 source) -> regles existantes
+  ICMP DMZ->servers s'appliquent (a verifier : *_dmz_to_servers* TF rule)
+- App01 voit du trafic d'une IP DMZ qu'il connait -> reply via 172.16.1.1
+- Conntrack vpn-gw01 fait le SNAT inverse au retour
+
+**Persistance** :
+```sh
+# Si netfilter-persistent en place
+sudo iptables-save > /etc/iptables/rules.v4
+sudo netfilter-persistent reload
+```
+A verifier si dependances existantes (rule deja en place avant ce soir ?).
+Sinon : role Ansible `vpn_gateway` -> tasks/policy_routing.yml ajout
+masquerade.
+
+**Tradeoff Wazuh/NIS2** :
+- **Perte d'IP source** : Wazuh logs cote app01/dc01/fs01/db01 verront
+  `172.16.1.4` comme source des actions road-warrior, pas l'IP client WG
+  (10.20.0.10, 10.20.0.20, ...).
+- **Audit NIS2 art.21 §2.i (traceability)** : la chaine "qui a fait quoi"
+  necessite de croiser :
+    - logs Wazuh app01 : action source=172.16.1.4
+    - logs wg-show wg0 cote vpn-gw01 : qui etait 10.20.0.10 a ce timestamp
+      (= matthieu-mac peer endpoint 185.55.247.170:NNNN)
+  C'est faisable mais ajoute un saut de log. **Pas un blocker NIS2 strict**.
+- **Auditeur jury** : peut etre questionne sur "comment tracez-vous un road
+  warrior individuel?" -> reponse "correlation wg-show timestamp + endpoint
+  IP source". OK pour un POC, moins propre pour prod.
+
+#### Option B -- Preservation IP source (recommande post-certif, NIS2 propre)
+
+Pas de MASQUERADE cote vpn-gw01. Trois fix combines :
+
+**B.1 -- FW-INT-LYON : ajout regles `10.20.0.0/24 -> 192.168.20.0/28`**
+
+Touche IaC. Code Terraform a ajouter dans `terraform/environments/opnsense/fw_int.tf` :
+
+```hcl
+resource "opnsense_firewall_filter" "fwint_roadwarriors_to_servers_icmp" {
+  provider    = opnsense.fw_int
+  enabled     = true
+  description = "WG road-warriors ICMP vers SERVERS"
+  interface   = { interface = ["dmz"] }
+  source      = { net = "net_road_warriors" }  # alias 10.20.0.0/24 a creer
+  destination = { net = "net_lyon_servers" }
+  protocol    = "icmp"
+  action      = "pass"
+  log         = true
+}
+# + regles symetriques pour TCP autres ports si besoin
+```
+
+**Pre-requis Terraform** :
+- Alias `net_road_warriors` (10.20.0.0/24) a creer dans `aliases.tf`
+- Verifier que le `direction` (FW-INT ne regarde pas vers le DMZ par defaut --
+  pas certain que cette regle s'applique au bon hook ; PEUT NECESSITER une
+  configuration `interface = ["wan"]` selon le sens OPNsense)
+
+**B.2 -- Route retour sur app01** (et tout serveur Lyon que les road warriors
+doivent atteindre) :
+
+```sh
+# Idempotent, persiste via /etc/network/interfaces.d/wg-rw-route OU role Ansible
+sudo ip route add 10.20.0.0/24 via 192.168.20.1                       # gateway VLAN servers
+# (192.168.20.1 = FW-INT-LYON sur VLAN20 servers ; il fwd vers vpn-gw01 via
+#  un peering qu'on aurait deja code en B.3)
+```
+
+**B.3 -- Route sur FW-INT-LYON pour 10.20.0.0/24 vers DMZ**
+
+Terraform `routes.tf` ou `fw_int.tf` :
+```hcl
+resource "opnsense_route" "fwint_to_road_warriors" {
+  provider = opnsense.fw_int
+  enabled  = true
+  network  = "10.20.0.0/24"
+  gateway  = "DMZ_LYON_GW"  # gateway = 172.16.1.4 (vpn-gw01) a creer prealablement
+}
+```
+
+**Tradeoff** :
+- **IP source preservee** : Wazuh trace 10.20.0.10 directement -> identifiable
+  via wg show wg0 endpoint + correlation peer name.
+- **Audit NIS2 plus propre** : 1 ligne log = 1 reponse.
+- **Cout** : 3 modifs (TF FW-INT alias + filter + route, modif Ansible role app01
+  et autres). Necessite snapshot 201+202 (FW-EXT-LYON + FW-INT-LYON) + tests.
+  ~30 min de travail superviseur, ~5 jours en CI/CD propre.
+
+#### Recommandation operationnelle
+
+| Critere | Option A (MASQUERADE) | Option B (preservation src) |
+|---------|----------------------|------------------------------|
+| Effort | **1 commande** | 3 modifs (TF + Ansible + route) |
+| Reversibilite | `iptables -D POSTROUTING ...` | `terraform destroy` ciblee |
+| NIS2 traceabilite | acceptable (2-saut log correlation) | optimale (direct) |
+| Demo jury aujourd'hui | OK -- "le tunnel marche, audit corrige V2" | KO -- trop de manip |
+| Production V2 | dette T-WG-MASQUERADE-TO-SOURCE-PRESERVATION | etat cible |
+
+**Decision proposee** :
+1. **Demo jury** : Option A (MASQUERADE) -- demain matin, 5 min.
+2. **Ticket V2 (post-certif)** : `T-WG-NAT-SOURCE-PRESERVATION` -- migration
+   vers Option B dans une fenetre supervisee, avec :
+   - role Ansible `wg_concentrator` enrichi
+   - Terraform alias + filter + route IaC propres
+   - audit Wazuh dashboards mis a jour (filtres par 10.20.0.x)
+
+### 11.7. Hypothese complementaire -- ping 10.20.0.1 (cible 2)
+
+Si apres Option A le ping 10.20.0.1 (passerelle) timeout TOUJOURS :
+
+**Test rapide cote Mac** (a faire toi-meme demain) :
+```sh
+# 1. Verifier que l'interface WG Nova est UP et que la route est posee
+sudo wg show
+route get 10.20.0.1                    # interface doit etre utunN du WG Nova
+ifconfig utunN                          # confirmer inet 10.20.0.10/24 + UP
+
+# 2. tcpdump cote Mac sur utunN pour voir le ping sortir (chiffre)
+sudo tcpdump -nn -i utunN icmp -c 10
+
+# 3. tcpdump cote serveur sur wg0 (necessite acces)
+ssh ... vpn-gw01 'sudo tcpdump -nn -i wg0 icmp -c 10'
+```
+
+**Si pas de paquet vu sur wg0 cote serveur** : le ping ne sort pas via le tunnel
+cote Mac. Probleme client (hypothese 11.5/cible 2/(b)).
+
+**Si paquet vu mais pas de reply genere** : nft INPUT a un drop cache (rate
+limit, conntrack invalid). Diag plus pousse necessaire.
+
+**Si reply genere mais pas remonte vers Mac** : route WG inversee cassee.
+
+### 11.8. Snapshots/backups a prendre AVANT le fix
+
+| Element | Action | Pourquoi |
+|---------|--------|----------|
+| vpn-gw01 (VMID 110) | `qm snapshot 110 pre-wg-data-fix-20260604` | rollback rapide si MASQUERADE casse autre chose |
+| `/etc/iptables/rules.v4` sur vpn-gw01 | `cp .bak-pre-wg-masq-20260604` | persistance iptables (si en place) |
+| `roles/vpn_gateway/tasks/*.yml` | aucun (lecture seule, modif apres demo) | la modif Ansible se fait apres validation du fix runtime |
+
+Pour Option B (post-certif uniquement) :
+- VMID 202 (fw-int-lyon01) : `qm snapshot 202 pre-rw-fwint-rules-20260604`
+- VMID 201 (fw-ext-lyon01) : non touche par Option B
+- VMID 106 (app01) : pas de snapshot, modif idempotente (route)
+- Terraform state opnsense : `terraform plan` avant `apply` -- diff doit
+  contenir EXACTEMENT les ressources nouvelles (filter + alias + route).
+
+### 11.9. Action item nuit -- aucune action (STOP)
+
+**Per consigne user 2026-06-03 nuit** : DIAGNOSTIC SEUL. Aucun fix applique.
+Cette section sera complétee demain par la validation du fix par l'operateur
++ tests reels.
+
