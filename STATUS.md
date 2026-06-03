@@ -2,6 +2,51 @@
 
 Derniere mise a jour : 3 juin 2026 (menage services failed + Borg cron confirme)
 
+## Session 2026-06-03 (soir) -- RECO IPsec + WireGuard road-warrior, dettes IaC ouvertes
+
+### Bloc 1 -- RECO IPsec inter-sites (lecture seule)
+
+Diagnostic Phase 1 audit sante du matin **corrige** : IPsec FONCTIONNE deja.
+Mon "charon Command not found" etait un artefact tcsh+ssh. Realite : 1 IKE SA
+ESTABLISHED depuis ~7h36 entre 10.0.0.2 et 10.0.2.2, 4 child SAs INSTALLED
+(bastion/29 + servers/28 + users/26 + backup/29 <-> MRS /26), trafic reel sur
+le tunnel SERVERS. Plan de demo livre dans
+[docs/runbook-ipsec-buildout.md](docs/runbook-ipsec-buildout.md) (commit `a6aad27`).
+
+Tickets ouverts par cette RECO :
+- **T-IPSEC-PERSISTENCE-SCRIPTS** (MEDIUM) -- `nova_ipsec_fix` + `fix_ipsec_children.py` absents, risque ecrasement swanctl.conf via GUI OPNsense.
+- **T-OPNSENSE-IPSEC-SERVICE-WRAPPER** (LOW) -- `service ipsec onestatus` ment ("not running" alors que charon tourne). Healthcheck a corriger.
+- **T-IPSEC-CERT-MIGRATION** (LOW post-certif) -- migration PSK -> certs step-ca, V2.
+- **T-ADR-2-5-SYNC-RUNTIME** (LOW) -- ADRs 0002 et 0005 utilisent prefixes 10.x non deployes, runtime utilise 192.168.x.
+- **T-OPNSENSE-TCSH-BASE64-PATTERN** (DOC) -- pattern SSH base64-encoded vers OPNsense pour bypass tcsh.
+
+### Bloc 2 -- WireGuard road-warrior demo (Option 3 revue) -- handshake OK, data routing reste a finaliser
+
+Plan d'execution dans
+[docs/runbook-wireguard-roadwarrior-demo.md](docs/runbook-wireguard-roadwarrior-demo.md).
+Ecart vs plan initial : DNAT cote Proxmox host (cf ADR-0017), pas cote
+OPNsense (provider Terraform ne supporte pas).
+
+**Etat au soir 2026-06-03** :
+
+| Etape | Statut | Detail |
+|-------|--------|--------|
+| Prerequis P1 vmbr3 IP | **RESOLU** | Runtime + persistance, cf ticket T-VMBR3-DMZ-IP RESOLU ci-dessous |
+| Prerequis P2 DNAT iptables | DEJA EN PLACE | regle pre-existante `udp dpt:51820 -> 172.16.1.4:51820` (compteurs DNAT=10/1188, FORWARD vmbr0->vmbr3=442/77792) ; restriction `-i vmbr0` toujours active mais suffisante pour le path `box -> nic0 -> vmbr0` |
+| Handshake matthieu-mac | **RESOLU 2026-06-03 20:50:40** | dmesg kernel : `Receiving handshake initiation from peer 1 (185.55.247.170:59081)`, `Sending handshake response`, `Keypair 44 created for peer 1`. wg show : `endpoint 185.55.247.170:59081`, transfer `7.23 KiB received, 4.49 KiB sent`. Persistent keepalive 25s. |
+| Side-fix client | -- | Address Mac corrigee en `10.20.0.10/24` (etait `/32` initialement). Pubkey serveur dans `[Peer]` confirmee `9ExSPQD6PWsFChdoX3SDEkY8ZppRnvXmH78SKM0vvy4=`. |
+| **Data routing intra-tunnel** | **OUVERT, a finaliser 2026-06-04** | Ping Mac (`10.20.0.10`) -> app01 (`192.168.20.13`) timeout malgre handshake OK et bytes echanges. Hypotheses prioritaires : (1) absence MASQUERADE vpn-gw01 pour `10.20.0.0/24 -> eth0`, (2) FW-INT-LYON sans regle ICMP road-warriors -> servers (regles existantes couvrent SSH/HTTPS uniquement : `fwint_rw_to_db01`, `fwint_rw_to_fs01`, `fwint_rw_to_dc01_dns`, `fwint_roadwarriors_to_app01_https`), (3) absence route retour `10.20.0.0/24 via 172.16.1.4` sur FW-INT-LYON / sur app01 directement, (4) nft INPUT sur wg0 vpn-gw01 trop strict. **Diag prevu demain** depuis Tailscale Mac reactive : tcpdump wg0/eth0 vpn-gw01 + `ip route` app01 + pf rules `fwint_*roadwarrior*` cote FW-INT. |
+
+Dettes ouvertes par cette RECO :
+
+| Ticket | Severite | Description |
+|--------|----------|-------------|
+| **T-VMBR3-DMZ-IP** | RESOLU 2026-06-03 (soir) | IP `172.16.1.5/29` posee runtime (`ip addr add`) + persistance `/etc/network/interfaces` (stanza `inet manual` -> `inet static address 172.16.1.5/29`). Backup `/etc/network/interfaces.bak-pre-vmbr3-ip-20260603`. Effet immediat verifie : `ip route show 172.16.1.0/29 -> dev vmbr3`, `ping 172.16.1.4 0.09 ms`. Cote WireGuard : forward `vmbr0 -> vmbr3 = 268 pkts` (avant 0), paquets arrivent enfin a vpn-gw01. |
+| **T-TF-OPNSENSE-NAT-NO-SUPPORT** | LOW | Provider `browningluke/opnsense` 0.16 ne supporte pas `opnsense_firewall_nat` ni `_port_forward`. Confirmation STATUS Phase II §1. Consequence : aucun DNAT/port-forward sur OPNsense codable en Terraform. Alternative -> Ansible-on-Proxmox-host (cf T-IPTABLES-ANSIBLE-PROXMOX). |
+| **T-IPTABLES-ANSIBLE-PROXMOX** | MEDIUM | Pas de role Ansible pour les regles iptables sur Proxmox host (`/etc/iptables/rules.v4`). Aujourd'hui modifications manuelles persistees via `iptables-save` (operationnel mais non reproductible). A integrer dans **T-IAC-BRIDGES-PROXMOX-HOST** (cf audit IaC §6.1). |
+| **T-IPTABLES-MASQUERADE-DUPLICATE** | LOW | Chain POSTROUTING Proxmox contient des MASQUERADE en doublon pour `192.168.15.0/29`, `192.168.20.0/28`, `192.168.50.0/29` (3 IPs x 2 entrees identiques). A investiguer + nettoyer hors session demo. |
+| **T-WG-WGCONF-CLIENT-VAULT** | LOW | Configs client `matthieu-mac` + `vps-hetzner-test` referencees mais cles privees off-repo, sans convention de stockage definie. A definir (1Password, vault Ansible, ...). |
+
 ## Session 2026-06-03 -- audit sante + menage services failed -- 13/13 VMs propres
 
 Audit complet runtime + remise en marche avant session captures jury.
