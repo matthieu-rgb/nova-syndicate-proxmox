@@ -1,6 +1,69 @@
 # Nova Syndicate -- STATUS
 
-Derniere mise a jour : 2 juin 2026 (T-LDAPS-MIGRATION ferme + audit IaC couverture)
+Derniere mise a jour : 3 juin 2026 (menage services failed + Borg cron confirme)
+
+## Session 2026-06-03 -- audit sante + menage services failed -- 13/13 VMs propres
+
+Audit complet runtime + remise en marche avant session captures jury.
+Diagnostic lecture seule puis reparations ciblees apres validation.
+
+### Resultat ménage (13/13 VMs avec 0 service failed)
+
+| Action | Cibles | Effet |
+|--------|--------|-------|
+| `systemctl disable --now openipmi` + reset-failed | 10 VMs (web01, mail01, bastion01, dc01, fs01, db01, app01, proxy-lyon01, proxy-mrs01, backup01) | LSB OpenIPMI driver desactive (hardware inexistant sur VM, BENIN). 3 VMs sans le paquet (vpn-gw01, awx01, pki01). |
+| `systemctl disable --now isc-dhcp-server` + reset-failed | dc01 | Service ne pouvait pas servir (subnet declare 192.168.30.0/26 VLAN Users mais dc01 = eth0 192.168.20.10/28 VLAN 20). JAMAIS-FINALISE. -> dette **T-DHCP-USERS-VLAN** ouverte. |
+| `systemctl reset-failed cloud-final` | pki01 | Echec one-shot APT update au 1er install (1er juin, DNS template 9000 KO). step-ca tourne. Etat failed historique nettoye. |
+| drop-in `/etc/systemd/system/dnsmasq.service.d/wait-wg0.conf` (`After=wg-quick@wg0.service` + `Requires=`) + restart | vpn-gw01 | Race condition systemd resolue : dnsmasq tente de bind 10.20.0.1 avant wg0 up. Persiste au reboot. -> dette **T-DNSMASQ-WG0-ORDERING** marquee RESOLUE. |
+
+Verification finale : `systemctl --failed --no-legend | wc -l` retourne `0` sur les 13 VMs Linux.
+
+### Borg backups -- correction de diagnostic
+
+Diagnostic initial Phase 1 erronne ("borgbackup-nova.timer inactive"). En realite :
+- **Le timer systemd N'EXISTE PAS**. La planification est via cron classique :
+  `/etc/cron.d/borg-cloud-backup : 30 23 * * * root /usr/local/bin/borg-cloud-sync.sh ...`
+- **Le backup CLOUD vers Hetzner FONCTIONNE deja** (preuve dry-run 2026-06-03 12:57) :
+  - Tunnel WireGuard backup01 (10.30.0.2) -> Hetzner (10.30.0.1) actif (handshake 1 min 39 s avant le check).
+  - 5 archives sur le VPS, dont **backup01-2026-06-02-2330** (hier soir).
+  - Ping 37 ms, transfer 603 KiB recus + 3.37 MiB envoyes (compteur live).
+
+**Dette T-IAC-BORG-ROLE** (audit catégorie B EVOLUTIONS) reste valide UNIQUEMENT pour la dimension "role Ansible reproductible". Le DRP runtime est operationnel des aujourd'hui.
+
+### Precisions IPsec Phase II §4 -- "daemon non demarre" -> "package non installe"
+
+Diagnostic SSH FW-EXT-LYON via `-J opn-fw-int-lyon root@10.0.1.1` confirme :
+- `charon: Command not found` (binaire absent du PATH).
+- `pgrep charon` = vide.
+- `swanctl --list-sas` et `--list-conns` = vides.
+- `last reboot` depuis 2026-05-07 -- aucune trace de demarrage strongswan.
+- ping FW-EXT-LYON -> 10.0.2.2 (WAN MRS) ou 192.168.40.1 (LAN MRS) : 100 % packet loss.
+
+**STATUS Phase II §4 ("strongSwan present mais daemon non demarre") etait imprecis** :
+le binaire `charon` n'est meme pas installe. C'est plus profond qu'un service down.
+Effort de remise en service Phase IV = install pkg + cert step-ca + swanctl.conf x 2 firewalls.
+
+FW-EXT-MRS non sonde directement (reseau coupe, chaine SSH cassee). Posture presumee identique.
+
+### Services metier critiques au jour de cette session
+
+13/13 services actifs (cf [docs/health-snapshot-2026-06-03.md](docs/health-snapshot-2026-06-03.md)
+pour le detail visuel). Aucune regression metier detectee.
+
+### Snapshots Proxmox a nettoyer (apres validation finale par l'operateur)
+
+Snapshots filets pris avant le menage du 3 juin :
+- VMID 103 (dc01) : `dc01-pre-menage-failed-services-20260603` (2026-06-03 12:52:22)
+- VMID 110 (vpn-gw01) : `vpn-gw01-pre-dnsmasq-ordering-20260603` (2026-06-03 12:52:22)
+
+A supprimer apres :
+1. Confirmation que les changements (openipmi/isc-dhcp/dnsmasq drop-in) tiennent au reboot.
+2. Aucune regression detectee lors de la session captures jury.
+
+Snapshots residuels des sessions precedentes a nettoyer egalement (cf STATUS sections 2026-06-02 et plus anciennes) :
+- VMID 101 (mail01) : `mail01-pre-ldaps-mail` (2026-06-02 09:14:04)
+- VMID 103 (dc01) : `dc01-pre-mail-ldaps`, `dc01-pre-strong-auth`, `dc01-pre-iac-reformat-smbconf`
+- 5 snapshots dc01 cumules en moins de 24 h, a nettoyer en lot.
 
 ## Session 2026-06-02 -- audit IaC READ-ONLY -- tickets ouverts
 
