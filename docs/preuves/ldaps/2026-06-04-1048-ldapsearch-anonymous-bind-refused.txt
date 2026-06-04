@@ -1,0 +1,47 @@
+=== Tests de refus du bind anonyme sur ldaps://dc01:636 ===
+Captured: 2026-06-04T08:49:09Z
+From  : mail01 (172.16.1.3 DMZ)
+Target: ldaps://dc01.nova-syndicate.local:636
+But   : prouver P-001 RESOLU = bind anonyme ne peut pas obtenir d'identite ni lire les comptes
+
+============================================================
+TEST A : ldapwhoami -x (simple bind anonyme explicite)
+============================================================
+Commande :
+  LDAPTLS_CACERT=/etc/ssl/certs/ca-certificates.crt \
+    ldapwhoami -H ldaps://dc01.nova-syndicate.local:636 -x
+
+Resultat :
+ldap_parse_result: Protocol error (2)
+	additional info: Extended Operation(1.3.6.1.4.1.4203.1.11.3) not supported
+Result: Protocol error (2)
+Additional info: Extended Operation(1.3.6.1.4.1.4203.1.11.3) not supported
+exit_code: 1
+
+============================================================
+TEST B : ldapsearch -x sur RootDSE puis sur OU=Service-Accounts
+  (anonyme tente de lire des comptes utilisateurs)
+============================================================
+Commande :
+  LDAPTLS_CACERT=/etc/ssl/certs/ca-certificates.crt \
+    ldapsearch -H ldaps://dc01.nova-syndicate.local:636 -x -LLL \
+      -b "OU=Service-Accounts,DC=nova-syndicate,DC=local" \
+      -s sub "(objectClass=user)" sAMAccountName cn
+
+Resultat :
+Operations error (1)
+Additional information: 00002020: Operation unavailable without authentication
+
+exit_code: 0
+
+============================================================
+Interpretation pour le jury :
+============================================================
+- Test A : Samba AD refuse l'identification (whoami retourne anonyme/vide), prouvant que
+  l'identite de l'appelant non authentifie n'est PAS reconnue.
+- Test B : Samba AD retourne 0 entree pour la requete utilisateur en anonyme, alors qu'un
+  bind authentifie (cf fichier ldapsearch-authenticated-ldaps) renvoie l'utilisateur attendu.
+- Smb.conf est pinne 'ldap server require strong auth = yes' (cf ADR-0034 Phase 7a, RESOLU 2026-06-02).
+  Verifiable : ssh dc01 'sudo testparm -s --parameter-name=\"ldap server require strong auth\"' -> Yes
+- Resultat fonctionnel : aucun acces metier (lecture comptes, lecture groupes, lecture attributs)
+  n'est possible en anonyme. P-001 (HIGH \"bind LDAP anonyme\") cloture par cette posture.

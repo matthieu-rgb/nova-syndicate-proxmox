@@ -1,0 +1,27 @@
+=== Authelia configuration.yml -- section authentication_backend.ldap ===
+Captured: 2026-06-04T08:49:11Z
+Source: app01:/etc/authelia/configuration.yml
+Note  : la valeur de 'password:*** REDACTED -- voir vault Ansible (vault_authelia_ldap_password) ***
+        Stockage securise : Ansible vault.
+
+--- Extrait section authentication_backend / ldap ---
+authentication_backend:
+  ldap:
+    implementation: activedirectory
+    address: ldaps://dc01.nova-syndicate.local:636
+    tls:
+      skip_verify: false
+      minimum_version: TLS1.2
+      server_name: dc01.nova-syndicate.local
+    timeout: 5s
+    start_tls: false
+    base_dn: DC=nova-syndicate,DC=local
+    users_filter: (&({username_attribute}={input})(objectCategory=person)(objectClass=user))
+    attributes:
+      username: sAMAccountName
+      display_name: displayName
+      mail: mail
+      group_name: cn
+    groups_filter: (member={dn})
+    user: CN=svc authelia,OU=Service-Accounts,DC=nova-syndicate,DC=local
+    password: *** REDACTED -- voir vault Ansible (vault_authelia_ldap_password) ***

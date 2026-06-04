@@ -1,0 +1,86 @@
+=== openssl s_client -connect dc01.nova-syndicate.local:636 ===
+Captured: 2026-06-04T08:48:01Z
+From  : mail01 (172.16.1.3 DMZ) -- step-ca trust deploye via role pki_client
+Target: dc01.nova-syndicate.local:636 (Samba AD LDAPS)
+
+--- Handshake + cert details (echo | openssl s_client) ---
+depth=2 O = Nova Syndicate Root CA, CN = Nova Syndicate Root CA Root CA
+verify return:1
+depth=1 O = Nova Syndicate Root CA, CN = Nova Syndicate Root CA Intermediate CA
+verify return:1
+depth=0 CN = dc01.nova-syndicate.local
+verify return:1
+CONNECTED(00000003)
+---
+Certificate chain
+ 0 s:CN = dc01.nova-syndicate.local
+   i:O = Nova Syndicate Root CA, CN = Nova Syndicate Root CA Intermediate CA
+   a:PKEY: id-ecPublicKey, 256 (bit); sigalg: ecdsa-with-SHA256
+   v:NotBefore: Jun  1 20:59:05 2026 GMT; NotAfter: Jun  1 21:00:05 2027 GMT
+-----BEGIN CERTIFICATE-----
+MIICkjCCAjigAwIBAgIRANH9CmZQP/qX2/4frJ5/Y4gwCgYIKoZIzj0EAwIwUjEf
+MB0GA1UEChMWTm92YSBTeW5kaWNhdGUgUm9vdCBDQTEvMC0GA1UEAxMmTm92YSBT
+eW5kaWNhdGUgUm9vdCBDQSBJbnRlcm1lZGlhdGUgQ0EwHhcNMjYwNjAxMjA1OTA1
+WhcNMjcwNjAxMjEwMDA1WjAkMSIwIAYDVQQDExlkYzAxLm5vdmEtc3luZGljYXRl
+LmxvY2FsMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEft/mS/MlqYHOvFQ5IxB7
+s34QNidF97h2UTyLn9a5Qt4hs/mO3PWVM2dMBGnaxJRbYQwc/n7jdiHTxsxbVmVp
+B6OCARswggEXMA4GA1UdDwEB/wQEAwIHgDAdBgNVHSUEFjAUBggrBgEFBQcDAQYI
+KwYBBQUHAwIwHQYDVR0OBBYEFAASBy2xOs5806yj3x9ODTubDrtJMB8GA1UdIwQY
+MBaAFHOGj/jwrY+JTjuivAfwSq8j9k/YMEYGA1UdEQQ/MD2CGWRjMDEubm92YS1z
+eW5kaWNhdGUubG9jYWyCFG5vdmEtc3luZGljYXRlLmxvY2FsggRkYzAxhwTAqBQK
+MF4GDCsGAQQBgqRkxihAAQROMEwCAQEEGmFkbWluQG5vdmEtc3luZGljYXRlLmxv
+Y2FsBCs3dVpTdGdqX2hzaERvVmd1U1FnRXMtUWJPMUR1ZTZVNnJ3VTFsTV9Icm40
+MAoGCCqGSM49BAMCA0gAMEUCIHLeLx51hCUeIBx6EezuR2P4f8pYArDZQdjzASyN
+V5HjAiEAjG2HlDaT/2CAnOaKYgaW1ov/WhuRgTWDM5HUq88cJvY=
+-----END CERTIFICATE-----
+ 1 s:O = Nova Syndicate Root CA, CN = Nova Syndicate Root CA Intermediate CA
+   i:O = Nova Syndicate Root CA, CN = Nova Syndicate Root CA Root CA
+   a:PKEY: id-ecPublicKey, 256 (bit); sigalg: ecdsa-with-SHA256
+   v:NotBefore: Jun  1 20:43:14 2026 GMT; NotAfter: May 29 20:43:14 2036 GMT
+-----BEGIN CERTIFICATE-----
+MIICAjCCAaegAwIBAgIRANQLHh6JM+hQdY6d1blOANgwCgYIKoZIzj0EAwIwSjEf
+MB0GA1UEChMWTm92YSBTeW5kaWNhdGUgUm9vdCBDQTEnMCUGA1UEAxMeTm92YSBT
+eW5kaWNhdGUgUm9vdCBDQSBSb290IENBMB4XDTI2MDYwMTIwNDMxNFoXDTM2MDUy
+OTIwNDMxNFowUjEfMB0GA1UEChMWTm92YSBTeW5kaWNhdGUgUm9vdCBDQTEvMC0G
+A1UEAxMmTm92YSBTeW5kaWNhdGUgUm9vdCBDQSBJbnRlcm1lZGlhdGUgQ0EwWTAT
+BgcqhkjOPQIBBggqhkjOPQMBBwNCAATfX3bJtJ1XgpQNv0Xiee/MG4ot1uDcDZAb
+/QY577soZWSYbAF/ykhS9qF/l5lLZeHp/80y4zLyZgouhRQIQb+fo2YwZDAOBgNV
+HQ8BAf8EBAMCAQYwEgYDVR0TAQH/BAgwBgEB/wIBADAdBgNVHQ4EFgQUc4aP+PCt
+j4lOO6K8B/BKryP2T9gwHwYDVR0jBBgwFoAUbsVWH8B40qWuPAfgw+wu1PaxdGsw
+CgYIKoZIzj0EAwIDSQAwRgIhAOW3Yt7+AdLFOvWiRXc3ZIZJj5aCrOxu+YsmZgVD
+YxsqAiEAjToW7ZMaqti5cl/gA2zTQFWrJCnT6ra3UMb7k/loz8Y=
+-----END CERTIFICATE-----
+---
+Server certificate
+subject=CN = dc01.nova-syndicate.local
+issuer=O = Nova Syndicate Root CA, CN = Nova Syndicate Root CA Intermediate CA
+---
+Acceptable client certificate CA names
+O = Nova Syndicate Root CA, CN = Nova Syndicate Root CA Root CA
+Requested Signature Algorithms: RSA+SHA256:rsa_pss_pss_sha256:RSA-PSS+SHA256:ECDSA+SHA256:ed25519:RSA+SHA384:rsa_pss_pss_sha384:RSA-PSS+SHA384:ECDSA+SHA384:ed448:RSA+SHA512:rsa_pss_pss_sha512:RSA-PSS+SHA512:ECDSA+SHA512:RSA+SHA1:ECDSA+SHA1
+Shared Requested Signature Algorithms: RSA+SHA256:rsa_pss_pss_sha256:RSA-PSS+SHA256:ECDSA+SHA256:ed25519:RSA+SHA384:rsa_pss_pss_sha384:RSA-PSS+SHA384:ECDSA+SHA384:ed448:RSA+SHA512:rsa_pss_pss_sha512:RSA-PSS+SHA512:ECDSA+SHA512
+Peer signing digest: SHA256
+Peer signature type: ECDSA
+Server Temp Key: X25519, 253 bits
+---
+SSL handshake has read 1712 bytes and written 441 bytes
+Verification: OK
+---
+New, TLSv1.3, Cipher is TLS_AES_256_GCM_SHA384
+Server public key is 256 bit
+Secure Renegotiation IS NOT supported
+Compression: NONE
+Expansion: NONE
+No ALPN negotiated
+Early data was not sent
+Verify return code: 0 (ok)
+---
+DONE
+
+--- Cert subject + issuer + dates (extrait synthetique) ---
+subject=CN = dc01.nova-syndicate.local
+issuer=O = Nova Syndicate Root CA, CN = Nova Syndicate Root CA Intermediate CA
+notBefore=Jun  1 20:59:05 2026 GMT
+notAfter=Jun  1 21:00:05 2027 GMT
+X509v3 Subject Alternative Name:
+    DNS:dc01.nova-syndicate.local, DNS:nova-syndicate.local, DNS:dc01, IP Address:192.168.20.10
