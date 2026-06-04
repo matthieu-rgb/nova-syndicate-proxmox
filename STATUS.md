@@ -1,6 +1,6 @@
 # Nova Syndicate -- STATUS
 
-Derniere mise a jour : 4 juin 2026 (soir) (RECO indexer Wazuh = faux-negatif healthcheck Grafana ; alias wazuh-alerts deploye + porte dans le role IaC ; preuve Borg purgee de l'historique Git + repo de test `/srv/borg-repo` supprime apres confirmation que la fuite etait inerte).
+Derniere mise a jour : 4 juin 2026 (soir) (RECO indexer Wazuh = faux-negatif healthcheck Grafana ; alias wazuh-alerts deploye + porte dans le role IaC ; preuve Borg purgee de l'historique Git + repo de test `/srv/borg-repo` supprime apres confirmation que la fuite etait inerte ; **validation SIEM live sur db01 = faille `su -> root` sans password decouverte sur db01, T-DB01-SU-NO-PASSWORD HIGH a corriger avant soutenance**).
 
 ## Session 2026-06-04 -- RECO Wazuh indexing (faux-negatif), alias deploye, hygiene preuves Borg
 
@@ -171,10 +171,35 @@ documente : "back up the key file in a different location than the
 repository". A re-exporter en cas de rotation Hetzner future (sinon
 filet stale).
 
+### Bloc 5 -- Validation SIEM live (evenements reels, dashboards Wazuh)
+
+Au lieu de fabriquer des alertes, declenchement de 5 evenements reels
+sur db01 (agent 005) pour valider la chaine de detection NIS2 E2E :
+SSH user inexistant, sudo failed auth, useradd+userdel, su simule,
+sudo NOPASSWD scoped. Capture des alertes correlees dans la fenetre
+`[2026-06-04T14:51:55Z, 14:53:00Z]` via query opensearch direct.
+
+**Resultat** : **43 alertes db01** dont **28 NIS2 custom** dans la
+fenetre, pipeline E2E latence ~774ms event->index. Verdict par event :
+
+| Event | Rule(s) firee(s) | Detection NIS2 |
+|-------|------------------|----------------|
+| 1 `ssh nonexistent@127.0.0.1` | 5710 (Wazuh default) seul | **GAP** : 100001 pas firee (`Invalid user` hors regex) |
+| 2 `sudo -S whoami` (debian) | 100002 (NIS2 art.21.2.b) + 5501/5502 PAM | OK -- detecte sudo COMMAND (note : auth a reussi via NOPASSWD) |
+| 3 `useradd && userdel` test | 100008 firee **24 fois** + 5901/5902/5903 | OK -- mais bruit massif (decoder audit kernel + user-space, pas dedup) |
+| 4 `su - root` simule | 5501/5502 PAM session opened **for root** -- **su a REUSSI sans password** | **GAP CRITIQUE** : 100007 (FAILED SU) pas firee, parce que su a reussi. Faille securite reelle sur db01 (cf dette T-DB01-SU-NO-PASSWORD). |
+| 5 `sudo -n nft list ruleset` | 100002 (NIS2 art.21.2.b) + 5501/5502 PAM | OK -- detecte sudo NOPASSWD scoped (pattern AWX runner) |
+
+Les 28 NIS2 alerts capturees sont desormais dans `wazuh-alerts-4.x-2026.06.04` -- requetable via Grafana datasource `Wazuh-OpenSearch`, filtre suggere :
+`agent.name : db01 AND rule.groups : nis2 AND @timestamp in [14:51:00Z, 14:53:00Z]`.
+
 ### Dettes ouvertes ce jour
 
 | Ticket | Severite | Description |
 |--------|----------|-------------|
+| **T-DB01-SU-NO-PASSWORD** | **HIGH (a corriger avant soutenance -- faille triviale qu'un jury verrait)** | `su - root` depuis l'utilisateur `debian` sur db01 **REUSSIT sans demander de mot de passe**. Preuve empirique Bloc 5 : event #4, log `Jun 04 14:52:00 db01 su[121378]: pam_unix(su-l:session): session opened for user root(uid=0) by (uid=0)` -- PAM session ouverte pour root sans prompt password. Risque : escalade root triviale depuis tout compte debian compromis (par ex. session SSH apres vol de cle). **Audit a faire (hors session) sur les 8 VMs Wazuh-agentees (app01, backup01, proxy-lyon01, dc01, fs01, db01, bastion01, mail01)** : (a) inspecter `/etc/pam.d/su` -- chercher `pam_rootok.so` mal place ou `pam_wheel.so trust` ; (b) verifier appartenance `debian` aux groupes `wheel`/`sudo`/`root` (`id debian` puis `getent group wheel sudo root`) ; (c) verifier `/etc/shadow` ligne `root` (compte locked attendu : `root:!:...`). Correction probable : retirer `pam_rootok` ou ajouter `auth required pam_wheel.so use_uid` apres le rootok. **A corriger avant soutenance.** |
+| **T-WAZUH-NIS2-100001-INVALID-USER-COVERAGE** | MEDIUM | Rule 100001 (NIS2 art.21.2.b "Tentative authentification SSH echouee") **ne couvre pas le pattern `Invalid user`** (user enumeration). Preuve Bloc 5 event #1 : `ssh nonexistent_siem_test@127.0.0.1` -> rule 5710 firee (Wazuh default sshd), rule 100001 silencieuse car la regex stricte `Failed password\|Failed keyboard-interactive\|authentication failure` ne match pas `Invalid user nonexistent_siem_test from 127.0.0.1`. Fix : ajouter `<if_sid>5710</if_sid>` en variant (heritage de la detection sshd default) OU elargir la regex avec `Invalid user`. Affecte la posture audit NIS2 (vecteur user-enumeration non remonte au SOC). Fichier a editer : `roles/wazuh_manager/templates/nova_nis2_rules.xml.j2` (ou equivalent) cote ansible. |
+| **T-WAZUH-NIS2-100008-AUDIT-DEDUP** | LOW | Un seul `useradd` + un seul `userdel` genere **24 alertes 100008** (chaque message kernel audit : SYSCALL/PATH/EXECVE/ADD_USER/ADD_GROUP/DEL_USER/DEL_GROUP/EXIT match `useradd\|userdel\|usermod\|groupadd\|groupdel`). Sature les dashboards. Fix : contraindre rule 100008 a `<match>useradd:\|userdel:\|new user:\|delete user '\|new group:\|delete group '</match>` (formats user-space stables) et/ou exclure les events `kind=audit` du decoder. Volet complementaire a T-WAZUH-AUDIT-DEDUP (deja resolu sur scope dc01 audit.log nova-iam le 24/05). |
 | **T-WAZUH-ALIAS-ANSIBLE-SYNC** | LOW | Le code IaC de l'alias est dans `roles/wazuh_indexer/tasks/aliases.yml` (+ playbook `deploy_wazuh_indexer_alias.yml`) mais a ete applique cette session via `curl` admin TLS faute de `bastion-nova` ControlMaster actif. Replay attendu : `ansible-playbook playbooks/deploy_wazuh_indexer_alias.yml --limit app01` doit reporter `ok=2 changed=0` (template PUT idempotent, _aliases backfill `changed_when=false`). A faire a la prochaine session avec MFA bastion ouverte. |
 | **T-WAZUH-INDEXER-INDICES-GAP-2026-05-30-31** | LOW (post-certif) | Trou de 2 jours dans la sequence `wazuh-alerts-4.x-YYYY.MM.DD` (pas de 05.30 ni 05.31). A confronter aux logs app01 de ces dates (potentiellement OOM recidive entre T-APP01-SWAP-ADD du 24/05 et le menage du 03/06). N'affecte pas l'indexation courante. |
 | **T-GITHUB-ORPHAN-COMMIT-RESIDUAL** | LOW (accepte) | Le commit `50e69eb` (pre-rewrite, contient la cle leake) reste resolvable par URL directe sur github.com pendant ~90 jours post force-push. Cle INERTE (cf Bloc 4 -- `/srv/borg-repo` supprime, repo etait vide). Pas d'action GitHub support, pas de recreation du repo. Echeance d'expiration GitHub estimee : **~2026-09-02**. Pas de monitoring requis, le risque est nul. |
