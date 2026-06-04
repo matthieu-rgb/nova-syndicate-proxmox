@@ -1,0 +1,225 @@
+=== OPNsense fw-int-lyon -- pfctl rules ===
+Captured: 2026-06-04T15:26:25Z
+Host SSH alias: opn-fw-int-lyon (via ProxyJump root@100.112.113.2)
+
+--- pfctl -si (Status) ---
+Status: Enabled for 3 days 01:55:24           Debug: Urgent
+
+Interface Stats for vtnet1            IPv4             IPv6
+  Bytes In                          451760                0
+  Bytes Out                        1897210              304
+  Packets In
+    Passed                            3212                0
+    Blocked                              0                0
+  Packets Out
+    Passed                            3768                3
+    Blocked                              0                0
+
+State Table                          Total             Rate
+  current entries                       35
+  searches                         5742909           21.6/s
+  inserts                            24777            0.1/s
+  removals                           24742            0.1/s
+Counters
+  match                              31618            0.1/s
+  bad-offset                             0            0.0/s
+  fragment                               0            0.0/s
+  short                                  0            0.0/s
+  normalize                              0            0.0/s
+  memory                                 0            0.0/s
+  bad-timestamp                          0            0.0/s
+  congestion                             0            0.0/s
+  ip-option                              0            0.0/s
+  proto-cksum                            0            0.0/s
+  state-mismatch                         0            0.0/s
+  state-insert                           0            0.0/s
+  state-limit                            0            0.0/s
+  src-limit                              0            0.0/s
+  synproxy                               0            0.0/s
+  map-failed                             0            0.0/s
+
+--- pfctl -sr (Filter Rules ACTIVE) ---
+scrub in all fragment reassemble
+block drop in log on ! vlan05 inet from 192.168.60.0/29 to any
+block drop in log inet from <__automatic_a1381c18_0> to any
+block drop in log on ! vlan01 inet from 192.168.50.0/29 to any
+block drop in log on ! vlan02 inet from 192.168.15.0/29 to any
+block drop in log on ! vtnet1 inet from 192.168.99.0/29 to any
+block drop in log on ! vlan03 inet from 192.168.20.0/28 to any
+block drop in log on ! vlan04 inet from 192.168.30.0/26 to any
+block drop in log on ! vtnet0 inet from 10.0.1.0/30 to any
+block drop in log on vlan05 inet6 from fe80::be24:11ff:fed7:fd2c to any
+block drop in log on vlan01 inet6 from fe80::be24:11ff:fed7:fd2c to any
+block drop in log on vlan02 inet6 from fe80::be24:11ff:fed7:fd2c to any
+block drop in log on vtnet1 inet6 from fe80::be24:11ff:fed7:fd2c to any
+block drop in log on vlan03 inet6 from fe80::be24:11ff:fed7:fd2c to any
+block drop in log on vlan04 inet6 from fe80::be24:11ff:fed7:fd2c to any
+block drop in log on vtnet0 inet6 from fe80::be24:11ff:fe88:2981 to any
+block drop in log inet all label "02f4bab031b57d1e30553ce08e0ec131"
+block drop in log inet6 all label "02f4bab031b57d1e30553ce08e0ec131"
+pass in log quick inet6 proto ipv6-icmp all icmp6-type unreach keep state label "09af71b030142498e74912f2a9231e00"
+pass in log quick inet6 proto ipv6-icmp all icmp6-type toobig keep state label "09af71b030142498e74912f2a9231e00"
+pass in log quick inet6 proto ipv6-icmp all icmp6-type neighbrsol keep state label "09af71b030142498e74912f2a9231e00"
+pass in log quick inet6 proto ipv6-icmp all icmp6-type neighbradv keep state label "09af71b030142498e74912f2a9231e00"
+pass out log quick inet6 proto ipv6-icmp from (self) to fe80::/10 icmp6-type echoreq keep state label "247d6ba2cf9b0caa4e483f8f98f7a480"
+pass out log quick inet6 proto ipv6-icmp from (self) to fe80::/10 icmp6-type echorep keep state label "247d6ba2cf9b0caa4e483f8f98f7a480"
+pass out log quick inet6 proto ipv6-icmp from (self) to fe80::/10 icmp6-type routersol keep state label "247d6ba2cf9b0caa4e483f8f98f7a480"
+pass out log quick inet6 proto ipv6-icmp from (self) to fe80::/10 icmp6-type routeradv keep state label "247d6ba2cf9b0caa4e483f8f98f7a480"
+pass out log quick inet6 proto ipv6-icmp from (self) to fe80::/10 icmp6-type neighbrsol keep state label "247d6ba2cf9b0caa4e483f8f98f7a480"
+pass out log quick inet6 proto ipv6-icmp from (self) to fe80::/10 icmp6-type neighbradv keep state label "247d6ba2cf9b0caa4e483f8f98f7a480"
+pass out log quick inet6 proto ipv6-icmp from (self) to ff02::/16 icmp6-type echoreq keep state label "247d6ba2cf9b0caa4e483f8f98f7a480"
+pass out log quick inet6 proto ipv6-icmp from (self) to ff02::/16 icmp6-type echorep keep state label "247d6ba2cf9b0caa4e483f8f98f7a480"
+pass out log quick inet6 proto ipv6-icmp from (self) to ff02::/16 icmp6-type routersol keep state label "247d6ba2cf9b0caa4e483f8f98f7a480"
+pass out log quick inet6 proto ipv6-icmp from (self) to ff02::/16 icmp6-type routeradv keep state label "247d6ba2cf9b0caa4e483f8f98f7a480"
+pass out log quick inet6 proto ipv6-icmp from (self) to ff02::/16 icmp6-type neighbrsol keep state label "247d6ba2cf9b0caa4e483f8f98f7a480"
+pass out log quick inet6 proto ipv6-icmp from (self) to ff02::/16 icmp6-type neighbradv keep state label "247d6ba2cf9b0caa4e483f8f98f7a480"
+pass in log quick inet6 proto ipv6-icmp from fe80::/10 to fe80::/10 icmp6-type echoreq keep state label "27d6e2944dd9de7c2bc048c4d1e9ad96"
+pass in log quick inet6 proto ipv6-icmp from fe80::/10 to fe80::/10 icmp6-type routersol keep state label "27d6e2944dd9de7c2bc048c4d1e9ad96"
+pass in log quick inet6 proto ipv6-icmp from fe80::/10 to fe80::/10 icmp6-type routeradv keep state label "27d6e2944dd9de7c2bc048c4d1e9ad96"
+pass in log quick inet6 proto ipv6-icmp from fe80::/10 to fe80::/10 icmp6-type neighbrsol keep state label "27d6e2944dd9de7c2bc048c4d1e9ad96"
+pass in log quick inet6 proto ipv6-icmp from fe80::/10 to fe80::/10 icmp6-type neighbradv keep state label "27d6e2944dd9de7c2bc048c4d1e9ad96"
+pass in log quick inet6 proto ipv6-icmp from fe80::/10 to ff02::/16 icmp6-type echoreq keep state label "27d6e2944dd9de7c2bc048c4d1e9ad96"
+pass in log quick inet6 proto ipv6-icmp from fe80::/10 to ff02::/16 icmp6-type routersol keep state label "27d6e2944dd9de7c2bc048c4d1e9ad96"
+pass in log quick inet6 proto ipv6-icmp from fe80::/10 to ff02::/16 icmp6-type routeradv keep state label "27d6e2944dd9de7c2bc048c4d1e9ad96"
+pass in log quick inet6 proto ipv6-icmp from fe80::/10 to ff02::/16 icmp6-type neighbrsol keep state label "27d6e2944dd9de7c2bc048c4d1e9ad96"
+pass in log quick inet6 proto ipv6-icmp from fe80::/10 to ff02::/16 icmp6-type neighbradv keep state label "27d6e2944dd9de7c2bc048c4d1e9ad96"
+pass in log quick inet6 proto ipv6-icmp from ff02::/16 to fe80::/10 icmp6-type echoreq keep state label "9d29c2425a82c03746ea76b6cbdaa92e"
+pass in log quick inet6 proto ipv6-icmp from ff02::/16 to fe80::/10 icmp6-type routersol keep state label "9d29c2425a82c03746ea76b6cbdaa92e"
+pass in log quick inet6 proto ipv6-icmp from ff02::/16 to fe80::/10 icmp6-type routeradv keep state label "9d29c2425a82c03746ea76b6cbdaa92e"
+pass in log quick inet6 proto ipv6-icmp from ff02::/16 to fe80::/10 icmp6-type neighbrsol keep state label "9d29c2425a82c03746ea76b6cbdaa92e"
+pass in log quick inet6 proto ipv6-icmp from ff02::/16 to fe80::/10 icmp6-type neighbradv keep state label "9d29c2425a82c03746ea76b6cbdaa92e"
+pass in log quick inet6 proto ipv6-icmp from :: to ff02::/16 icmp6-type echoreq keep state label "8f5ab8e9f0470eb9496ed94ec777ecf6"
+pass in log quick inet6 proto ipv6-icmp from :: to ff02::/16 icmp6-type routersol keep state label "8f5ab8e9f0470eb9496ed94ec777ecf6"
+pass in log quick inet6 proto ipv6-icmp from :: to ff02::/16 icmp6-type routeradv keep state label "8f5ab8e9f0470eb9496ed94ec777ecf6"
+pass in log quick inet6 proto ipv6-icmp from :: to ff02::/16 icmp6-type neighbrsol keep state label "8f5ab8e9f0470eb9496ed94ec777ecf6"
+pass in log quick inet6 proto ipv6-icmp from :: to ff02::/16 icmp6-type neighbradv keep state label "8f5ab8e9f0470eb9496ed94ec777ecf6"
+block drop in log quick inet proto tcp from any port = 0 to any label "7b5bdc64d7ae74be1932f6764a591da5"
+block drop in log quick inet proto udp from any port = 0 to any label "7b5bdc64d7ae74be1932f6764a591da5"
+block drop in log quick inet6 proto tcp from any port = 0 to any label "7b5bdc64d7ae74be1932f6764a591da5"
+block drop in log quick inet6 proto udp from any port = 0 to any label "7b5bdc64d7ae74be1932f6764a591da5"
+block drop in log quick inet proto tcp from any to any port = 0 label "ae69f581dc429e3484a65f8ecd63baa5"
+block drop in log quick inet proto udp from any to any port = 0 label "ae69f581dc429e3484a65f8ecd63baa5"
+block drop in log quick inet6 proto tcp from any to any port = 0 label "ae69f581dc429e3484a65f8ecd63baa5"
+block drop in log quick inet6 proto udp from any to any port = 0 label "ae69f581dc429e3484a65f8ecd63baa5"
+block drop in log quick proto tcp from <sshlockout> to (self) port = ssh label "669143f420c3ab4118bcb0bf4b5fd823"
+block drop in log quick proto tcp from <sshlockout> to (self) port = https label "6baefc2a9cf2536834c092a51134a45c"
+block drop in log quick from <virusprot> to any label "8e367e2f9944d93137ae56d788c5d5e1"
+pass out log all flags S/SA keep state allow-opts label "fae559338f65e11c53669fc3642c93c2"
+pass in log quick on vtnet1 proto tcp from any to (self) port = ssh flags S/SA keep state label "60533d555322b9f6a009f71c1c471480"
+pass in log quick on vtnet1 proto tcp from any to (self) port = http flags S/SA keep state label "01e83daa25c4483dee217a7ecd7c9a88"
+pass in log quick on vtnet1 proto tcp from any to (self) port = https flags S/SA keep state label "3345e04986bd5750d23b77cbbb21271f"
+pass out log route-to (vtnet0 10.0.1.1) inet from (vtnet0) to ! (vtnet0:network) flags S/SA keep state allow-opts label "6125cb207f65033775d1069fdf6d0ccf"
+pass in quick on vtnet0 inet proto tcp from <net_proxmox_admin> to <host_app01> port = https flags S/SA keep state label "0a87955a-6d36-4ac2-9d30-1cd3de185f0d"
+pass in log quick on vtnet0 inet proto tcp from <host_mail01> to <host_app01> port = 1514 flags S/SA keep state label "0d7f186e-892e-4ef2-a43b-46d0294a129b"
+pass in log quick on vtnet0 inet proto tcp from <host_mail01> to <host_dc01> port = ldaps flags S/SA keep state label "087ee5a5-6099-4ab7-a7c6-0b6957a4e3e8"
+pass in quick on vlan01 inet proto tcp from <host_backup01> to <net_lyon_servers> port = ssh flags S/SA keep state label "5e718e38-555a-47e4-a073-2e0fcafcba5a"
+pass in log quick on vtnet0 inet proto tcp from <host_mail01> to <host_dc01> port = ldaps flags S/SA keep state label "6a4cc203-b022-426b-bc94-d09d4d3cbf9c"
+pass in quick on vlan02 inet proto udp from <host_bastion01> to <host_dc01> port = ntp keep state label "6cf41cac-7eb1-4298-9e72-2787d1ed9d29"
+pass in quick on vlan02 inet proto udp from <host_bastion01> to <host_dc01> port = netbios-ns keep state label "6cf41cac-7eb1-4298-9e72-2787d1ed9d29"
+pass in quick on vlan02 inet proto udp from <host_bastion01> to <host_dc01> port = netbios-dgm keep state label "6cf41cac-7eb1-4298-9e72-2787d1ed9d29"
+pass in quick on vlan02 inet proto udp from <host_bastion01> to <host_dc01> port = ldap keep state label "6cf41cac-7eb1-4298-9e72-2787d1ed9d29"
+pass in quick on vlan02 inet proto udp from <host_bastion01> to <host_dc01> port = kpasswd keep state label "6cf41cac-7eb1-4298-9e72-2787d1ed9d29"
+pass in quick on vlan02 inet proto udp from <host_bastion01> to <host_dc01> port = domain keep state label "6cf41cac-7eb1-4298-9e72-2787d1ed9d29"
+pass in quick on vlan02 inet proto udp from <host_bastion01> to <host_dc01> port = kerberos-sec keep state label "6cf41cac-7eb1-4298-9e72-2787d1ed9d29"
+pass in quick on vlan03 inet from <net_lyon_servers> to any flags S/SA keep state label "7c8e2113-a17e-4f53-bb32-6649f2847cca"
+pass in quick on vlan04 inet proto udp from <net_lyon_users> to <host_dc01> port = ntp keep state label "7ced8432-29e5-4453-b544-00c26ed8f536"
+pass in quick on vlan04 inet proto udp from <net_lyon_users> to <host_dc01> port = netbios-ns keep state label "7ced8432-29e5-4453-b544-00c26ed8f536"
+pass in quick on vlan04 inet proto udp from <net_lyon_users> to <host_dc01> port = netbios-dgm keep state label "7ced8432-29e5-4453-b544-00c26ed8f536"
+pass in quick on vlan04 inet proto udp from <net_lyon_users> to <host_dc01> port = ldap keep state label "7ced8432-29e5-4453-b544-00c26ed8f536"
+pass in quick on vlan04 inet proto udp from <net_lyon_users> to <host_dc01> port = kpasswd keep state label "7ced8432-29e5-4453-b544-00c26ed8f536"
+pass in quick on vlan04 inet proto udp from <net_lyon_users> to <host_dc01> port = domain keep state label "7ced8432-29e5-4453-b544-00c26ed8f536"
+pass in quick on vlan04 inet proto udp from <net_lyon_users> to <host_dc01> port = kerberos-sec keep state label "7ced8432-29e5-4453-b544-00c26ed8f536"
+pass in log quick on vtnet0 inet proto tcp from any to 192.168.20.13 port = https flags S/SA keep state label "7e41da05-f524-49f0-bd46-5ac2c6b5c5ac"
+pass in quick on vtnet0 inet proto tcp from <net_road_warriors> to <host_app01> port = https flags S/SA keep state label "8fb06cae-4eda-41ff-b647-53cb91927761"
+pass in log quick on vtnet0 inet proto tcp from any to 192.168.20.13 port = http flags S/SA keep state label "40dc8dc8-e7e6-4134-8947-b8fa59c80d53"
+pass in quick on vtnet0 inet proto udp from 10.0.1.1 to 192.168.20.13 port = 5141 keep state label "54e02b1f-d09b-4e78-aecc-016cda15bd39"
+pass in quick on vlan04 inet proto tcp from <net_lyon_users> to <net_lyon_servers> port = netbios-ssn flags S/SA keep state label "55cebee1-e5f8-4ce9-9193-05ba6726d89b"
+pass in quick on vlan04 inet proto tcp from <net_lyon_users> to <net_lyon_servers> port = microsoft-ds flags S/SA keep state label "55cebee1-e5f8-4ce9-9193-05ba6726d89b"
+pass in quick on vlan04 inet from <net_lyon_users> to any flags S/SA keep state label "435d8df8-ef2d-4bbb-8f07-38f0db216720"
+pass in quick on vlan01 inet from <host_backup01> to any flags S/SA keep state label "502bd253-40c2-4049-8252-34812c3f698b"
+pass in quick on vlan02 inet proto tcp from <host_bastion01> to <net_lyon_servers> port = ssh flags S/SA keep state label "512f9592-3335-4d25-8324-0f60bdf399d2"
+pass in quick on vlan04 inet proto tcp from <net_lyon_users> to <host_dc01> port = epmap flags S/SA keep state label "597fe853-bf9a-45ee-9a21-d8007eb5377f"
+pass in quick on vlan04 inet proto tcp from <net_lyon_users> to <host_dc01> port = 3268 flags S/SA keep state label "597fe853-bf9a-45ee-9a21-d8007eb5377f"
+pass in quick on vlan04 inet proto tcp from <net_lyon_users> to <host_dc01> port = 3269 flags S/SA keep state label "597fe853-bf9a-45ee-9a21-d8007eb5377f"
+pass in quick on vlan04 inet proto tcp from <net_lyon_users> to <host_dc01> port = ldap flags S/SA keep state label "597fe853-bf9a-45ee-9a21-d8007eb5377f"
+pass in quick on vlan04 inet proto tcp from <net_lyon_users> to <host_dc01> port = microsoft-ds flags S/SA keep state label "597fe853-bf9a-45ee-9a21-d8007eb5377f"
+pass in quick on vlan04 inet proto tcp from <net_lyon_users> to <host_dc01> port = kpasswd flags S/SA keep state label "597fe853-bf9a-45ee-9a21-d8007eb5377f"
+pass in quick on vlan04 inet proto tcp from <net_lyon_users> to <host_dc01> port = ldaps flags S/SA keep state label "597fe853-bf9a-45ee-9a21-d8007eb5377f"
+pass in quick on vlan04 inet proto tcp from <net_lyon_users> to <host_dc01> port = kerberos-sec flags S/SA keep state label "597fe853-bf9a-45ee-9a21-d8007eb5377f"
+pass in quick on vtnet0 inet proto udp from 10.0.1.1 to 192.168.20.13 port = syslog keep state label "898e5ae9-86f4-4a32-99d2-7e71403a7dc1"
+block drop in log quick on vlan04 inet all label "17883b5f-459d-454a-b520-206de0766b47"
+pass in quick on vtnet0 inet proto tcp from <net_road_warriors> to <host_fs01> port = netbios-ssn flags S/SA keep state label "911380c1-be3a-47f2-bb1a-357d3f191f55"
+pass in quick on vtnet0 inet proto tcp from <net_road_warriors> to <host_fs01> port = ssh flags S/SA keep state label "911380c1-be3a-47f2-bb1a-357d3f191f55"
+pass in quick on vtnet0 inet proto tcp from <net_road_warriors> to <host_fs01> port = microsoft-ds flags S/SA keep state label "911380c1-be3a-47f2-bb1a-357d3f191f55"
+pass in quick on vtnet0 inet from <net_lan_mrs> to <net_lyon_internal> flags S/SA keep state label "11642651-920e-4a31-b4d5-fc6d2b216411"
+pass in quick on vlan02 inet from <host_bastion01> to any flags S/SA keep state label "a6e2e32e-182a-4833-bebf-e5b872b94097"
+pass in log quick on vtnet0 inet proto tcp from <host_mail01> to <host_app01> port = 1515 flags S/SA keep state label "a7adcd34-a55d-4569-9f54-35604462d64c"
+pass in quick on vtnet0 inet proto tcp from <net_road_warriors> to <host_db01> port = ssh flags S/SA keep state label "abd6b7fc-b55f-4877-9623-079ab0ed9010"
+pass in quick on vtnet0 inet proto tcp from <net_road_warriors> to <host_db01> port = mysql flags S/SA keep state label "abd6b7fc-b55f-4877-9623-079ab0ed9010"
+block drop in log quick on vlan01 inet all label "ac3427cc-0011-447c-bcf3-a00e76c7329a"
+block drop in log quick on vlan03 inet all label "b19da746-376d-4640-9639-6738c210923f"
+pass in quick on vlan02 inet proto tcp from <host_bastion01> to <host_dc01> port = epmap flags S/SA keep state label "e934d579-ba12-41cd-89e7-ccf4f64f5e54"
+pass in quick on vlan02 inet proto tcp from <host_bastion01> to <host_dc01> port = 3268 flags S/SA keep state label "e934d579-ba12-41cd-89e7-ccf4f64f5e54"
+pass in quick on vlan02 inet proto tcp from <host_bastion01> to <host_dc01> port = 3269 flags S/SA keep state label "e934d579-ba12-41cd-89e7-ccf4f64f5e54"
+pass in quick on vlan02 inet proto tcp from <host_bastion01> to <host_dc01> port = ldap flags S/SA keep state label "e934d579-ba12-41cd-89e7-ccf4f64f5e54"
+pass in quick on vlan02 inet proto tcp from <host_bastion01> to <host_dc01> port = microsoft-ds flags S/SA keep state label "e934d579-ba12-41cd-89e7-ccf4f64f5e54"
+pass in quick on vlan02 inet proto tcp from <host_bastion01> to <host_dc01> port = kpasswd flags S/SA keep state label "e934d579-ba12-41cd-89e7-ccf4f64f5e54"
+pass in quick on vlan02 inet proto tcp from <host_bastion01> to <host_dc01> port = ldaps flags S/SA keep state label "e934d579-ba12-41cd-89e7-ccf4f64f5e54"
+pass in quick on vlan02 inet proto tcp from <host_bastion01> to <host_dc01> port = kerberos-sec flags S/SA keep state label "e934d579-ba12-41cd-89e7-ccf4f64f5e54"
+block drop in log quick on vlan02 inet all label "ea6cf741-fb9a-49a4-9116-ff76f8d46dce"
+pass in quick on vtnet0 inet proto udp from <net_road_warriors> to <host_dc01> port = domain keep state label "fa856de7-de2b-485b-8220-d20101a6d89b"
+block drop in log quick on vtnet0 inet all label "730f9aeb-83c3-4aee-bd99-7871da4dd08a"
+pass in quick on vlan05 inet proto tcp from <net_lyon_admin> to <host_dc01> port = epmap flags S/SA keep state label "35e38f1d-5abc-4225-8349-e6e65bd7a1ee"
+pass in quick on vlan05 inet proto tcp from <net_lyon_admin> to <host_dc01> port = 3268 flags S/SA keep state label "35e38f1d-5abc-4225-8349-e6e65bd7a1ee"
+pass in quick on vlan05 inet proto tcp from <net_lyon_admin> to <host_dc01> port = 3269 flags S/SA keep state label "35e38f1d-5abc-4225-8349-e6e65bd7a1ee"
+pass in quick on vlan05 inet proto tcp from <net_lyon_admin> to <host_dc01> port = ldap flags S/SA keep state label "35e38f1d-5abc-4225-8349-e6e65bd7a1ee"
+pass in quick on vlan05 inet proto tcp from <net_lyon_admin> to <host_dc01> port = microsoft-ds flags S/SA keep state label "35e38f1d-5abc-4225-8349-e6e65bd7a1ee"
+pass in quick on vlan05 inet proto tcp from <net_lyon_admin> to <host_dc01> port = kpasswd flags S/SA keep state label "35e38f1d-5abc-4225-8349-e6e65bd7a1ee"
+pass in quick on vlan05 inet proto tcp from <net_lyon_admin> to <host_dc01> port = ldaps flags S/SA keep state label "35e38f1d-5abc-4225-8349-e6e65bd7a1ee"
+pass in quick on vlan05 inet proto tcp from <net_lyon_admin> to <host_dc01> port = kerberos-sec flags S/SA keep state label "35e38f1d-5abc-4225-8349-e6e65bd7a1ee"
+pass in quick on vlan05 inet proto udp from <net_lyon_admin> to <host_dc01> port = ntp keep state label "b8be7aec-b66e-4270-bddd-82f95a8d34df"
+pass in quick on vlan05 inet proto udp from <net_lyon_admin> to <host_dc01> port = netbios-ns keep state label "b8be7aec-b66e-4270-bddd-82f95a8d34df"
+pass in quick on vlan05 inet proto udp from <net_lyon_admin> to <host_dc01> port = netbios-dgm keep state label "b8be7aec-b66e-4270-bddd-82f95a8d34df"
+pass in quick on vlan05 inet proto udp from <net_lyon_admin> to <host_dc01> port = ldap keep state label "b8be7aec-b66e-4270-bddd-82f95a8d34df"
+pass in quick on vlan05 inet proto udp from <net_lyon_admin> to <host_dc01> port = kpasswd keep state label "b8be7aec-b66e-4270-bddd-82f95a8d34df"
+pass in quick on vlan05 inet proto udp from <net_lyon_admin> to <host_dc01> port = domain keep state label "b8be7aec-b66e-4270-bddd-82f95a8d34df"
+pass in quick on vlan05 inet proto udp from <net_lyon_admin> to <host_dc01> port = kerberos-sec keep state label "b8be7aec-b66e-4270-bddd-82f95a8d34df"
+pass in quick on vlan05 inet proto tcp from <net_lyon_admin> to <net_lyon_internal> port = ssh flags S/SA keep state label "6da0ae27-859b-4e91-a77b-8cbd79a2d5d9"
+pass in quick on vlan05 inet proto tcp from <net_lyon_admin> to any port = https flags S/SA keep state label "a3411564-e701-403f-8083-9c9497488327"
+pass in quick on vlan05 inet proto tcp from <net_lyon_admin> to any port = http flags S/SA keep state label "a3411564-e701-403f-8083-9c9497488327"
+pass in quick on vlan05 inet proto tcp from <net_lyon_admin> to <net_dmz_lyon> port = ssh flags S/SA keep state label "23d828a2-5f6f-40fe-95da-9ec8d192673d"
+block drop in log quick on vlan05 inet all label "ee7897d2-7d09-4e3e-bfdb-57ddb80ed994"
+pass in quick on vtnet0 reply-to (vtnet0 10.0.1.1) inet all flags S/SA keep state label "6900a192a21bd88bf5613efb2b144af0"
+pass in quick on vtnet1 inet from (vtnet1:network) to any flags S/SA keep state label "4bfb5fd278db74db425885c6372ac3f8"
+pass in quick on vtnet1 inet6 from (vtnet1:network) to any flags S/SA keep state label "6f1cebbb93644ef66fec482f1bd8a0b5"
+pass in quick on vtnet1 inet6 from fe80::/10 to any flags S/SA keep state label "6f1cebbb93644ef66fec482f1bd8a0b5"
+
+--- pfctl -sr | wc -l (compte) ---
+     154
+
+--- pfctl -sn (NAT rules ACTIVE) ---
+no nat proto carp all
+no nat on vtnet0 inet from 192.168.0.0/16 to 192.168.40.0/26
+no nat on vtnet0 inet from 192.168.15.0/29 to 192.168.40.0/26
+no nat on vtnet0 inet from 192.168.30.0/26 to 192.168.40.0/26
+no nat on vtnet0 inet from 192.168.50.0/29 to 192.168.40.0/26
+nat on vtnet0 inet from (vlan05:network) to any port = isakmp -> (vtnet0:0) static-port
+nat on vtnet0 inet from (vlan01:network) to any port = isakmp -> (vtnet0:0) static-port
+nat on vtnet0 inet from (vlan02:network) to any port = isakmp -> (vtnet0:0) static-port
+nat on vtnet0 inet from (vtnet1:network) to any port = isakmp -> (vtnet0:0) static-port
+nat on vtnet0 inet from (lo0:network) to any port = isakmp -> (vtnet0:0) static-port
+nat on vtnet0 inet from (vlan03:network) to any port = isakmp -> (vtnet0:0) static-port
+nat on vtnet0 inet from (vlan04:network) to any port = isakmp -> (vtnet0:0) static-port
+nat on vtnet0 inet from 127.0.0.0/8 to any port = isakmp -> (vtnet0:0) static-port
+nat on vtnet0 inet from (vlan05:network) to any -> (vtnet0:0) port 1024:65535
+nat on vtnet0 inet from (vlan01:network) to any -> (vtnet0:0) port 1024:65535
+nat on vtnet0 inet from (vlan02:network) to any -> (vtnet0:0) port 1024:65535
+nat on vtnet0 inet from (vtnet1:network) to any -> (vtnet0:0) port 1024:65535
+nat on vtnet0 inet from (lo0:network) to any -> (vtnet0:0) port 1024:65535
+nat on vtnet0 inet from (vlan03:network) to any -> (vtnet0:0) port 1024:65535
+nat on vtnet0 inet from (vlan04:network) to any -> (vtnet0:0) port 1024:65535
+nat on vtnet0 inet from 127.0.0.0/8 to any -> (vtnet0:0) port 1024:65535
+no rdr proto carp all
+no rdr on vtnet1 proto tcp from any to (vtnet1) port = ssh
+no rdr on vtnet1 proto tcp from any to (vtnet1) port = http
+no rdr on vtnet1 proto tcp from any to (vtnet1) port = https
