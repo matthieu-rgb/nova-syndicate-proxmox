@@ -1,0 +1,31 @@
+=== Borg repo local sur backup01 ===
+Captured: 2026-06-04T11:56:19Z
+Host: backup01
+
+--- /srv/borg-repo content ---
+total 76
+drwxr-x--- 3 borg borg  4096 Jun  3 12:55 .
+drwxr-xr-x 3 root root  4096 May 12 14:04 ..
+-rw------- 1 borg borg    73 May 12 14:04 README
+-rw------- 1 borg borg   964 May 12 14:04 config
+drwx------ 3 borg borg  4096 May 12 14:04 data
+-rw------- 1 borg borg    70 May 12 14:04 hints.1
+-rw------- 1 borg borg 41258 May 12 14:04 index.1
+-rw------- 1 borg borg   190 May 12 14:04 integrity.1
+-rw------- 1 borg borg    16 May 12 14:04 nonce
+
+--- README ---
+This is a Borg Backup repository.
+See https://borgbackup.readthedocs.io/
+
+--- config (extrait pertinent) ---
+[repository]
+version = 1
+segments_per_dir = 1000
+max_segment_size = 524288000
+append_only = 0
+storage_quota = 0
+additional_free_space = 0
+id = dcb68bbed8015a3b04edccdf8d06ab0a8a452f04e78aea0bc906d57dd209bbe6
+key = *** REDACTED (repokey expurged from history 2026-06-04, repo deleted) ***
+

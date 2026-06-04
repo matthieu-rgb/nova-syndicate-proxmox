@@ -1,0 +1,74 @@
+=== Borg backup -- configuration + cron + tunnel WireGuard offsite ===
+Captured: 2026-06-04T11:56:03Z
+Host: backup01 (192.168.50.2)
+
+--- Borg version ---
+borg 1.2.4
+
+--- Cron job /etc/cron.d/borg-cloud-backup ---
+# Borg cloud sync to VPS Hetzner via WireGuard
+# Runs daily at 23:30 (after local Borg backups)
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+30 23 * * * root /usr/local/bin/borg-cloud-sync.sh >> /var/log/borg-cloud-sync.log 2>&1
+
+--- Script /usr/local/bin/borg-cloud-sync.sh (head 40 -- config + targets) ---
+#!/bin/bash
+# borg-cloud-sync.sh - Push BACKUP01 backups to VPS Hetzner via WireGuard
+# Cron: 23h30 daily
+
+set -euo pipefail
+
+# Configuration
+REPO="borguser@10.30.0.1:/srv/borg-repo/nova-syndicate/"
+PASSPHRASE_FILE="/etc/borg/passphrase"
+SSH_KEY="/root/.ssh/id_ed25519_borg-cloud"
+LOG_FILE="/var/log/borg-cloud-sync.log"
+LOCK_FILE="/var/run/borg-cloud-sync.lock"
+ARCHIVE_NAME="backup01-$(date +%Y-%m-%d-%H%M)"
+HOSTNAME=$(hostname -s)
+
+# Fonctions
+log() {
+    echo "[$(date +%Y-%m-%dT%H:%M:%S%z)] $*" | tee -a "$LOG_FILE"
+    logger -t borg-cloud-sync "$*"
+}
+
+cleanup() {
+    rm -f "$LOCK_FILE"
+}
+
+# Verifier mode dry-run
+DRY_RUN=""
+if [ "${1:-}" = "--dry-run" ]; then
+    DRY_RUN="--dry-run"
+    log "DRY-RUN mode activated"
+fi
+
+# Lock pour eviter executions concurrentes
+if [ -f "$LOCK_FILE" ]; then
+    log "ERROR: lock file exists ($LOCK_FILE), another sync is running. Exit."
+    exit 1
+fi
+echo $$ > "$LOCK_FILE"
+trap cleanup EXIT INT TERM
+
+
+--- WireGuard backup01 -> Hetzner (state) ---
+interface: wg0
+  public key: +Q5HPOp8fzmRmDIcIzwemRNXfqdT4ddj2Tblo0jAu2U=
+  private key: (hidden)
+  listening port: 33355
+
+peer: tNuP7iBH2lYL5KozXewSlcP2/aSzCgI+ubNWNj21uCg=
+  endpoint: 46.62.138.33:51820
+  allowed ips: 10.30.0.1/32
+  latest handshake: 53 seconds ago
+  transfer: 844.85 KiB received, 4.11 MiB sent
+  persistent keepalive: every 25 seconds
+
+--- Ping endpoint Hetzner via tunnel ---
+
+--- 10.30.0.1 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1000ms
+rtt min/avg/max/mdev = 43.662/43.860/44.058/0.198 ms

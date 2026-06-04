@@ -1,0 +1,38 @@
+=== Borg archives sur le repo Hetzner (10.30.0.1) ===
+Captured: 2026-06-04T11:56:08Z
+Host source: backup01 (192.168.50.2)
+Repo cible : borguser@10.30.0.1:/srv/borg-repo/nova-syndicate/ (via WireGuard offsite tunnel)
+Auth      : /etc/borg/passphrase + /root/.ssh/id_ed25519_borg-cloud
+
+--- borg list (toutes les archives, short) ---
+test-2026-05-10-1740
+backup01-2026-05-10-2330
+backup01-2026-05-17-2330
+backup01-2026-05-24-2330
+backup01-2026-05-26-2330
+backup01-2026-05-27-2330
+backup01-2026-05-28-2330
+backup01-2026-05-29-2330
+backup01-2026-06-01-2330
+backup01-2026-06-02-2330
+backup01-2026-06-03-2330
+
+--- borg list (5 archives recentes, detail) ---
+backup01-2026-05-28-2330             Thu, 2026-05-28 23:30:07 [3c14ff22d1dfdea8fe5b20de89c234c9af68c0ff92b6bdca8c57804086caec28]
+backup01-2026-05-29-2330             Fri, 2026-05-29 23:30:07 [9ec70d023ec0e3b9a68515c1fa879ab310c90d50734bdb6b6b1298f04345eda6]
+backup01-2026-06-01-2330             Mon, 2026-06-01 23:30:07 [87af3634219dc236583f652e7e7702eaff8343051fa5d6842839dc8ff74263e4]
+backup01-2026-06-02-2330             Tue, 2026-06-02 23:30:08 [105f1351c07388005adb1ab74b75e1ec0c405bba0df771a56c15f1a1417ba088]
+backup01-2026-06-03-2330             Wed, 2026-06-03 23:30:08 [61e614155e9636793f91f77d806f46914bf332ca66251ecb466f6e68a58cfddd]
+
+--- borg info (stats du repo : nombre archives, taille, dedup) ---
+Repository ID: 0cbd03d5664de890e033d42f76450469d388a35cbd764278a23d677269a7fb06
+Location: ssh://borguser@10.30.0.1/srv/borg-repo/nova-syndicate
+Encrypted: Yes (repokey BLAKE2b)
+Cache: /root/.cache/borg/0cbd03d5664de890e033d42f76450469d388a35cbd764278a23d677269a7fb06
+Security dir: /root/.config/borg/security/0cbd03d5664de890e033d42f76450469d388a35cbd764278a23d677269a7fb06
+------------------------------------------------------------------------------
+                       Original size      Compressed size    Deduplicated size
+All archives:              312.80 MB            296.95 MB             40.45 MB
+
+                       Unique chunks         Total chunks
+Chunk index:                    1198                11246

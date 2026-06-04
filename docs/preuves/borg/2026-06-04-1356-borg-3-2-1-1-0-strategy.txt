@@ -1,0 +1,40 @@
+=== Strategie de sauvegarde 3-2-1-1-0 -- Nova Syndicate ===
+Captured: 2026-06-04T11:56:22Z
+ADR de reference : ADR-0008 (borg repokey append-only), ADR-0009 (strategie 3-2-1-1-0), ADR-0010 (VPS Hetzner hors-site)
+
+DEFINITION 3-2-1-1-0 :
+  3 : 3 copies des donnees au minimum
+  2 : 2 mediums differents (disque local + cloud)
+  1 : 1 copie offsite (hors locaux)
+  1 : 1 copie offline / air-gap (immutable)
+  0 : 0 erreur de restoration (verification reguliere)
+
+MAPPING POUR NOVA SYNDICATE :
+
+[1] -- COPIE PRIMAIRE : donnees originales sur les VMs source
+      (dc01 sysvol, db01 dumps, fs01 partages, app01 configs, etc.)
+
+[2] -- COPIE LOCALE : borg repo sur backup01 (/srv/borg-repo)
+      Medium : disque local backup01 VMID 109 (LVM thin sur Proxmox host)
+      Encryption : repokey (cle dans borg config local)
+
+[3] -- COPIE OFFSITE : VPS Hetzner Helsinki (borguser@10.30.0.1)
+      Medium : disque distant VPS, datacenter Hetzner Helsinki (FI)
+      Tunnel : WireGuard backup01 <-> Hetzner sur 10.30.0.0/24 (cf ADR-0010)
+      Cron   : daily 23:30 (cf /etc/cron.d/borg-cloud-backup)
+
+[4] -- COPIE OFFLINE / APPEND-ONLY :
+      Borg repokey append-only sur le repo Hetzner = mode immutable cote serveur,
+      borguser ne peut PAS supprimer les anciennes archives (cf ADR-0008).
+      Air-gap logique : la cle SSH borg-cloud (cote backup01) ne peut PAS executer
+      'borg delete'/'borg prune' cote serveur Hetzner -- seules les operations
+      'create' et 'list' sont autorisees par les forced commands SSH.
+
+[5] -- ZERO ERREUR :
+      Verification dry-run quotidienne via cron borg list/info
+      Audit Wazuh agent 001 backup01 (cf preuves wazuh) avec rules audit_consultations
+
+PREUVES DANS LES AUTRES FICHIERS DE CE DOSSIER :
+  - 2026-06-04-1356-borg-archives-hetzner-list.txt : N archives effectivement presentes sur Hetzner
+  - 2026-06-04-1356-borg-config-cron-wg.txt        : cron, script, tunnel WG actif
+  - 2026-06-04-1356-borg-local-repo.txt             : repo local /srv/borg-repo
