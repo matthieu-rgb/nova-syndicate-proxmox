@@ -1,0 +1,28 @@
+=== MariaDB service status + listener ===
+Captured: 2026-06-04T11:52:20Z
+Host: db01 (192.168.20.12)
+
+--- systemctl is-active + status ---
+active
+---
+â mariadb.service - MariaDB 10.11.14 database server
+     Loaded: loaded (/lib/systemd/system/mariadb.service; enabled; preset: enabled)
+     Active: active (running) since Mon 2026-06-01 08:15:41 CEST; 3 days ago
+       Docs: man:mariadbd(8)
+             https://mariadb.com/kb/en/library/systemd/
+   Main PID: 860 (mariadbd)
+     Status: "Taking your SQL requests now..."
+      Tasks: 9 (limit: 15500)
+     Memory: 175.8M
+        CPU: 18.915s
+     CGroup: /system.slice/mariadb.service
+             ââ860 /usr/sbin/mariadbd
+
+Jun 04 11:30:01 db01 mariadbd[860]: 2026-06-04 11:30:01 333 [Warning] Access denied for user 'backup_nova'@'localhost' (using password: YES)
+Jun 04 11:45:01 db01 mariadbd[860]: 2026-06-04 11:45:01 334 [Warning] Access denied for user 'backup_nova'@'localhost' (using password: YES)
+
+--- Listener TCP 3306 ---
+LISTEN 0      80     192.168.20.12:3306      0.0.0.0:*    users:(("mariadbd",pid=860,fd=30))         
+
+--- Version MariaDB ---
+mysql  Ver 15.1 Distrib 10.11.14-MariaDB, for debian-linux-gnu (x86_64) using  EditLine wrapper

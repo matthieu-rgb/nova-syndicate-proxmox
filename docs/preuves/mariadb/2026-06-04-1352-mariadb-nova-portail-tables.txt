@@ -1,0 +1,85 @@
+=== MariaDB nova_portail : base metier active (portail Flask) ===
+Captured: 2026-06-04T11:55:07Z
+Host: db01
+
+--- USE nova_portail; SHOW TABLES; ---
+Tables_in_nova_portail
+audit_consultations
+clients
+devis
+devis_lignes
+tarifs
+
+--- Tables + row counts + engines ---
+TABLE_NAME	TABLE_ROWS	ENGINE
+audit_consultations	18	InnoDB
+clients	4	InnoDB
+devis	0	InnoDB
+devis_lignes	0	InnoDB
+tarifs	23	InnoDB
+
+--- Structure DESCRIBE clients ---
+Field	Type	Null	Key	Default	Extra
+id	int(11)	NO	PRI	NULL	auto_increment
+raison_sociale	varchar(255)	NO		NULL	
+siret	varchar(14)	YES	UNI	NULL	
+secteur	enum('medical','aerospace','defense','industriel','public')	NO	MUL	NULL	
+adresse_ligne1	varchar(255)	YES		NULL	
+adresse_ligne2	varchar(255)	YES		NULL	
+code_postal	varchar(5)	YES		NULL	
+ville	varchar(100)	YES		NULL	
+pays	varchar(50)	YES		France	
+email_contact	varchar(255)	YES		NULL	
+telephone	varchar(20)	YES		NULL	
+habilitation_defense	tinyint(1)	YES		0	
+date_creation	timestamp	YES		current_timestamp()	
+actif	tinyint(1)	YES		1	
+
+--- Structure DESCRIBE tarifs ---
+Field	Type	Null	Key	Default	Extra
+id	int(11)	NO	PRI	NULL	auto_increment
+reference	varchar(50)	NO	UNI	NULL	
+libelle	varchar(255)	NO		NULL	
+description	text	YES		NULL	
+categorie	enum('medical','aerospace','defense','standard')	NO	MUL	NULL	
+unite	enum('piece','kg','m3','heure','jour','mois','forfait')	NO		NULL	
+prix_ht	decimal(10,2)	NO		NULL	
+tva	decimal(4,2)	YES		20.00	
+delai_jours	int(11)	YES		1	
+certifications	text	YES		NULL	
+date_creation	timestamp	YES		current_timestamp()	
+date_modif	timestamp	YES		current_timestamp()	on update current_timestamp()
+actif	tinyint(1)	YES		1	
+
+--- Structure DESCRIBE audit_consultations ---
+Field	Type	Null	Key	Default	Extra
+id	int(11)	NO	PRI	NULL	auto_increment
+user_ad	varchar(100)	NO	MUL	NULL	
+user_groups	text	YES		NULL	
+timestamp	timestamp	YES	MUL	current_timestamp()	
+action	varchar(50)	NO		NULL	
+resource_type	varchar(50)	YES		NULL	
+resource_id	int(11)	YES		NULL	
+ip_source	varchar(45)	YES		NULL	
+user_agent	text	YES		NULL	
+
+--- Structure DESCRIBE devis + devis_lignes ---
+Field	Type	Null	Key	Default	Extra
+id	int(11)	NO	PRI	NULL	auto_increment
+numero	varchar(20)	NO	UNI	NULL	
+client_id	int(11)	NO	MUL	NULL	
+date_emission	timestamp	YES		current_timestamp()	
+date_validite	date	NO		NULL	
+montant_ht	decimal(12,2)	NO		NULL	
+montant_ttc	decimal(12,2)	NO		NULL	
+statut	enum('brouillon','envoye','accepte','refuse','expire')	YES	MUL	brouillon	
+user_ad_createur	varchar(100)	YES		NULL	
+notes	text	YES		NULL	
+Field	Type	Null	Key	Default	Extra
+id	int(11)	NO	PRI	NULL	auto_increment
+devis_id	int(11)	NO	MUL	NULL	
+tarif_id	int(11)	NO	MUL	NULL	
+quantite	decimal(10,2)	NO		NULL	
+prix_unitaire_ht	decimal(10,2)	NO		NULL	
+remise_pourcent	decimal(5,2)	YES		0.00	
+total_ht	decimal(12,2)	NO		NULL	

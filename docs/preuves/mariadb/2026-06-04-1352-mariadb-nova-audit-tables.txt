@@ -1,0 +1,7 @@
+=== MariaDB nova_audit : base d'audit ===
+Captured: 2026-06-04T11:55:14Z
+Host: db01
+
+--- USE nova_audit; SHOW TABLES; ---
+
+--- Tables info ---

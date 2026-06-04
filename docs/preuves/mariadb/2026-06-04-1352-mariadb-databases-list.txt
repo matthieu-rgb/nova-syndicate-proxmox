@@ -1,0 +1,18 @@
+=== MariaDB databases (SHOW DATABASES) ===
+Captured: 2026-06-04T11:53:00Z
+Host: db01 (192.168.20.12)
+Auth: vault_mariadb_root_password (Ansible vault) - REDACTED
+
+--- SHOW DATABASES; ---
+Database
+information_schema
+mysql
+nova_audit
+nova_logistique
+nova_portail
+nova_rh
+performance_schema
+sys
+
+--- SHOW DATABASES count metier (hors information_schema/mysql/performance_schema/sys) ---
+4

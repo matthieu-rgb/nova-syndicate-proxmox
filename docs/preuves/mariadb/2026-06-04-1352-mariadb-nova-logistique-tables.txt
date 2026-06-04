@@ -1,0 +1,11 @@
+=== MariaDB nova_logistique : bases existante mais aucune table ===
+Captured: 2026-06-04T11:55:04Z
+Host: db01 (192.168.20.12)
+
+--- USE nova_logistique; SHOW TABLES; ---
+
+--- Tables (information_schema) ---
+
+Conclusion : la base nova_logistique est PROVISIONNEE (CREATE DATABASE)
+mais ne contient AUCUNE table -- bases applicative metier preparee, jamais peuplee.
+La base metier reellement active est nova_portail (cf fichier dedie).
