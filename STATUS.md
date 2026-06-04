@@ -1,6 +1,105 @@
 # Nova Syndicate -- STATUS
 
-Derniere mise a jour : 3 juin 2026 (menage services failed + Borg cron confirme)
+Derniere mise a jour : 4 juin 2026 (RECO indexer Wazuh = faux-negatif healthcheck Grafana ; alias wazuh-alerts deploye + porte dans le role IaC ; preuve Borg expurgee).
+
+## Session 2026-06-04 -- RECO Wazuh indexing (faux-negatif), alias deploye, hygiene preuves Borg
+
+### Bloc 1 -- Wazuh -> OpenSearch indexing : ALARME = FAUX-NEGATIF
+
+Diagnostic methodique lecture seule sur app01 (VMID 106) via Tailscale +
+`qm guest exec`. Hypothese de depart "index wazuh-alerts-* jamais cree" :
+**FAUSSE**. Etat live mesure 2026-06-04 14:42 :
+
+| Verification | Resultat |
+|---|---|
+| `df -h /` | 24G/32G = **80 %** (sous low watermark 85 %, pas de flood-stage) |
+| `_cluster/health` (mTLS admin) | **green**, 55 shards, 0 unassigned |
+| `_cluster/state/blocks` | `{}` |
+| `_settings` sur `wazuh-alerts-*` | aucun `blocks.read_only*` |
+| watermarks defaults | `enable_for_single_data_node=false` (donc non appliques sur ce cluster) |
+| `_cat/indices` | 16 indices `wazuh-alerts-4.x-YYYY.MM.DD` du 2026.05.18 au 2026.06.04 (trou 05.30 + 05.31) |
+| Index du jour | `wazuh-alerts-4.x-2026.06.04`, 423 docs, dernier `@timestamp` `2026-06-04T12:42:17.615Z` |
+| `wazuh-alerts-*/_search` | HTTP 200, **8959 hits** cumules |
+| Logs Grafana 14:27 | plugin `grafana-opensearch-datasource` 2.33.1, `dsUid=wazuh-opensearch`, `endpoint=queryData`, **`status=ok`** ~60ms |
+
+L'indexation tourne, filebeat publie en live, le datasource Grafana
+queryData repond `status=ok` -- les dashboards qui lisent vraiment le
+datasource ont des donnees.
+
+Cause exacte du `HTTP 400 Index not found: wazuh-alerts-*` observe sur
+`/api/datasources/uid/wazuh-opensearch/health` : faux-negatif cosmetique
+du healthcheck plugin, **deja documente** comme dette
+[T-WAZUH-INDEXER-ALIAS-DAILY](docs/INFRA-INVENTORY.md#dettes-ouvertes-post-t-wazuh-indexer-install)
+(`docs/INFRA-INVENTORY.md:298-300`). Resolution = alias `wazuh-alerts`
+sur le pattern `wazuh-alerts-4.x-*`.
+
+### Bloc 2 -- Resolution T-WAZUH-INDEXER-ALIAS-DAILY (IaC + live)
+
+Approche minimale (n'ecrase pas le template `wazuh` package-managed,
+order=0/version=1) : **template legacy contributif `wazuh-alias`**
+(order=1, pattern `wazuh-alerts-4.x-*`, aliases `wazuh-alerts: {}`).
+OpenSearch merge la section `aliases` des templates qui matchent ; les
+futurs indices daily recoivent l'alias a la creation. Indices existants
+backfilles une fois via `_aliases`.
+
+Porte dans le role Ansible (`nova-syndicate-ansible` commit `7e4c6ec`) :
+- `roles/wazuh_indexer/tasks/aliases.yml` : 2 tasks `uri` (PUT template +
+  POST `_aliases`) en mTLS admin.pem, idempotentes.
+- `roles/wazuh_indexer/tasks/main.yml` : `import_tasks aliases.yml` en
+  fin de role (replay du role complet couvre l'alias).
+- `playbooks/deploy_wazuh_indexer_alias.yml` : entree surgical via
+  `import_role` + `tasks_from=aliases.yml` (evite de rejouer apt/certs/
+  security-init).
+
+Applique en live via `curl` admin TLS bit-identique aux tasks `uri`
+(`bastion-nova` MFA ControlMaster non actif cette session). Verifie :
+
+```
+PUT /_template/wazuh-alias      -> 200 {"acknowledged":true}
+POST /_aliases (add wazuh-alerts) -> 200 {"acknowledged":true}
+GET /_alias/wazuh-alerts        -> 200, alias sur 16 indices
+GET /wazuh-alerts/_search       -> 200, 8962 hits, 48 shards (16 indices x 3 prim)
+```
+
+Verification cote Grafana (healthcheck `/api/datasources/.../health`
+desormais 200) **reportee** : Grafana admin password introuvable en
+lecture seule (cf dette pre-existante T-GRAFANA-13-ADMIN-RESET-BUG).
+Si le 400 cosmetique persiste apres alias (parce que le plugin
+healthcheck garde le wildcard), suite naturelle = pointer `database`
+du datasource sur `wazuh-alerts` (sans `*`) ; non fait cette session,
+hors scope de T-WAZUH-INDEXER-ALIAS-DAILY tel que formule.
+
+### Bloc 3 -- Hygiene preuves Borg
+
+Bloc `key = hqlh...` (repokey base64) expurge du fichier de preuve
+`docs/preuves/borg/2026-06-04-1356-borg-local-repo.txt` (commit
+`1659b35` ce repo). Remplace par 1 ligne :
+`key = *** REDACTED (repokey chiffree par passphrase, stockee hors repo) ***`.
+Le reste du fichier (config, README, listing FS) intact. Pre-commit OK.
+
+Historique Git non purge : repokey protegee par passphrase Borg
+(modele de menace : la cle exposee seule n'est pas exploitable sans
+la passphrase) + repo Nova reste prive + cite dans 1 seul commit
+recent (`50e69eb`). Cout d'un `git filter-repo` (force-push,
+invalidation clones, perte des SHAs cites dans STATUS) > benefice
+securite reel. Decision : expurgation suffisante. Critere de bascule
+vers purge : push public ou fuite simultanee de la passphrase.
+
+### Dettes ouvertes ce jour
+
+| Ticket | Severite | Description |
+|--------|----------|-------------|
+| **T-WAZUH-ALIAS-ANSIBLE-SYNC** | LOW | Le code IaC de l'alias est dans `roles/wazuh_indexer/tasks/aliases.yml` (+ playbook `deploy_wazuh_indexer_alias.yml`) mais a ete applique cette session via `curl` admin TLS faute de `bastion-nova` ControlMaster actif. Replay attendu : `ansible-playbook playbooks/deploy_wazuh_indexer_alias.yml --limit app01` doit reporter `ok=2 changed=0` (template PUT idempotent, _aliases backfill `changed_when=false`). A faire a la prochaine session avec MFA bastion ouverte. |
+| **T-WAZUH-INDEXER-INDICES-GAP-2026-05-30-31** | LOW (post-certif) | Trou de 2 jours dans la sequence `wazuh-alerts-4.x-YYYY.MM.DD` (pas de 05.30 ni 05.31). A confronter aux logs app01 de ces dates (potentiellement OOM recidive entre T-APP01-SWAP-ADD du 24/05 et le menage du 03/06). N'affecte pas l'indexation courante. |
+
+### Dette fermee ce jour
+
+- **T-WAZUH-INDEXER-ALIAS-DAILY** (`docs/INFRA-INVENTORY.md:298-300`) :
+  RESOLUE 2026-06-04. Alias `wazuh-alerts -> wazuh-alerts-4.x-*` cree
+  via template contributif `wazuh-alias` (order=1), backfille sur les
+  16 indices existants. Code IaC dans role `wazuh_indexer` (commit
+  ansible `7e4c6ec`). Verification cote Grafana renvoyee a la prochaine
+  session (cf bloc 2).
 
 ## Session 2026-06-03 (soir) -- RECO IPsec + WireGuard road-warrior, dettes IaC ouvertes
 
