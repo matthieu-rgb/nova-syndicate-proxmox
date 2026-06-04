@@ -1,0 +1,12 @@
+=== samba-tool domain info 127.0.0.1 ===
+Captured: 2026-06-04T08:26:52Z
+Host: dc01 (192.168.20.10) -- Samba AD Domain Controller
+
+lpcfg_do_global_parameter: WARNING: The "server schannel" option is deprecated
+Forest           : nova-syndicate.local
+Domain           : nova-syndicate.local
+Netbios domain   : NOVA-SYNDICATE
+DC name          : dc01.nova-syndicate.local
+DC netbios name  : DC01
+Server site      : Default-First-Site-Name
+Client site      : Default-First-Site-Name

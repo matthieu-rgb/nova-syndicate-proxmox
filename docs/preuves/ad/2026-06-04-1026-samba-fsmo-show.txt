@@ -1,0 +1,12 @@
+=== samba-tool fsmo show ===
+Captured: 2026-06-04T08:27:00Z
+Host: dc01 (192.168.20.10)
+
+lpcfg_do_global_parameter: WARNING: The "server schannel" option is deprecated
+SchemaMasterRole owner: CN=NTDS Settings,CN=DC01,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC=nova-syndicate,DC=local
+InfrastructureMasterRole owner: CN=NTDS Settings,CN=DC01,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC=nova-syndicate,DC=local
+RidAllocationMasterRole owner: CN=NTDS Settings,CN=DC01,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC=nova-syndicate,DC=local
+PdcEmulationMasterRole owner: CN=NTDS Settings,CN=DC01,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC=nova-syndicate,DC=local
+DomainNamingMasterRole owner: CN=NTDS Settings,CN=DC01,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC=nova-syndicate,DC=local
+DomainDnsZonesMasterRole owner: CN=NTDS Settings,CN=DC01,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC=nova-syndicate,DC=local
+ForestDnsZonesMasterRole owner: CN=NTDS Settings,CN=DC01,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC=nova-syndicate,DC=local

@@ -1,0 +1,7 @@
+=== samba-tool computer list ===
+Captured: 2026-06-04T08:26:58Z
+Host: dc01 (192.168.20.10)
+
+lpcfg_do_global_parameter: WARNING: The "server schannel" option is deprecated
+FS01$
+DC01$

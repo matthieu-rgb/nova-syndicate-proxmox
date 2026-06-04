@@ -1,0 +1,87 @@
+=== systemctl status samba-ad-dc --no-pager ===
+Captured: 2026-06-04T08:27:01Z
+Host: dc01 (192.168.20.10)
+
+â samba-ad-dc.service - Samba AD Daemon
+     Loaded: loaded (/lib/systemd/system/samba-ad-dc.service; enabled; preset: enabled)
+     Active: active (running) since Tue 2026-06-02 20:32:43 CEST; 1 day 13h ago
+       Docs: man:samba(8)
+             man:samba(7)
+             man:smb.conf(5)
+   Main PID: 118602 (samba)
+     Status: "samba: ready to serve connections..."
+      Tasks: 60 (limit: 2348)
+     Memory: 181.8M
+        CPU: 2min 30.312s
+     CGroup: /system.slice/samba-ad-dc.service
+             ââ118602 "samba: root process"
+             ââ118603 "samba: tfork waiter process(118604)"
+             ââ118604 "samba: task[s3fs] pre-fork master"
+             ââ118605 "samba: tfork waiter process(118607)"
+             ââ118606 "samba: tfork waiter process(118608)"
+             ââ118607 "samba: task[rpc] pre-fork master"
+             ââ118608 /usr/sbin/smbd -D "--option=server role check:inhibit=yes" --foreground
+             ââ118609 "samba: tfork waiter process(118613)"
+             ââ118610 "samba: tfork waiter process(118611)"
+             ââ118611 "samba: task[rpc] pre-forked worker(0)"
+             ââ118612 "samba: tfork waiter process(118615)"
+             ââ118613 "samba: task[nbt] pre-fork master"
+             ââ118614 "samba: tfork waiter process(118616)"
+             ââ118615 "samba: task[rpc] pre-forked worker(1)"
+             ââ118616 "samba: task[wrepl] pre-fork master"
+             ââ118617 "samba: tfork waiter process(118619)"
+             ââ118618 "samba: tfork waiter process(118623)"
+             ââ118619 "samba: task[rpc] pre-forked worker(2)"
+             ââ118620 "samba: tfork waiter process(118621)"
+             ââ118621 "samba: task[rpc] pre-forked worker(3)"
+             ââ118623 "samba: task[ldap] pre-fork master"
+             ââ118624 "samba: tfork waiter process(118625)"
+             ââ118625 "samba: task[cldap] pre-fork master"
+             ââ118626 "samba: tfork waiter process(118627)"
+             ââ118627 "samba: task[kdc] pre-fork master"
+             ââ118628 "samba: tfork waiter process(118630)"
+             ââ118629 "samba: tfork waiter process(118632)"
+             ââ118630 "samba: task[drepl] pre-fork master"
+             ââ118631 "samba: tfork waiter process(118636)"
+             ââ118632 "samba: task[kdc] pre-forked worker(0)"
+             ââ118633 "samba: tfork waiter process(118634)"
+             ââ118634 "samba: task[kdc] pre-forked worker(1)"
+             ââ118635 "samba: tfork waiter process(118643)"
+             ââ118636 "samba: task[winbindd] pre-fork master"
+             ââ118637 "samba: tfork waiter process(118638)"
+             ââ118638 "samba: task[ntp_signd] pre-fork master"
+             ââ118639 "samba: tfork waiter process(118641)"
+             ââ118640 "samba: tfork waiter process(118650)"
+             ââ118641 "samba: task[kcc] pre-fork master"
+             ââ118642 "samba: tfork waiter process(118645)"
+             ââ118643 "samba: task[kdc] pre-forked worker(2)"
+             ââ118644 "samba: tfork waiter process(118647)"
+             ââ118645 "samba: task[dnsupdate] pre-fork master"
+             ââ118646 "samba: tfork waiter process(118649)"
+             ââ118647 "samba: task[kdc] pre-forked worker(3)"
+             ââ118649 "samba: task[dns] pre-fork master"
+             ââ118650 /usr/sbin/winbindd -D "--option=server role check:inhibit=yes" --foreground
+             ââ118655 /usr/sbin/smbd -D "--option=server role check:inhibit=yes" --foreground
+             ââ118656 /usr/sbin/smbd -D "--option=server role check:inhibit=yes" --foreground
+             ââ118657 "winbindd: domain child [NOVA-SYNDICATE]"
+             ââ118658 "samba: tfork waiter process(118659)"
+             ââ118659 "samba: task[ldap] pre-forked worker(0)"
+             ââ118660 "samba: tfork waiter process(118661)"
+             ââ118661 "samba: task[ldap] pre-forked worker(1)"
+             ââ118662 "samba: tfork waiter process(118663)"
+             ââ118663 "samba: task[ldap] pre-forked worker(2)"
+             ââ118664 "samba: tfork waiter process(118665)"
+             ââ118665 "samba: task[ldap] pre-forked worker(3)"
+             ââ118712 "winbindd: idmap child"
+             ââ251225 /usr/sbin/smbd -D "--option=server role check:inhibit=yes" --foreground
+
+Jun 04 10:13:31 dc01 samba[118641]: [2026/06/04 10:13:31.876780,  0] ../../lib/util/util_runcmd.c:355(samba_runcmd_io_handler)
+Jun 04 10:13:31 dc01 samba[118641]:   /usr/sbin/samba_kcc: lpcfg_do_global_parameter: WARNING: The "server schannel" option is deprecated
+Jun 04 10:18:31 dc01 samba[118641]: [2026/06/04 10:18:31.966752,  0] ../../lib/util/util_runcmd.c:355(samba_runcmd_io_handler)
+Jun 04 10:18:31 dc01 samba[118641]:   /usr/sbin/samba_kcc: lpcfg_do_global_parameter: WARNING: The "server schannel" option is deprecated
+Jun 04 10:23:00 dc01 samba[118645]: [2026/06/04 10:23:00.498636,  0] ../../lib/util/util_runcmd.c:355(samba_runcmd_io_handler)
+Jun 04 10:23:00 dc01 samba[118645]:   /usr/sbin/samba_spnupdate: lpcfg_do_global_parameter: WARNING: The "server schannel" option is deprecated
+Jun 04 10:23:00 dc01 samba[118645]: [2026/06/04 10:23:00.627123,  0] ../../lib/util/util_runcmd.c:355(samba_runcmd_io_handler)
+Jun 04 10:23:00 dc01 samba[118645]:   /usr/sbin/samba_dnsupdate: lpcfg_do_global_parameter: WARNING: The "server schannel" option is deprecated
+Jun 04 10:23:32 dc01 samba[118641]: [2026/06/04 10:23:32.068260,  0] ../../lib/util/util_runcmd.c:355(samba_runcmd_io_handler)
+Jun 04 10:23:32 dc01 samba[118641]:   /usr/sbin/samba_kcc: lpcfg_do_global_parameter: WARNING: The "server schannel" option is deprecated

@@ -1,0 +1,10 @@
+=== samba-tool domain level show ===
+Captured: 2026-06-04T08:26:52Z
+Host: dc01 (192.168.20.10)
+
+lpcfg_do_global_parameter: WARNING: The "server schannel" option is deprecated
+Domain and forest function level for domain 'DC=nova-syndicate,DC=local'
+
+Forest function level: (Windows) 2008 R2
+Domain function level: (Windows) 2008 R2
+Lowest function level of a DC: (Windows) 2008 R2
