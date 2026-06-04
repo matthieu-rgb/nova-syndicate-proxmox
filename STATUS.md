@@ -1,6 +1,6 @@
 # Nova Syndicate -- STATUS
 
-Derniere mise a jour : 4 juin 2026 (soir) (RECO indexer Wazuh = faux-negatif healthcheck Grafana ; alias wazuh-alerts deploye + porte dans le role IaC ; preuve Borg purgee de l'historique Git + repo de test `/srv/borg-repo` supprime apres confirmation que la fuite etait inerte ; **validation SIEM live sur db01 = faille `su -> root` sans password decouverte sur db01, T-DB01-SU-NO-PASSWORD HIGH a corriger avant soutenance**).
+Derniere mise a jour : 4 juin 2026 (soir) (RECO indexer Wazuh = faux-negatif healthcheck Grafana ; alias wazuh-alerts deploye + porte dans le role IaC ; preuve Borg purgee de l'historique Git + repo de test `/srv/borg-repo` supprime apres confirmation que la fuite etait inerte ; **validation SIEM live sur db01 = faille `su -> root` sans password decouverte sur db01, T-DB01-SU-NO-PASSWORD HIGH a corriger avant soutenance** ; pack NIS2 dashboard Wazuh deploye en IaC -- 12 visus + 1 dashboard organise par article NIS2 cf Bloc 6).
 
 ## Session 2026-06-04 -- RECO Wazuh indexing (faux-negatif), alias deploye, hygiene preuves Borg
 
@@ -193,6 +193,51 @@ fenetre, pipeline E2E latence ~774ms event->index. Verdict par event :
 Les 28 NIS2 alerts capturees sont desormais dans `wazuh-alerts-4.x-2026.06.04` -- requetable via Grafana datasource `Wazuh-OpenSearch`, filtre suggere :
 `agent.name : db01 AND rule.groups : nis2 AND @timestamp in [14:51:00Z, 14:53:00Z]`.
 
+### Bloc 6 -- Pack dashboard NIS2 dedie (Wazuh Dashboard, IaC)
+
+Construit + deploye live un pack dashboard NIS2 dedie dans Wazuh Dashboard
+(= OpenSearch Dashboards), organise par article NIS2 (21.2.b auth, 21.2.c
+continuite, 21.2.e integrite+reseau, 21.2.i comptes). Code IaC : nouveau
+role Ansible `wazuh_dashboard_nis2_pack` + playbook
+`deploy_wazuh_dashboard_nis2.yml` (ansible repo commit `14cb188`).
+
+**Contenu pack -- 13 saved_objects** :
+
+| ID | Type | Couverture |
+|----|------|------------|
+| `nis2-m1-total` | metric | Total alertes `rule.groups:nis2` (big number) |
+| `nis2-m2-agents` | metric | Cardinality `agent.id` -- cible 8/8 |
+| `nis2-m3-high` | metric | Alertes `level>=10` AND `nis2` (high+critical) |
+| `nis2-p1-auth-failures-by-rule` | pie | art.21.2.b -- 100001 SSH / 100007 SU / 100011 SMTP / 100014 LDAP |
+| `nis2-p2-auth-priv-timeline` | area stacked | art.21.2.b -- timeline 8 regles auth+priv stack par rule.id |
+| `nis2-p3-brute-force-table` | table | art.21.2.b -- 100004/100012 (brute force SSH+SMTP) |
+| `nis2-p4-service-stop-table` | table | art.21.2.c -- 100006 (samba/mariadb/wazuh/nginx/squid stop) |
+| `nis2-p5-fim-critical-bar` | histogram | art.21.2.e -- 100003/100010 FIM critiques |
+| `nis2-p6-firewall-drops-line` | line | art.21.2.e -- 100009 firewall drops volumetrie |
+| `nis2-p7-network-pivot-table` | table | art.21.2.e -- 100013 pivot mail01 hors flux |
+| `nis2-p8-account-lifecycle` | area stacked | art.21.2.i -- 100008/100400-402 customs + 5901/5902/5903 Wazuh defaults |
+| `nis2-p9-top-users` | bar horizontal | art.21.2.i -- top agents (proxy identite) sur ops comptes |
+| `nis2-nova-syndicate` | dashboard | layout 48-col grille, 6 rows, 12 panneaux |
+
+**Pattern technique** (apprentissages session) :
+- **Filter `bool/match_phrase` au lieu de KQL `query`** -- pilote v1 (KQL `rule.id : ("100001" or ...)`) rendait camembert vide cote UI ; pilote v2 (filter bool) rend correctement. KQL parser cote OpenSearch Dashboards 2.16 a un comportement subtil pour les terms quotes ; bool filter est universel.
+- **References explicites** : 1 entry pour `query.index` + 1 par `filter[i].meta.index` -- omettre la 2e casse le rendu silencieusement.
+- **migrationVersion** : `visualization: 7.10.0` + `dashboard: 7.9.3` -- correspond a la matrice de compat OpenSearch Dashboards 2.x heritee Kibana.
+- **POST multipart sur `_import?overwrite=true`** -- idempotent ; remplace si IDs deja presents.
+
+**Application live** : `curl` admin bit-identique a la task `uri` Ansible, faute de bastion-nova ControlMaster actif (meme pattern que pour T-WAZUH-INDEXER-ALIAS-DAILY du matin). Verification import :
+```
+{"success":true,"successCount":13, ...}
+```
+
+**URL acces jury** :
+```
+https://siem.nova-syndicate.local/app/dashboards#/view/nis2-nova-syndicate
+```
+Necessite Authelia SSO + admin OpenSearch security (mdp = `WAZUH_INDEXER_PASSWORD` live dans `/etc/default/grafana-server`, drift connu avec rotation file cf T-VAULT-OPNSENSE-PASSWORDS-MIGRATE).
+
+**Note jury sur panneaux vides** : P4 (service stop) + P7 (network pivot mail01) afficheront vide -- 0 hit historique pour 100006/100013. Comportement attendu (le panel capture l'event si declenche). Pour la demo : montrer P1/P2/P3/P5/P8/P9 qui ont des donnees grace au test live db01 du Bloc 5.
+
 ### Dettes ouvertes ce jour
 
 | Ticket | Severite | Description |
@@ -205,6 +250,8 @@ Les 28 NIS2 alerts capturees sont desormais dans `wazuh-alerts-4.x-2026.06.04` -
 | **T-GITHUB-ORPHAN-COMMIT-RESIDUAL** | LOW (accepte) | Le commit `50e69eb` (pre-rewrite, contient la cle leake) reste resolvable par URL directe sur github.com pendant ~90 jours post force-push. Cle INERTE (cf Bloc 4 -- `/srv/borg-repo` supprime, repo etait vide). Pas d'action GitHub support, pas de recreation du repo. Echeance d'expiration GitHub estimee : **~2026-09-02**. Pas de monitoring requis, le risque est nul. |
 | **T-PRECOMMIT-BORG-REPOKEY-PATTERN** | MEDIUM | Le pre-commit `gitleaks` (filet local) n'a pas catch le repokey Borg lors du commit `50e69eb` (10:56). Le pattern entropie-based `generic-api-key` a fonctionne **server-side seulement** (workflow GitHub Actions, scan full-history). Action : ajouter au `.pre-commit-config.yaml` une regex ad-hoc sur le pattern `^key = hqlh[A-Za-z0-9+/=]{40,}` (debut du wrapper repokey Borg) pour bloquer au commit local. Cible : nova-syndicate-proxmox + nova-syndicate-ansible (les 2 repos qui captent des preuves). |
 | **T-BACKUP01-LEFTOVER-CLEANUP** | LOW | Apres validation finale par operateur : `shred -u /root/.borg-passphrase-pre-rotation-20260604.bak` (filet 0.3, doublon de `/etc/borg/passphrase`) + `rm /usr/local/sbin/borg-rotation-step.sh` (script de session, contient des chemins mais aucun secret) + retrait snapshot Proxmox `pre-borg-passphrase-rotation-20260604` VMID 109 + retrait mirror `/tmp/nova-syndicate-proxmox-prerewrite-20260604.git` Mac. |
+| **T-WAZUH-DASHBOARD-NIS2-ANSIBLE-SYNC** | LOW | Pack NIS2 (role `wazuh_dashboard_nis2_pack` commit ansible `14cb188`) applique live cette session via `curl` admin (bastion-nova MFA ControlMaster non actif). Replay attendu : `ansible-playbook playbooks/deploy_wazuh_dashboard_nis2.yml --limit app01 --ask-vault-pass` doit reporter `ok=4 changed=0` (overwrite=true idempotent). A faire prochaine session bastion ouverte. |
+| **T-VAULT-WAZUH-INDEXER-PASSWORD** | MEDIUM | `vault_wazuh_indexer_admin_password` reference dans le role `wazuh_dashboard_nis2_pack/defaults` mais ABSENT du vault `inventory/group_vars/all/vault.yml`. Le secret vit actuellement en plaintext dans `/etc/default/grafana-server` + `nova-iac-secrets/rotation-2026-05-18.txt` (off-repo). Action : `ansible-vault edit` pour ajouter `vault_wazuh_indexer_admin_password: <valeur live>`. Volet de T-VAULT-OPNSENSE-PASSWORDS-MIGRATE etendu aux secrets Wazuh. |
 
 ### Dette fermee ce jour
 
@@ -214,6 +261,15 @@ Les 28 NIS2 alerts capturees sont desormais dans `wazuh-alerts-4.x-2026.06.04` -
   16 indices existants. Code IaC dans role `wazuh_indexer` (commit
   ansible `7e4c6ec`). Verification cote Grafana renvoyee a la prochaine
   session (cf bloc 2).
+- **T-WAZUH-DASHBOARD-NIS2-CUSTOM** : **RESOLUE 2026-06-04 (soir)**.
+  Pack 13 saved_objects (3 metrics + 9 visus + 1 dashboard) deploye via
+  `_import?overwrite=true`, organise par article NIS2 (21.2.b auth, .c
+  continuite, .e integrite+reseau, .i comptes). Code IaC : role
+  `wazuh_dashboard_nis2_pack` + playbook `deploy_wazuh_dashboard_nis2.yml`
+  (ansible commit `14cb188`). URL acces :
+  `https://siem.nova-syndicate.local/app/dashboards#/view/nis2-nova-syndicate`.
+  Verification import : `success:true successCount:13`. Cf Bloc 6.
+  Replay Ansible : dette T-WAZUH-DASHBOARD-NIS2-ANSIBLE-SYNC ouverte.
 
 ## Session 2026-06-03 (soir) -- RECO IPsec + WireGuard road-warrior, dettes IaC ouvertes
 
