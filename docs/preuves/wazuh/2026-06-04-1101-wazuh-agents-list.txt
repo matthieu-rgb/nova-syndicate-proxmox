@@ -1,0 +1,32 @@
+=== Wazuh agents (agent_control -ls + -l) ===
+Captured: 2026-06-04T09:01:38Z
+Host: app01 (192.168.20.13) -- Wazuh Manager
+
+--- /var/ossec/bin/agent_control -ls (short list machine-parseable) ---
+000,app01 (server),127.0.0.1,Active/Local,
+001,backup01,any,Active,
+002,proxy-lyon01,any,Active,
+003,dc01,any,Active,
+004,fs01,any,Active,
+005,db01,any,Active,
+006,bastion01,any,Active,
+007,mail01,any,Active,
+
+
+--- /var/ossec/bin/agent_control -l (human-readable list) ---
+
+Wazuh agent_control. List of available agents:
+   ID: 000, Name: app01 (server), IP: 127.0.0.1, Active/Local
+   ID: 001, Name: backup01, IP: any, Active
+   ID: 002, Name: proxy-lyon01, IP: any, Active
+   ID: 003, Name: dc01, IP: any, Active
+   ID: 004, Name: fs01, IP: any, Active
+   ID: 005, Name: db01, IP: any, Active
+   ID: 006, Name: bastion01, IP: any, Active
+   ID: 007, Name: mail01, IP: any, Active
+
+List of agentless devices:
+
+
+--- Count Active agents ---
+8

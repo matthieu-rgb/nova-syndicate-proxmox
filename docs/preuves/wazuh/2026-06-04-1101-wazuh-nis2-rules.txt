@@ -1,0 +1,117 @@
+=== Wazuh regles NIS2 custom 100001-100010 ===
+Captured: 2026-06-04T09:01:43Z
+Host: app01 (192.168.20.13)
+
+--- Localisation des fichiers regles ---
+total 20
+drwxr-x--- 2 root  wazuh 4096 May 18 19:45 .
+drwxrwx--- 7 wazuh wazuh 4096 May 25 15:40 ..
+-rw-rw---- 1 wazuh wazuh 1126 May  8 22:58 local_rules.xml
+-rw-rw---- 1 root  wazuh  883 May 18 19:48 nova-iam_rules.xml
+-rw-r----- 1 wazuh wazuh 3854 May 18 22:37 nova_nis2_rules.xml
+
+/var/ossec/etc/decoders/local_decoder.xml
+/var/ossec/etc/rules/local_rules.xml
+
+--- Contenu : extraction des regles 100001 a 100010 ---
+<group name="nova,nis2,">
+  <rule id="100001" level="10">
+    <if_group>sshd</if_group>
+    <regex>Failed password|Failed keyboard-interactive|authentication failure</regex>
+    <description>NIS2 art.21.2.b: Tentative authentification SSH echouee</description>
+    <group>authentication_failure,nis2</group>
+  </rule>
+  <rule id="100002" level="8">
+    <if_group>sudo</if_group>
+    <match>COMMAND</match>
+    <description>NIS2 art.21.2.b: Execution commande sudo - privilege eleve</description>
+    <group>privilege_escalation,nis2</group>
+  </rule>
+  <rule id="100003" level="12">
+    <if_group>syscheck</if_group>
+    <match>/etc/passwd|/etc/shadow|/etc/sudoers</match>
+    <description>NIS2 art.21.2.e: Modification fichier systeme critique</description>
+    <group>file_integrity,nis2</group>
+  </rule>
+  <rule id="100004" level="14">
+    <if_matched_sid>100001</if_matched_sid>
+    <same_source_ip />
+    <description>NIS2 art.21.2.b: Brute force SSH detecte</description>
+    <group>brute_force,nis2</group>
+  </rule>
+  <rule id="100005" level="12">
+    <if_group>sshd</if_group>
+    <match>session opened for user root</match>
+    <description>NIS2 art.21.2.b: Connexion directe root detectee</description>
+    <group>authentication_success,nis2</group>
+  </rule>
+  <rule id="100006" level="12">
+    <if_group>syslog</if_group>
+    <match>samba|mariadb|wazuh|nginx|squid</match>
+    <regex>stopped|failed|killed</regex>
+    <description>NIS2 art.21.2.c: Service critique arrete</description>
+    <group>service_stop,nis2</group>
+  </rule>
+  <rule id="100007" level="10">
+    <if_group>syslog</if_group>
+    <match>FAILED SU|su: FAILED</match>
+    <description>NIS2 art.21.2.b: Tentative elevation de privilege echouee</description>
+    <group>privilege_escalation,nis2</group>
+  </rule>
+  <rule id="100008" level="8">
+    <if_group>syslog</if_group>
+    <match>useradd|userdel|usermod|groupadd|groupdel</match>
+    <description>NIS2 art.21.2.i: Modification compte utilisateur</description>
+    <group>account_management,nis2</group>
+  </rule>
+  <rule id="100009" level="10">
+    <if_group>syslog</if_group>
+    <match>iptables|nftables|ufw|firewall</match>
+    <regex>DROP|REJECT|blocked</regex>
+    <description>NIS2 art.21.2.e: Trafic reseau bloque - tentative acces non autorise</description>
+    <group>firewall,nis2</group>
+  </rule>
+  <rule id="100010" level="14">
+    <if_group>syslog</if_group>
+    <match>/etc/ssh/sshd_config|/etc/sudoers|/etc/hosts</match>
+    <description>NIS2 art.21.2.e: Modification configuration critique systeme</description>
+    <group>file_integrity,nis2</group>
+  </rule>
+  <rule id="100011" level="8">
+    <if_group>postfix</if_group>
+    <regex>SASL LOGIN authentication failed|SASL PLAIN authentication failed</regex>
+    <description>NIS2 art.21.2.b: Tentative authentification SMTP echouee (Postfix SASL)</description>
+    <group>authentication_failure,nis2,mail</group>
+  </rule>
+  <rule id="100012" level="13">
+    <if_matched_sid>100011</if_matched_sid>
+  </rule>
+  <rule id="100010" level="14">
+    <if_group>syslog</if_group>
+    <match>/etc/ssh/sshd_config|/etc/sudoers|/etc/hosts</match>
+    <description>NIS2 art.21.2.e: Modification configuration critique systeme</description>
+    <group>file_integrity,nis2</group>
+  </rule>
+  <rule id="100011" level="8">
+    <if_group>postfix</if_group>
+    <regex>SASL LOGIN authentication failed|SASL PLAIN authentication failed</regex>
+    <description>NIS2 art.21.2.b: Tentative authentification SMTP echouee (Postfix SASL)</description>
+    <group>authentication_failure,nis2,mail</group>
+  </rule>
+  <rule id="100012" level="13">
+    <if_matched_sid>100011</if_matched_sid>
+    <same_source_ip />
+    <description>NIS2 art.21.2.b: Brute force SMTP detecte (>= 5 echecs meme IP)</description>
+    <group>brute_force,nis2,mail</group>
+  </rule>
+  <rule id="100013" level="8">
+    <if_group>pf</if_group>
+    <regex>src=172\.16\.1\.3.*(?!dst=192\.168\.20\.10:636)</regex>
+    <description>NIS2 art.21.2.e: MAIL01 tente connexion hors flux autorise (pivot/compromise suspect)</description>
+    <group>network_pivot,nis2,mail</group>
+  </rule>
+  <rule id="100014" level="5">
+    <if_group>dovecot</if_group>
+    <regex>ldap.*bind failed|ldap.*Invalid credentials</regex>
+    <description>NIS2 art.21.2.b: Echec bind LDAP depuis mail01 (svc-mail-ldap creds compromis ou brute force)</description>
+    <group>authentication_failure,nis2,mail,ldap</group>

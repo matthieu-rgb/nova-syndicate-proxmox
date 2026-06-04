@@ -1,0 +1,47 @@
+=== Wazuh manager service + listeners ===
+Captured: 2026-06-04T09:01:41Z
+Host: app01 (192.168.20.13)
+
+--- systemctl is-active + status wazuh-manager ---
+active
+active
+active
+---
+â wazuh-manager.service - Wazuh manager
+     Loaded: loaded (/lib/systemd/system/wazuh-manager.service; enabled; preset: enabled)
+     Active: active (running) since Mon 2026-06-01 08:15:57 CEST; 3 days ago
+      Tasks: 175 (limit: 1062)
+     Memory: 2.9G
+        CPU: 25min 58.868s
+     CGroup: /system.slice/wazuh-manager.service
+             ââ1055 /var/ossec/framework/python/bin/python3 /var/ossec/api/scripts/wazuh_apid.py
+             ââ1058 /var/ossec/framework/python/bin/python3 /var/ossec/api/scripts/wazuh_apid.py
+             ââ1059 /var/ossec/framework/python/bin/python3 /var/ossec/api/scripts/wazuh_apid.py
+             ââ1062 /var/ossec/framework/python/bin/python3 /var/ossec/api/scripts/wazuh_apid.py
+             ââ1065 /var/ossec/framework/python/bin/python3 /var/ossec/api/scripts/wazuh_apid.py
+             ââ1110 /var/ossec/bin/wazuh-authd
+             ââ1130 /var/ossec/bin/wazuh-db
+             ââ1165 /var/ossec/bin/wazuh-execd
+             ââ1182 /var/ossec/bin/wazuh-analysisd
+             ââ1195 /var/ossec/bin/wazuh-syscheckd
+             ââ1265 /var/ossec/bin/wazuh-remoted
+             ââ1311 /var/ossec/bin/wazuh-logcollector
+             ââ1396 /var/ossec/bin/wazuh-monitord
+             ââ1485 /var/ossec/bin/wazuh-modulesd
+
+Jun 01 08:15:51 app01 env[473]: wazuh-logcollector: Process 1374 not used by Wazuh, removing...
+Jun 01 08:15:53 app01 env[473]: Started wazuh-logcollector...
+Jun 01 08:15:53 app01 env[473]: wazuh-monitord: Process 1435 not used by Wazuh, removing...
+
+--- Listeners Wazuh (1514 data, 1515 enroll, 55000 indexer, 9200 indexer-api) ---
+LISTEN 0      128               0.0.0.0:1514       0.0.0.0:*    users:(("wazuh-remoted",pid=1265,fd=4))                                                                                                  
+LISTEN 0      128               0.0.0.0:1515       0.0.0.0:*    users:(("wazuh-authd",pid=1110,fd=3))                                                                                                    
+LISTEN 0      2048              0.0.0.0:55000      0.0.0.0:*    users:(("python3",pid=1055,fd=42))                                                                                                       
+LISTEN 0      4096   [::ffff:127.0.0.1]:9300             *:*    users:(("java",pid=472,fd=602))                                                                                                          
+LISTEN 0      4096   [::ffff:127.0.0.1]:9200             *:*    users:(("java",pid=472,fd=604))                                                                                                          
+LISTEN 0      2048                 [::]:55000         [::]:*    users:(("python3",pid=1055,fd=44))                                                                                                       
+
+--- /var/ossec/bin/agent_control version + uptime ---
+WAZUH_VERSION="v4.11.2"
+WAZUH_REVISION="41122"
+WAZUH_TYPE="server"
