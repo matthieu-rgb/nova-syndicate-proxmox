@@ -1,6 +1,6 @@
 # Nova Syndicate -- STATUS
 
-Derniere mise a jour : 4 juin 2026 (RECO indexer Wazuh = faux-negatif healthcheck Grafana ; alias wazuh-alerts deploye + porte dans le role IaC ; preuve Borg expurgee).
+Derniere mise a jour : 4 juin 2026 (soir) (RECO indexer Wazuh = faux-negatif healthcheck Grafana ; alias wazuh-alerts deploye + porte dans le role IaC ; preuve Borg purgee de l'historique Git + repo de test `/srv/borg-repo` supprime apres confirmation que la fuite etait inerte).
 
 ## Session 2026-06-04 -- RECO Wazuh indexing (faux-negatif), alias deploye, hygiene preuves Borg
 
@@ -69,21 +69,107 @@ healthcheck garde le wildcard), suite naturelle = pointer `database`
 du datasource sur `wazuh-alerts` (sans `*`) ; non fait cette session,
 hors scope de T-WAZUH-INDEXER-ALIAS-DAILY tel que formule.
 
-### Bloc 3 -- Hygiene preuves Borg
+### Bloc 3 -- Hygiene preuves Borg -- premiere analyse (decision revoquee, cf Bloc 4)
 
 Bloc `key = hqlh...` (repokey base64) expurge du fichier de preuve
-`docs/preuves/borg/2026-06-04-1356-borg-local-repo.txt` (commit
-`1659b35` ce repo). Remplace par 1 ligne :
+`docs/preuves/borg/2026-06-04-1356-borg-local-repo.txt` (SHA pre-rewrite
+`1659b35`, post-rewrite `bca93af` -- cf table de mapping Bloc 4).
+Remplace par 1 ligne :
 `key = *** REDACTED (repokey chiffree par passphrase, stockee hors repo) ***`.
 Le reste du fichier (config, README, listing FS) intact. Pre-commit OK.
 
-Historique Git non purge : repokey protegee par passphrase Borg
-(modele de menace : la cle exposee seule n'est pas exploitable sans
-la passphrase) + repo Nova reste prive + cite dans 1 seul commit
-recent (`50e69eb`). Cout d'un `git filter-repo` (force-push,
-invalidation clones, perte des SHAs cites dans STATUS) > benefice
-securite reel. Decision : expurgation suffisante. Critere de bascule
-vers purge : push public ou fuite simultanee de la passphrase.
+**Analyse INITIALE** (revoquee soir 2026-06-04, cf Bloc 4) : historique
+Git non purge -- repokey protegee par passphrase Borg + repo Nova prive
++ cite dans 1 seul commit recent (`50e69eb`). Cout d'un `git filter-repo`
+(force-push, invalidation clones, perte des SHAs cites dans STATUS)
+> benefice securite reel. Decision : expurgation suffisante.
+
+### Bloc 4 -- Hygiene preuves Borg -- purge complete (apres revision analyse)
+
+**Decision revisee** suite a confirmation que le jury pourrait avoir
+acces au repo : passage de "expurgation seule" (Bloc 3) a "purge
+complete" (filter-repo + force-push). Le diagnostic methodique conduit
+en preparation de la rotation passphrase a revele un **modele de menace
+faux** -- la fuite est INERTE -- ce qui a annule la phase 1 (rotation)
+tout en preservant les phases 2-3 (history rewrite, demande explicite jury).
+
+#### Diagnostic factuel -- la fuite est INERTE
+
+| Element | `/srv/borg-repo` (LOCAL = LEAKE) | Hetzner `borguser@10.30.0.1:.../` (PRODUCTION) |
+|---|---|---|
+| Repo id | `dcb68bbed801...09bbe6` -- **identique au commit Git fuite** | `0cbd03d5664d...a7fb06` -- **different, jamais leake** |
+| Archives | **0** | 11 archives (test 05.10 -> backup01 06.03) |
+| Donnees reelles | 547 octets metadata init (segments `data/0/0`=530o, `data/0/1`=17o) | KB-MB d'archives production |
+| mtime config | 2026-05-12 14:04 -- **jamais touche depuis init** | -- |
+| Passphrase | inconnue, distincte de `/etc/borg/passphrase` (rejet `borg key change-passphrase`) | `/etc/borg/passphrase` (`c4a5280f...242c`) -- valide |
+| Usage cron / bash_history | **AUCUNE reference** | toutes les operations borg ciblent celui-ci |
+
+`/srv/borg-repo` etait un repo de test initialise le 12 mai, jamais
+utilise. Sa cle leake wrap **0 archive**. Production Hetzner a une
+cle DIFFERENTE, jamais dans aucun commit Git.
+
+#### Execution
+
+**Phase 0 -- filets** (4 actions read-only, ~5 min) :
+| # | Filet | Etat |
+|---|---|---|
+| 0.1 | Snapshot Proxmox VMID 109 `pre-borg-passphrase-rotation-20260604` (2026-06-04 15:13:53) | en place |
+| 0.2 | Mirror Git `/tmp/nova-syndicate-proxmox-prerewrite-20260604.git` (HEAD `a7f79f6...aca08`) | en place |
+| 0.3 | Backup `/etc/borg/passphrase` -> `/root/.borg-passphrase-pre-rotation-20260604.bak` (sha `c4a5280f...242c`) | en place |
+| 0.4 | Capture SHAs `/tmp/nova-proxmox-sha-pre-rewrite-20260604.txt` (10 commits) | en place |
+
+**Phase 1 -- rotation passphrase : ANNULEE**.
+- 1.1 OK : passphrase NEW generee sur backup01 (`openssl rand -base64 33`, sha `d17d34de...6155`, 44 octets, mode 600 root).
+- 1.2 ECHEC + DECOUVERTE : `backup-remote-config` via `scp` echoue (la cle SSH `id_ed25519_borg-cloud` est restreinte a `borg serve` dans `~borguser/.ssh/authorized_keys` cote Hetzner -- defense en profondeur correcte, mais incompatible scp). Patch script v2 : `borg key export` au lieu de `scp config` (compatible borg serve). Filet Hetzner cree (`/root/borg-keys/hetzner-2026-06-04.export`, 813 octets, sha `2c506585...0588`).
+- 1.2b `rotate-local` ECHEC : `passphrase supplied in BORG_PASSPHRASE is incorrect`. Le contenu de `/etc/borg/passphrase` n'est PAS la passphrase du repo `/srv/borg-repo`. Diagnostic READ-ONLY -> les 2 repos ont des passphrases distinctes ; `/etc/borg/passphrase` est dedie a Hetzner uniquement.
+- DECISION : phase 1 annulee (rotation impossible sans passphrase d'origine ET inutile vu que le repo leake est vide).
+
+**Actions de cleanup** (apres confirmation modele de menace) :
+| Action | Resultat |
+|---|---|
+| Restore cron `borg-cloud-backup` (renommage inverse) | OK -- cron actif, prochain run 23:30 |
+| `rm -rf /srv/borg-repo` (debris de test, repo de la cle fuitee) | OK -- `/srv/borg-repo` absent |
+| `shred -u /etc/borg/passphrase.new` | OK |
+| Rename `hetzner-key.pre-rotation` -> `/root/borg-keys/hetzner-2026-06-04.export` (mode 600 root) | OK -- conserve comme backup off-repo legitime de la cle prod Hetzner (best practice Borg) |
+| `rmdir /root/borg-rotation-20260604/` | OK |
+| Filet 0.3 `/root/.borg-passphrase-pre-rotation-20260604.bak` | conserve cette session, shred ulterieur (doublon de `/etc/borg/passphrase` qui reste la passphrase prod active) |
+
+**Phase 2 -- git filter-repo** (Mac, repo `nova-syndicate-proxmox`) :
+- Blob-callback Python (`re.compile(rb'key = hqlhb[A-Za-z0-9+/=\\n\\t ]+dmVyc2lvbgE=', re.DOTALL)`) -> remplacement litteral
+  `key = *** REDACTED (repokey expurged from history 2026-06-04, repo deleted) ***`.
+- Stash `.DS_Store` avant rewrite, restore apres.
+- Nettoyage prealable `.git/filter-repo/` (residu d'un run T-VAULT-PLAINTEXT-FIX du 18/05).
+- 197 commits parses, 0.28 s, `git fsck` clean, `git grep "hqlhbGdvcml0aG2"` sur all-revs = **0 match**.
+
+**Mapping SHA pre/post rewrite** (4 commits touches) :
+| Commit (avant) | Commit (apres) | Sujet |
+|---|---|---|
+| `50e69eb2ade81a67e46e2902a3491499b2f31412` | `9ca35e520ffe6133a77bf4a91e62995a8b02970c` | docs(preuves): captures Borg backup01 (LEAK) |
+| `a0ae9671ecca1bec0d1b2b179e106d6c34579070` | `23a0107bd0bd8df4a04c5202e26d25cded87bae6` | docs(preuves): captures IaC |
+| `1659b35...` | `bca93afbbfd2930ab8565e54710511fbfc373308` | docs(preuves): expurge cle repokey (= Bloc 3) |
+| `a7f79f67f7e02a6054ca14d5041f2afebd7aca08` | `df45bd5026deea22edae54db3af26981a020f03a` | docs(status): session 2026-06-04 RECO Wazuh + alias (= Blocs 1-3) |
+
+**Phase 3 -- force-push + verifs GitHub** :
+- `git push --force-with-lease=main:a0ae9671... origin main` : exit 0, `+ a0ae967...df45bd5 main -> main (forced update)`.
+- Workflow `secret-scan` (gitleaks) sur `df45bd5` : **completed success** 17s.
+- **Decouverte secondaire** : le run gitleaks PRECEDENT (`a0ae967`, 2026-06-04 11:57Z) etait **FAILURE** -- gitleaks A detecte la fuite a posteriori via rule `generic-api-key` (entropie-based fallback), fingerprint `50e69eb2...:docs/preuves/borg/...:30`. Mon affirmation precedente (Bloc 3 / proposition initiale Bloc 4) selon laquelle "gitleaks default ruleset NE detecte PAS le repokey Borg" etait **fausse** -- le serveur-side a fonctionne, le pre-commit local non.
+
+**Residu accepte -- T-GITHUB-ORPHAN-COMMIT-RESIDUAL** :
+Le commit orphelin `50e69eb` reste resolvable par URL directe sur
+github.com (`HTTP 200` confirme, `https://github.com/matthieu-rgb/nova-syndicate-proxmox/commit/50e69eb...`) pendant **~90 jours** post-rewrite (politique GitHub).
+Risque absorbe : la cle dans ce commit est INERTE (`/srv/borg-repo` supprime,
+repo etait vide, passphrase inconnue, jamais utilise). Pas d'action GitHub
+support, pas de recreation du repo.
+
+#### Hetzner backup off-repo (bonus inattendu)
+
+Le fichier `/root/borg-keys/hetzner-2026-06-04.export` (813 octets, sha
+`2c506585...0588`, mode 600 root sur backup01) est un **backup legitime
+de la cle prod Hetzner** au format `borg key export` (compatible borg
+serve, donc rejouable avec la cle SSH actuelle). Best practice Borg
+documente : "back up the key file in a different location than the
+repository". A re-exporter en cas de rotation Hetzner future (sinon
+filet stale).
 
 ### Dettes ouvertes ce jour
 
@@ -91,6 +177,9 @@ vers purge : push public ou fuite simultanee de la passphrase.
 |--------|----------|-------------|
 | **T-WAZUH-ALIAS-ANSIBLE-SYNC** | LOW | Le code IaC de l'alias est dans `roles/wazuh_indexer/tasks/aliases.yml` (+ playbook `deploy_wazuh_indexer_alias.yml`) mais a ete applique cette session via `curl` admin TLS faute de `bastion-nova` ControlMaster actif. Replay attendu : `ansible-playbook playbooks/deploy_wazuh_indexer_alias.yml --limit app01` doit reporter `ok=2 changed=0` (template PUT idempotent, _aliases backfill `changed_when=false`). A faire a la prochaine session avec MFA bastion ouverte. |
 | **T-WAZUH-INDEXER-INDICES-GAP-2026-05-30-31** | LOW (post-certif) | Trou de 2 jours dans la sequence `wazuh-alerts-4.x-YYYY.MM.DD` (pas de 05.30 ni 05.31). A confronter aux logs app01 de ces dates (potentiellement OOM recidive entre T-APP01-SWAP-ADD du 24/05 et le menage du 03/06). N'affecte pas l'indexation courante. |
+| **T-GITHUB-ORPHAN-COMMIT-RESIDUAL** | LOW (accepte) | Le commit `50e69eb` (pre-rewrite, contient la cle leake) reste resolvable par URL directe sur github.com pendant ~90 jours post force-push. Cle INERTE (cf Bloc 4 -- `/srv/borg-repo` supprime, repo etait vide). Pas d'action GitHub support, pas de recreation du repo. Echeance d'expiration GitHub estimee : **~2026-09-02**. Pas de monitoring requis, le risque est nul. |
+| **T-PRECOMMIT-BORG-REPOKEY-PATTERN** | MEDIUM | Le pre-commit `gitleaks` (filet local) n'a pas catch le repokey Borg lors du commit `50e69eb` (10:56). Le pattern entropie-based `generic-api-key` a fonctionne **server-side seulement** (workflow GitHub Actions, scan full-history). Action : ajouter au `.pre-commit-config.yaml` une regex ad-hoc sur le pattern `^key = hqlh[A-Za-z0-9+/=]{40,}` (debut du wrapper repokey Borg) pour bloquer au commit local. Cible : nova-syndicate-proxmox + nova-syndicate-ansible (les 2 repos qui captent des preuves). |
+| **T-BACKUP01-LEFTOVER-CLEANUP** | LOW | Apres validation finale par operateur : `shred -u /root/.borg-passphrase-pre-rotation-20260604.bak` (filet 0.3, doublon de `/etc/borg/passphrase`) + `rm /usr/local/sbin/borg-rotation-step.sh` (script de session, contient des chemins mais aucun secret) + retrait snapshot Proxmox `pre-borg-passphrase-rotation-20260604` VMID 109 + retrait mirror `/tmp/nova-syndicate-proxmox-prerewrite-20260604.git` Mac. |
 
 ### Dette fermee ce jour
 
