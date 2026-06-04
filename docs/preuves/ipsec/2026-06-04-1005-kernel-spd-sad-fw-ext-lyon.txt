@@ -1,0 +1,152 @@
+=== Kernel IPsec SPD/SAD (FW-EXT-LYON, FreeBSD)
+Equivalent Linux: 'ip xfrm policy' = setkey -DP, 'ip xfrm state' = setkey -D
+Captured: 2026-06-04T08:06:20Z
+Host: OPNsense.localdomain - FreeBSD FreeBSD 14.2-RELEASE
+
+--- setkey -DP (Security Policy Database, equivalent ip xfrm policy) ---
+192.168.40.0/26[any] 192.168.50.0/29[any] any
+	in ipsec
+	esp/tunnel/10.0.2.2-10.0.0.2/unique:4
+	created: Jun  1 13:31:44 2026  lastused: Jun  4 08:05:50 2026
+	lifetime: 9223372036854775807(s) validtime: 0(s)
+	spid=11 seq=7 pid=25546 scope=global
+	refcnt=1
+192.168.40.0/26[any] 192.168.15.0/29[any] any
+	in ipsec
+	esp/tunnel/10.0.2.2-10.0.0.2/unique:2
+	created: Jun  1 13:31:44 2026  lastused: Jun  4 08:05:44 2026
+	lifetime: 9223372036854775807(s) validtime: 0(s)
+	spid=13 seq=6 pid=25546 scope=global
+	refcnt=1
+192.168.40.0/26[any] 192.168.20.0/28[any] any
+	in ipsec
+	esp/tunnel/10.0.2.2-10.0.0.2/unique:1
+	created: Jun  1 13:31:43 2026  lastused: Jun  4 08:05:46 2026
+	lifetime: 9223372036854775807(s) validtime: 0(s)
+	spid=9 seq=5 pid=25546 scope=global
+	refcnt=1
+192.168.40.0/26[any] 192.168.30.0/26[any] any
+	in ipsec
+	esp/tunnel/10.0.2.2-10.0.0.2/unique:3
+	created: Jun  1 13:31:44 2026  lastused: Jun  4 08:05:48 2026
+	lifetime: 9223372036854775807(s) validtime: 0(s)
+	spid=15 seq=4 pid=25546 scope=global
+	refcnt=1
+192.168.50.0/29[any] 192.168.40.0/26[any] any
+	out ipsec
+	esp/tunnel/10.0.0.2-10.0.2.2/unique:4
+	created: Jun  1 13:31:44 2026  lastused: Jun  4 08:05:50 2026
+	lifetime: 9223372036854775807(s) validtime: 0(s)
+	spid=12 seq=3 pid=25546 scope=global
+	refcnt=1
+192.168.15.0/29[any] 192.168.40.0/26[any] any
+	out ipsec
+	esp/tunnel/10.0.0.2-10.0.2.2/unique:2
+	created: Jun  1 13:31:44 2026  lastused: Jun  4 08:05:44 2026
+	lifetime: 9223372036854775807(s) validtime: 0(s)
+	spid=14 seq=2 pid=25546 scope=global
+	refcnt=1
+192.168.20.0/28[any] 192.168.40.0/26[any] any
+	out ipsec
+	esp/tunnel/10.0.0.2-10.0.2.2/unique:1
+	created: Jun  1 13:31:43 2026  lastused: Jun  4 08:05:46 2026
+	lifetime: 9223372036854775807(s) validtime: 0(s)
+	spid=10 seq=1 pid=25546 scope=global
+	refcnt=1
+192.168.30.0/26[any] 192.168.40.0/26[any] any
+	out ipsec
+	esp/tunnel/10.0.0.2-10.0.2.2/unique:3
+	created: Jun  1 13:31:44 2026  lastused: Jun  4 08:05:48 2026
+	lifetime: 9223372036854775807(s) validtime: 0(s)
+	spid=16 seq=0 pid=25546 scope=global
+	refcnt=1
+
+--- setkey -D (Security Association Database, equivalent ip xfrm state) ---
+10.0.0.2 10.0.2.2
+	esp mode=tunnel spi=3274754988(0xc330cbac) reqid=3(0x00000003)
+	E: aes-cbc  bed07f86 17d6a6a7 eb53cde4 53c5fab4 1b5edeba 7de68831 cd751f48 97637d34
+	A: hmac-sha2-256  b3084aaf aea95e75 90f23c1c a81a7b32 85f3fd7e af3643fb 3cc56567 6dd6999d
+	seq=0x00000003 replay=0 flags=0x00000000 state=mature
+	created: Jun  4 07:54:04 2026	current: Jun  4 08:06:20 2026
+	diff: 736(s)	hard: 3960(s)	soft: 3573(s)
+	last: Jun  4 08:05:46 2026	hard: 0(s)	soft: 0(s)
+	current: 468(bytes)	hard: 0(bytes)	soft: 0(bytes)
+	allocated: 3	hard: 0	soft: 0
+	sadb_seq=7 pid=25651 refcnt=1
+10.0.2.2 10.0.0.2
+	esp mode=tunnel spi=3275198556(0xc337905c) reqid=3(0x00000003)
+	E: aes-cbc  95be7317 ad3a770d 322e424d ad28d75b 339a7035 18112538 4277a310 56a4242f
+	A: hmac-sha2-256  0c183620 6b097524 5e20d94a 14ff3ade e8a0364e 98eb88e6 cf8c775a 1a896496
+	seq=0x00000003 replay=4 flags=0x00000000 state=mature
+	created: Jun  4 07:54:04 2026	current: Jun  4 08:06:20 2026
+	diff: 736(s)	hard: 3960(s)	soft: 3376(s)
+	last: Jun  4 08:05:46 2026	hard: 0(s)	soft: 0(s)
+	current: 252(bytes)	hard: 0(bytes)	soft: 0(bytes)
+	allocated: 3	hard: 0	soft: 0
+	sadb_seq=6 pid=25651 refcnt=1
+10.0.0.2 10.0.2.2
+	esp mode=tunnel spi=3446123420(0xcd67ab9c) reqid=2(0x00000002)
+	E: aes-cbc  d552cd45 0c738c91 459af3a6 ef24a1cb b7ab7a19 a9e689c0 fd0b1d69 04140d9d
+	A: hmac-sha2-256  34d25a98 ff61d03a 64b3d3cd eac1a5b7 30297e2a 7e5cdb16 e1b66241 5b381237
+	seq=0x00000003 replay=0 flags=0x00000000 state=mature
+	created: Jun  4 07:37:55 2026	current: Jun  4 08:06:20 2026
+	diff: 1705(s)	hard: 3960(s)	soft: 3289(s)
+	last: Jun  4 08:05:42 2026	hard: 0(s)	soft: 0(s)
+	current: 468(bytes)	hard: 0(bytes)	soft: 0(bytes)
+	allocated: 3	hard: 0	soft: 0
+	sadb_seq=5 pid=25651 refcnt=1
+10.0.2.2 10.0.0.2
+	esp mode=tunnel spi=3301196368(0xc4c44250) reqid=2(0x00000002)
+	E: aes-cbc  562dbfbe 42b6e462 981f587c 5b3a7041 22df6b22 4b6567ab 3739fef6 d25ba2ec
+	A: hmac-sha2-256  aa061335 63e96c8f c0c24c23 1e773fda 2dc480ed eff3a3e1 0e016cef 3885f87e
+	seq=0x00000003 replay=4 flags=0x00000000 state=mature
+	created: Jun  4 07:37:55 2026	current: Jun  4 08:06:20 2026
+	diff: 1705(s)	hard: 3960(s)	soft: 3457(s)
+	last: Jun  4 08:05:42 2026	hard: 0(s)	soft: 0(s)
+	current: 252(bytes)	hard: 0(bytes)	soft: 0(bytes)
+	allocated: 3	hard: 0	soft: 0
+	sadb_seq=4 pid=25651 refcnt=1
+10.0.0.2 10.0.2.2
+	esp mode=tunnel spi=3330349763(0xc6811ac3) reqid=4(0x00000004)
+	E: aes-cbc  e42bec0b 57f26abe 79d34b2d fc789722 b39a411c 565110da eb12d648 ea99bb4f
+	A: hmac-sha2-256  479992a5 96df02f5 9d7adcc7 ae067330 97712953 55b72486 8375f035 a344a79e
+	seq=0x00000003 replay=0 flags=0x00000000 state=mature
+	created: Jun  4 07:53:15 2026	current: Jun  4 08:06:20 2026
+	diff: 785(s)	hard: 3960(s)	soft: 3423(s)
+	last: Jun  4 08:05:48 2026	hard: 0(s)	soft: 0(s)
+	current: 468(bytes)	hard: 0(bytes)	soft: 0(bytes)
+	allocated: 3	hard: 0	soft: 0
+	sadb_seq=3 pid=25651 refcnt=1
+10.0.2.2 10.0.0.2
+	esp mode=tunnel spi=3482541256(0xcf935cc8) reqid=4(0x00000004)
+	E: aes-cbc  3ee61581 89cba16a e2d793ca 5cedeed8 143ac2d9 94fe02e7 cdf2a52f 61ca0f87
+	A: hmac-sha2-256  34211077 f0cd8e9b 30a34bdf 0e4624c4 b122308c 56520d0c 90365d25 01ef6cb8
+	seq=0x00000003 replay=4 flags=0x00000000 state=mature
+	created: Jun  4 07:53:15 2026	current: Jun  4 08:06:20 2026
+	diff: 785(s)	hard: 3960(s)	soft: 3374(s)
+	last: Jun  4 08:05:48 2026	hard: 0(s)	soft: 0(s)
+	current: 252(bytes)	hard: 0(bytes)	soft: 0(bytes)
+	allocated: 3	hard: 0	soft: 0
+	sadb_seq=2 pid=25651 refcnt=1
+10.0.0.2 10.0.2.2
+	esp mode=tunnel spi=3450119540(0xcda4a574) reqid=1(0x00000001)
+	E: aes-cbc  be5c1759 efb2dc63 4ee85aa3 dd902f70 97dfb622 9d2b4dc9 fc8e6522 2cbc2558
+	A: hmac-sha2-256  ad1a2f58 7f2a18d7 3c63ba86 07090b2c 779cb016 fbe0a49c 4fc23d9c 8887433e
+	seq=0x00000003 replay=0 flags=0x00000000 state=mature
+	created: Jun  4 07:52:25 2026	current: Jun  4 08:06:20 2026
+	diff: 835(s)	hard: 3960(s)	soft: 3412(s)
+	last: Jun  4 08:05:44 2026	hard: 0(s)	soft: 0(s)
+	current: 468(bytes)	hard: 0(bytes)	soft: 0(bytes)
+	allocated: 3	hard: 0	soft: 0
+	sadb_seq=1 pid=25651 refcnt=1
+10.0.2.2 10.0.0.2
+	esp mode=tunnel spi=3328116328(0xc65f0668) reqid=1(0x00000001)
+	E: aes-cbc  75445779 1ff6830b 81480766 39289bb3 9d6837cd 5fcb1613 b8bcda3d 3da466a3
+	A: hmac-sha2-256  2a2baf22 d68c5add c3960337 d00103c9 c2d2d320 c7a02cec 155b6154 1ebc1040
+	seq=0x00000003 replay=4 flags=0x00000000 state=mature
+	created: Jun  4 07:52:25 2026	current: Jun  4 08:06:20 2026
+	diff: 835(s)	hard: 3960(s)	soft: 3543(s)
+	last: Jun  4 08:05:44 2026	hard: 0(s)	soft: 0(s)
+	current: 252(bytes)	hard: 0(bytes)	soft: 0(bytes)
+	allocated: 3	hard: 0	soft: 0
+	sadb_seq=0 pid=25651 refcnt=1

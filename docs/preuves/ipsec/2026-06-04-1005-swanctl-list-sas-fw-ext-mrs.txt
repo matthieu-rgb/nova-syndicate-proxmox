@@ -1,0 +1,34 @@
+=== swanctl --list-sas (FW-EXT-MRS) ===
+Captured: 2026-06-04T08:06:55Z
+Host: OPNsense.localdomain - FreeBSD FreeBSD 14.2-RELEASE
+
+no files found matching '/usr/local/etc/strongswan.opnsense.d/*.conf'
+cbe685dd-489c-497f-a629-7cf407dd4362: #4, ESTABLISHED, IKEv2, d195d1ef3055d976_i* 95e28ee0f9d8a433_r
+  local  '10.0.2.2' @ 10.0.2.2[500]
+  remote '10.0.0.2' @ 10.0.0.2[500]
+  AES_GCM_16-256/PRF_HMAC_SHA2_256/MODP_2048
+  established 3287s ago, rekeying in 78031s
+  fbcde098-adc6-4b61-9ac6-da6fef1fe229: #293, reqid 2, INSTALLED, TUNNEL, ESP:AES_CBC-256/HMAC_SHA2_256_128/MODP_2048
+    installed 1740s ago, rekeying in 1617s, expires in 2220s
+    in  cd67ab9c,    252 bytes,     3 packets,    71s ago
+    out c4c44250,    468 bytes,     3 packets,    71s ago
+    local  192.168.40.0/26
+    remote 192.168.15.0/29
+  4b43c523-3f25-4903-8e93-cfafbb41bc2d: #294, reqid 1, INSTALLED, TUNNEL, ESP:AES_CBC-256/HMAC_SHA2_256_128/MODP_2048
+    installed 870s ago, rekeying in 2476s, expires in 3090s
+    in  cda4a574,    252 bytes,     3 packets,    69s ago
+    out c65f0668,    468 bytes,     3 packets,    69s ago
+    local  192.168.40.0/26
+    remote 192.168.20.0/28
+  bf600d43-4a9f-4b10-b87f-5b5ee4b82b77: #295, reqid 4, INSTALLED, TUNNEL, ESP:AES_CBC-256/HMAC_SHA2_256_128/MODP_2048
+    installed 821s ago, rekeying in 2445s, expires in 3139s
+    in  c6811ac3,    252 bytes,     3 packets,    65s ago
+    out cf935cc8,    468 bytes,     3 packets,    65s ago
+    local  192.168.40.0/26
+    remote 192.168.50.0/29
+  83231d8e-849b-4119-94c3-84c3716eed1a: #296, reqid 3, INSTALLED, TUNNEL, ESP:AES_CBC-256/HMAC_SHA2_256_128/MODP_2048
+    installed 772s ago, rekeying in 2604s, expires in 3188s
+    in  c330cbac,    252 bytes,     3 packets,    67s ago
+    out c337905c,    468 bytes,     3 packets,    67s ago
+    local  192.168.40.0/26
+    remote 192.168.30.0/26

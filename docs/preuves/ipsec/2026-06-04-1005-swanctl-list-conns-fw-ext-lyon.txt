@@ -1,0 +1,24 @@
+=== swanctl --list-conns (FW-EXT-LYON) ===
+Captured: 2026-06-04T08:06:19Z
+Host: OPNsense.localdomain
+
+no files found matching '/usr/local/etc/strongswan.opnsense.d/*.conf'
+78112723-0176-40d8-905f-1c187aaf58b3: IKEv2, no reauthentication, rekeying every 86400s, dpd delay 30s
+  local:  10.0.0.2
+  remote: 10.0.2.2
+  local pre-shared key authentication:
+    id: 10.0.0.2
+  remote pre-shared key authentication:
+    id: 10.0.2.2
+  4bbf5017-9416-4332-8551-a0d9e77990f8: TUNNEL, rekeying every 3600s, dpd action is none
+    local:  192.168.20.0/28
+    remote: 192.168.40.0/26
+  1856ee5d-842a-4008-a917-bafbfcf50072: TUNNEL, rekeying every 3600s, dpd action is none
+    local:  192.168.15.0/29
+    remote: 192.168.40.0/26
+  1a71c717-2f3e-4006-99b4-5f786880c64b: TUNNEL, rekeying every 3600s, dpd action is none
+    local:  192.168.30.0/26
+    remote: 192.168.40.0/26
+  120d04c8-4353-4854-a95f-df0b1459b9d9: TUNNEL, rekeying every 3600s, dpd action is none
+    local:  192.168.50.0/29
+    remote: 192.168.40.0/26

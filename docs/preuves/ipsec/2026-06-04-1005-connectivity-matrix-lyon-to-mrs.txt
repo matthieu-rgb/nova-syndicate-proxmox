@@ -1,0 +1,44 @@
+=== Lyon -> MRS connectivity matrix ===
+Date: 2026-06-04T08:05:42Z
+From: FW-INT-LYON (192.168.99.1, sub-interfaces on each VLAN)
+To:   192.168.40.11 (proxy-mrs01 in MRS LAN 192.168.40.0/26)
+
+----- BASTION /29 : ping -S 192.168.15.1 -> 192.168.40.11 (3 paquets) -----
+PING 192.168.40.11 (192.168.40.11) from 192.168.15.1: 56 data bytes
+64 bytes from 192.168.40.11: icmp_seq=0 ttl=62 time=0.501 ms
+64 bytes from 192.168.40.11: icmp_seq=1 ttl=62 time=0.542 ms
+64 bytes from 192.168.40.11: icmp_seq=2 ttl=62 time=0.619 ms
+
+--- 192.168.40.11 ping statistics ---
+3 packets transmitted, 3 packets received, 0.0% packet loss
+round-trip min/avg/max/stddev = 0.501/0.554/0.619/0.049 ms
+
+----- SERVERS /28 : ping -S 192.168.20.1 -> 192.168.40.11 (3 paquets) -----
+PING 192.168.40.11 (192.168.40.11) from 192.168.20.1: 56 data bytes
+64 bytes from 192.168.40.11: icmp_seq=0 ttl=62 time=0.423 ms
+64 bytes from 192.168.40.11: icmp_seq=1 ttl=62 time=0.602 ms
+64 bytes from 192.168.40.11: icmp_seq=2 ttl=62 time=0.620 ms
+
+--- 192.168.40.11 ping statistics ---
+3 packets transmitted, 3 packets received, 0.0% packet loss
+round-trip min/avg/max/stddev = 0.423/0.548/0.620/0.089 ms
+
+----- USERS /26 : ping -S 192.168.30.1 -> 192.168.40.11 (3 paquets) -----
+PING 192.168.40.11 (192.168.40.11) from 192.168.30.1: 56 data bytes
+64 bytes from 192.168.40.11: icmp_seq=0 ttl=62 time=0.399 ms
+64 bytes from 192.168.40.11: icmp_seq=1 ttl=62 time=0.646 ms
+64 bytes from 192.168.40.11: icmp_seq=2 ttl=62 time=0.626 ms
+
+--- 192.168.40.11 ping statistics ---
+3 packets transmitted, 3 packets received, 0.0% packet loss
+round-trip min/avg/max/stddev = 0.399/0.557/0.646/0.112 ms
+
+----- BACKUP /29 : ping -S 192.168.50.1 -> 192.168.40.11 (3 paquets) -----
+PING 192.168.40.11 (192.168.40.11) from 192.168.50.1: 56 data bytes
+64 bytes from 192.168.40.11: icmp_seq=0 ttl=62 time=0.430 ms
+64 bytes from 192.168.40.11: icmp_seq=1 ttl=62 time=0.650 ms
+64 bytes from 192.168.40.11: icmp_seq=2 ttl=62 time=0.588 ms
+
+--- 192.168.40.11 ping statistics ---
+3 packets transmitted, 3 packets received, 0.0% packet loss
+round-trip min/avg/max/stddev = 0.430/0.556/0.650/0.092 ms
