@@ -1,0 +1,97 @@
+=== Ansible playbooks -- nova-syndicate-ansible/playbooks/ + site.yml ===
+Captured: 2026-06-04T11:57:02Z
+
+--- Liste des playbooks ---
+backup_check.yml
+create_users.yml
+delete_users.yml
+deploy_agents_key.yml
+deploy_awx_runner_key.yml
+deploy_bastion.yml
+deploy_database.yml
+deploy_dc.yml
+deploy_fileserver.yml
+deploy_mail.yml
+deploy_mfa.yml
+deploy_portail.yml
+deploy_swap.yml
+deploy_vpn_gw.yml
+deploy_vpn.yml
+deploy_website.yml
+disk_alert.yml
+iam
+install_audit_tools.yml
+maintenance
+static_ip.yml
+user_report.yml
+
+--- Count playbooks ---
+      22
+
+--- site.yml orchestrateur (ETAPES) ---
+- name: "ETAPE 0 -- Distribution Nova root CA (ADR-0034 LDAPS migration)"
+  hosts: nova_all
+  roles:
+- name: "ETAPE 0bis -- Validation PKI server step-ca (pki01)"
+  hosts: pki
+  roles:
+- name: "ETAPE 1 -- Base commune sur toutes les VMs"
+  hosts: nova_all
+  roles:
+- name: "ETAPE 2 -- Durcissement de toutes les VMs"
+  hosts: nova_all
+  roles:
+- name: "ETAPE 3 -- Controleur de Domaine (DC01)"
+  hosts: domain_controllers
+  roles:
+- name: "ETAPE 4 -- Serveur de Fichiers (FS01)"
+  hosts: fileservers
+  roles:
+- name: "ETAPE 5 -- Base de Donnees (DB01)"
+  hosts: databases
+  roles:
+- name: "ETAPE 6 -- Bastion SSH (BASTION01)"
+  hosts: bastions
+  roles:
+- name: "ETAPE 7 -- VPN WireGuard + IPsec"
+  hosts: vpn_gateways
+  roles:
+- name: "ETAPE 8 -- Proxy Squid"
+  hosts: proxies
+  roles:
+- name: "ETAPE 8bis -- Mail server (mail01 DMZ -- T-MAIL-PROD)"
+  hosts: mailservers
+  roles:
+- name: "ETAPE 09 -- Wazuh Manager + regles NIS2 (APP01)"
+  hosts: app_servers
+  roles:
+- name: "ETAPE 10 -- Agents Wazuh (monitoring NIS2)"
+  hosts: nova_all
+  roles:
+
+--- Inventaire hosts ---
+        dc01:
+          ansible_host: 192.168.20.10
+        fs01:
+          ansible_host: 192.168.20.11
+        db01:
+          ansible_host: 192.168.20.12
+        bastion01:
+          ansible_host: 192.168.15.2
+        app01:
+          ansible_host: 192.168.20.13
+        proxy-lyon01:
+          ansible_host: 192.168.20.14
+          ansible_host: 192.168.40.11
+        backup01:
+          ansible_host: 192.168.50.2
+        web01:
+          ansible_host: 172.16.1.2
+        mail01:
+          ansible_host: 172.16.1.3
+        vpn-gw01:
+          ansible_host: 172.16.1.4
+        awx01:
+          ansible_host: 192.168.60.2
+        pki01:
+          ansible_host: 192.168.60.4

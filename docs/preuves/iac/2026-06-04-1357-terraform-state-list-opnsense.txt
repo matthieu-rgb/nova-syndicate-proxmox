@@ -1,0 +1,116 @@
+=== Terraform state -- environnement opnsense (4 firewalls : WAN-SIM + FW-EXT-LYON + FW-INT-LYON + FW-EXT-MRS) ===
+Captured: 2026-06-04T11:57:02Z
+Repo : nova-syndicate-proxmox/terraform/environments/opnsense/
+Provider : browningluke/opnsense ~> 0.16
+
+--- Ressources dans le state ---
+opnsense_firewall_alias.fwext_host["host_mail01"]
+opnsense_firewall_alias.fwext_host["host_web01"]
+opnsense_firewall_alias.fwext_network["net_dmz_lyon"]
+opnsense_firewall_alias.fwext_network["net_lan_mrs"]
+opnsense_firewall_alias.fwext_network["net_lyon_internal"]
+opnsense_firewall_alias.fwext_port["ports_mail_smtp"]
+opnsense_firewall_alias.fwextmrs_host["host_proxy_mrs01"]
+opnsense_firewall_alias.fwextmrs_network["net_lan_mrs"]
+opnsense_firewall_alias.fwextmrs_network["net_lyon_internal"]
+opnsense_firewall_alias.fwint_host["host_app01"]
+opnsense_firewall_alias.fwint_host["host_awx01"]
+opnsense_firewall_alias.fwint_host["host_backup01"]
+opnsense_firewall_alias.fwint_host["host_bastion01"]
+opnsense_firewall_alias.fwint_host["host_dc01"]
+opnsense_firewall_alias.fwint_host["host_mail01"]
+opnsense_firewall_alias.fwint_host["host_proxy_lyon01"]
+opnsense_firewall_alias.fwint_network["net_dmz_lyon"]
+opnsense_firewall_alias.fwint_network["net_lan_mrs"]
+opnsense_firewall_alias.fwint_network["net_lyon_admin"]
+opnsense_firewall_alias.fwint_network["net_lyon_backup"]
+opnsense_firewall_alias.fwint_network["net_lyon_bastion"]
+opnsense_firewall_alias.fwint_network["net_lyon_internal"]
+opnsense_firewall_alias.fwint_network["net_lyon_servers"]
+opnsense_firewall_alias.fwint_network["net_lyon_users"]
+opnsense_firewall_alias.fwint_network["net_proxmox_admin"]
+opnsense_firewall_alias.fwint_port["ports_ad_tcp"]
+opnsense_firewall_alias.fwint_port["ports_ad_udp"]
+opnsense_firewall_alias.fwint_port["ports_smb"]
+opnsense_firewall_alias.fwint_port["ports_web_out"]
+opnsense_firewall_alias.fwint_rw_host["host_db01"]
+opnsense_firewall_alias.fwint_rw_host["host_fs01"]
+opnsense_firewall_alias.fwint_rw_network["net_road_warriors"]
+opnsense_firewall_alias.fwint_rw_port["ports_db_ssh"]
+opnsense_firewall_alias.fwint_rw_port["ports_smb_ssh"]
+opnsense_firewall_alias.wansim_network["net_lyon_subnet"]
+opnsense_firewall_alias.wansim_network["net_mrs_subnet"]
+opnsense_firewall_filter.dmz_to_bastion_ssh
+opnsense_firewall_filter.fwext_rw_to_mail01
+opnsense_firewall_filter.fwext_rw_to_mail01_imap
+opnsense_firewall_filter.fwext_rw_to_mail01_imaps
+opnsense_firewall_filter.fwext_rw_to_servers
+opnsense_firewall_filter.fwext_rw_to_web01
+opnsense_firewall_filter.fwext_rw_to_web01_https
+opnsense_firewall_filter.fwext_wan_ipsec_esp
+opnsense_firewall_filter.fwext_wan_ipsec_ike
+opnsense_firewall_filter.fwext_wan_ipsec_natt
+opnsense_firewall_filter.fwext_wan_to_mail_submission
+opnsense_firewall_filter.fwextmrs_lan_to_any
+opnsense_firewall_filter.fwextmrs_wan_block_all
+opnsense_firewall_filter.fwextmrs_wan_ipsec_esp
+opnsense_firewall_filter.fwextmrs_wan_ipsec_ike
+opnsense_firewall_filter.fwextmrs_wan_ipsec_natt
+opnsense_firewall_filter.fwint_admin_block_all
+opnsense_firewall_filter.fwint_admin_to_app01_https
+opnsense_firewall_filter.fwint_admin_to_dc_ad_tcp
+opnsense_firewall_filter.fwint_admin_to_dc_ad_udp
+opnsense_firewall_filter.fwint_admin_to_dmz_ssh
+opnsense_firewall_filter.fwint_admin_to_internal_ssh
+opnsense_firewall_filter.fwint_admin_to_internet_web
+opnsense_firewall_filter.fwint_backup_block_all
+opnsense_firewall_filter.fwint_backup_to_internet
+opnsense_firewall_filter.fwint_backup_to_servers_ssh
+opnsense_firewall_filter.fwint_bastion_block_all
+opnsense_firewall_filter.fwint_bastion_to_dc_ad_tcp
+opnsense_firewall_filter.fwint_bastion_to_dc_ad_udp
+opnsense_firewall_filter.fwint_bastion_to_internet
+opnsense_firewall_filter.fwint_bastion_to_servers_ssh
+opnsense_firewall_filter.fwint_mail01_to_app01_wazuh_auth
+opnsense_firewall_filter.fwint_mail01_to_app01_wazuh_data
+opnsense_firewall_filter.fwint_mail01_to_dc01_ldaps
+opnsense_firewall_filter.fwint_roadwarriors_to_app01_https
+opnsense_firewall_filter.fwint_rw_to_db01
+opnsense_firewall_filter.fwint_rw_to_dc01_dns
+opnsense_firewall_filter.fwint_rw_to_fs01
+opnsense_firewall_filter.fwint_servers_block_all
+opnsense_firewall_filter.fwint_servers_to_internet
+opnsense_firewall_filter.fwint_users_block_all
+opnsense_firewall_filter.fwint_users_to_dc_ad_tcp
+opnsense_firewall_filter.fwint_users_to_dc_ad_udp
+opnsense_firewall_filter.fwint_users_to_internet
+opnsense_firewall_filter.fwint_users_to_servers_smb
+opnsense_firewall_filter.fwint_wan_block_all
+opnsense_firewall_filter.fwint_wan_ipsec_decapsulated
+opnsense_firewall_filter.transit_to_wan
+opnsense_firewall_filter.wan_block_all
+opnsense_firewall_filter.wan_to_dmz_http
+opnsense_firewall_filter.wan_to_dmz_https
+opnsense_firewall_filter.wan_to_mail
+opnsense_firewall_filter.wansim_lan_to_any
+opnsense_firewall_filter.wansim_opt1_to_any
+opnsense_firewall_filter.wansim_wan_block_all
+opnsense_interfaces_vlan.fwint_vlan15_bastion
+opnsense_interfaces_vlan.fwint_vlan20_servers
+opnsense_interfaces_vlan.fwint_vlan30_users
+opnsense_interfaces_vlan.fwint_vlan50_backup
+opnsense_interfaces_vlan.fwint_vlan60_admin
+opnsense_route.fwext_to_backup
+opnsense_route.fwext_to_bastion
+opnsense_route.fwext_to_road_warriors
+opnsense_route.fwext_to_servers
+opnsense_route.fwext_to_users
+
+--- Count total ---
+     101
+
+--- Compte par type de ressource ---
+  55 opnsense_firewall_filter
+  36 opnsense_firewall_alias
+   5 opnsense_route
+   5 opnsense_interfaces_vlan

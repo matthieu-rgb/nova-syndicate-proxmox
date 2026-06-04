@@ -1,0 +1,49 @@
+=== Ansible roles -- nova-syndicate-ansible/roles/ ===
+Captured: 2026-06-04T11:57:02Z
+
+--- Liste des roles ---
+bastion
+common
+database
+dc
+fileserver
+hardening
+mail_server
+mfa_totp
+pki_client
+pki_server
+portail
+proxy
+swap_file
+vpn
+vpn_gateway
+wazuh_agent
+wazuh_filebeat
+wazuh_indexer
+wazuh_manager
+website
+
+--- Count roles ---
+      20
+
+--- Lignes de tasks/main.yml par role (indicateur taille) ---
+  bastion                         45 lignes
+  common                          26 lignes
+  database                       134 lignes
+  dc                              20 lignes
+  fileserver                      87 lignes
+  hardening                       24 lignes
+  mail_server                    262 lignes
+  mfa_totp                        11 lignes
+  pki_client                      31 lignes
+  pki_server                      55 lignes
+  portail                        124 lignes
+  proxy                           20 lignes
+  swap_file                       41 lignes
+  vpn                             27 lignes
+  vpn_gateway                     15 lignes
+  wazuh_agent                    141 lignes
+  wazuh_filebeat                 102 lignes
+  wazuh_indexer                  128 lignes
+  wazuh_manager                   25 lignes
+  website                         76 lignes
