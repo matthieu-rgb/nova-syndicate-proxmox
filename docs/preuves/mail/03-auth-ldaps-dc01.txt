@@ -1,0 +1,55 @@
+Nova Syndicate -- Preuve mail01 : authentification LDAPS via DC01
+Capture reelle depuis mail01 (VMID 101, 172.16.1.3, DMZ)
+Date : 2026-06-05T13:16:17+00:00
+==============================================================
+
+--- CONFIG AUTH DOVECOT (dovecot-ldap.conf.ext) ---
+uris = ldaps://dc01.nova-syndicate.local:636
+auth_bind = yes
+ldap_version = 3
+tls_require_cert = hard
+tls_ca_cert_file = /etc/ssl/certs/ca-certificates.crt    <- bundle systeme (inclut Nova Root CA)
+dn = CN=svc-mail-ldap,OU=Service-Accounts,DC=nova-syndicate,DC=local
+base = DC=nova-syndicate,DC=local
+user_filter = (&(objectClass=user)(sAMAccountName=%n))
+pass_filter = (&(objectClass=user)(sAMAccountName=%n))
+user_attrs = =uid=5000,=gid=5000,=home=/var/vmail/%d/%n,=mail=maildir:/var/vmail/%d/%n
+
+--- VERIFICATION CHAINE TLS DC01:636 ---
+$ echo '' | openssl s_client -connect 192.168.20.10:636 -showcerts 2>&1 | grep -E 'subject|issuer|verify|depth'
+
+depth=2 O = Nova Syndicate Root CA, CN = Nova Syndicate Root CA Root CA
+verify return:1
+depth=1 O = Nova Syndicate Root CA, CN = Nova Syndicate Root CA Intermediate CA
+verify return:1
+depth=0 CN = dc01.nova-syndicate.local
+verify return:1
+subject=CN = dc01.nova-syndicate.local
+issuer=O = Nova Syndicate Root CA, CN = Nova Syndicate Root CA Intermediate CA
+
+Chaine : Root CA Nova -> Intermediate CA Nova -> cert dc01.nova-syndicate.local
+Verification TLS : OK (verify return:1 sur les 3 niveaux)
+
+--- DOVEADM AUTH TEST (LDAPS bind depuis Dovecot -> DC01:636) ---
+
+$ sudo doveadm auth test -x service=imap fabien.bonnet@nova-syndicate.local 'REDACTED'
+passdb: fabien.bonnet@nova-syndicate.local auth succeeded
+extra fields:
+  user=fabien.bonnet@nova-syndicate.local
+
+$ sudo doveadm auth test -x service=imap marine.fleury@nova-syndicate.local 'REDACTED'
+passdb: marine.fleury@nova-syndicate.local auth succeeded
+extra fields:
+  user=marine.fleury@nova-syndicate.local
+
+--- INTERPRETATION ---
+Dovecot effectue un auth_bind LDAPS contre DC01:636 avec les credentials de
+l'utilisateur. Le bind reussit -> auth succeeded. Le compte AD sert directement
+de base d'authentification (pas de base de mots de passe locale).
+
+--- NOTE SUR LA CONFIG POSTFIX ---
+Un bug a ete identifie et corrige lors de cette capture :
+  Avant : /etc/postfix/ldap-aliases.cf -> tls_ca_cert_file = /etc/ssl/certs/nova-CA.crt
+          (ancien cert auto-signe Samba, invalide depuis migration step-ca)
+  Apres : tls_ca_cert_file = /etc/ssl/certs/ca-certificates.crt
+  Correction appliquee le 2026-06-05. A repercuter dans le role Ansible (T-MAIL-LDAP-CA-FIX).

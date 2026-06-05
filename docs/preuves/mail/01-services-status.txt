@@ -1,0 +1,66 @@
+Nova Syndicate -- Preuve mail01 : services actifs
+Capture reelle depuis mail01 (VMID 101, 172.16.1.3, DMZ)
+Date : 2026-06-05T13:12:08+00:00
+Methode : ssh -J root@100.112.113.2 debian@172.16.1.3
+==============================================================
+
+=== HOSTNAME ===
+mail01
+
+=== POSTFIX STATUS ===
+● postfix.service - Postfix Mail Transport Agent
+     Loaded: loaded (/lib/systemd/system/postfix.service; enabled; preset: enabled)
+     Active: active (exited) since Mon 2026-06-01 06:15:27 UTC; 4 days ago
+       Docs: man:postfix(1)
+   Main PID: 1021 (code=exited, status=0/SUCCESS)
+        CPU: 367us
+
+Jun 01 06:15:27 mail01 systemd[1]: Starting postfix.service - Postfix Mail Transport Agent...
+Jun 01 06:15:27 mail01 systemd[1]: Finished postfix.service - Postfix Mail Transport Agent.
+
+=== POSTFIX VERSION ===
+mail_version = 3.7.11
+
+=== DOVECOT STATUS ===
+● dovecot.service - Dovecot IMAP/POP3 email server
+     Loaded: loaded (/lib/systemd/system/dovecot.service; enabled; preset: enabled)
+     Active: active (running) since Tue 2026-06-02 07:17:59 UTC; 3 days ago
+       Docs: man:dovecot(1)
+             https://doc.dovecot.org/
+   Main PID: 117271 (dovecot)
+     Status: "v2.3.19.1 (9b53102964) running"
+      Tasks: 5 (limit: 2348)
+     Memory: 3.6M
+        CPU: 93ms
+     CGroup: /system.slice/dovecot.service
+             ├─117271 /usr/sbin/dovecot -F
+             ├─117272 dovecot/anvil
+             ├─117273 dovecot/log
+             ├─117275 dovecot/config
+             └─117312 dovecot/stats
+
+Jun 02 07:17:59 mail01 systemd[1]: Stopped dovecot.service - Dovecot IMAP/POP3 email server.
+Jun 02 07:17:59 mail01 systemd[1]: Starting dovecot.service - Dovecot IMAP/POP3 email server...
+Jun 02 07:17:59 mail01 systemd[1]: Started dovecot.service - Dovecot IMAP/POP3 email server.
+
+=== DOVECOT VERSION ===
+2.3.19.1 (9b53102964)
+
+=== OPENDKIM STATUS ===
+● opendkim.service - OpenDKIM Milter
+     Loaded: loaded (/lib/systemd/system/opendkim.service; enabled; preset: enabled)
+     Active: active (running) since Mon 2026-06-01 06:15:26 UTC; 4 days ago
+   Main PID: 417 (opendkim)
+      Tasks: 6 (limit: 2348)
+     Memory: 8.0M
+        CPU: 2.926s
+     CGroup: /system.slice/opendkim.service
+             └─417 /usr/sbin/opendkim
+
+Jun 01 06:15:26 mail01 opendkim[417]: OpenDKIM Filter v2.11.0 starting
+Jun 01 06:15:26 mail01 systemd[1]: Started opendkim.service - OpenDKIM Milter.
+
+--- SYNTHESE ---
+Postfix  3.7.11   : active (exited)  -- normal pour Postfix (master daemon tourne via PID 1020)
+Dovecot  2.3.19.1 : active (running) -- 5 sous-processus (anvil, log, config, stats)
+OpenDKIM 2.11.0   : active (running)

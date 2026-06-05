@@ -1,0 +1,123 @@
+Nova Syndicate -- Preuve mail01 : envoi/reception interne
+Capture reelle depuis mail01 (VMID 101, 172.16.1.3, DMZ)
+Date : 2026-06-05T13:15:58+00:00
+Expediteur  : fabien.bonnet@nova-syndicate.local
+Destinataire: marine.fleury@nova-syndicate.local
+==============================================================
+
+--- ENVOI VIA SWAKS (SMTP AUTH + STARTTLS, port 587) ---
+
+$ sudo swaks \
+    --from fabien.bonnet@nova-syndicate.local \
+    --to marine.fleury@nova-syndicate.local \
+    --server 127.0.0.1 --port 587 \
+    --auth LOGIN \
+    --auth-user fabien.bonnet@nova-syndicate.local \
+    --auth-password 'REDACTED' \
+    --tls \
+    --header "Subject: [NOVA-PROOF] Test interne 2026-06-05T13:15:58Z" \
+    --body 'Mail de test interne Nova Syndicate. Preuve: Postfix 3.7.11 + Dovecot 2.3.19 + auth LDAPS DC01 (step-ca).'
+
+=== Trying 127.0.0.1:587...
+=== Connected to 127.0.0.1.
+<-  220 mail.nova-syndicate.local ESMTP Postfix
+ -> EHLO mail01
+<-  250-mail.nova-syndicate.local
+<-  250-PIPELINING
+<-  250-SIZE 10240000
+<-  250-VRFY
+<-  250-ETRN
+<-  250-STARTTLS
+<-  250-AUTH PLAIN LOGIN
+<-  250-ENHANCEDSTATUSCODES
+<-  250-8BITMIME
+<-  250-DSN
+<-  250 CHUNKING
+ -> STARTTLS
+<-  220 2.0.0 Ready to start TLS
+=== TLS started with cipher TLSv1.3:TLS_AES_256_GCM_SHA384:256
+=== TLS peer DN="/O=mkcert development certificate/OU=matthieu@MacBook-Pro-de-Matthieu-2.local (Matthieu Broquard)"
+ ~> EHLO mail01
+<~  250-mail.nova-syndicate.local
+<~  250-AUTH PLAIN LOGIN
+<~  250-AUTH=PLAIN LOGIN
+[... negotiation TLS tronquee pour lisibilite ...]
+ ~> AUTH LOGIN
+<~  334 VXNlcm5hbWU6
+ ~> ZmFiaWVuLmJvbm5ldEBub3ZhLXN5bmRpY2F0ZS5sb2NhbA==    (base64: fabien.bonnet@nova-syndicate.local)
+<~  334 UGFzc3dvcmQ6
+ ~> [REDACTED]                                              (base64: REDACTED)
+<~  235 2.7.0 Authentication successful
+ ~> MAIL FROM:<fabien.bonnet@nova-syndicate.local>
+<~  250 2.1.0 Ok
+ ~> RCPT TO:<marine.fleury@nova-syndicate.local>
+<~  250 2.1.5 Ok                                           <- lookup LDAP OK
+ ~> DATA
+<~  354 End data with <CR><LF>.<CR><LF>
+[headers + body envoyes]
+<~  250 2.0.0 Ok: queued as 5B26320AED
+ ~> QUIT
+<~  221 2.0.0 Bye
+=== Connection closed with remote host.
+
+Queue-ID Postfix : 5B26320AED
+
+--- VERIFICATION MAILDIR (marine.fleury) ---
+
+$ sudo ls -la /var/vmail/nova-syndicate.local/marine.fleury/new/
+total 12
+drwx------ 2 vmail vmail 4096 Jun  5 13:15 .
+drwx------ 5 vmail vmail 4096 Jun  5 13:15 ..
+-rw------- 1 vmail vmail 1535 Jun  5 13:15 1780665358.M532829P444906.mail01,S=1535,W=1565
+
+1 message dans new/ (non lu), timestamp 13:15:58 UTC -- correspond a l'envoi.
+
+--- CONTENU DU MESSAGE RECU ---
+
+Return-Path: <fabien.bonnet@nova-syndicate.local>
+Delivered-To: marine.fleury@nova-syndicate.local
+Received: from mail.nova-syndicate.local
+        by mail01 with LMTP
+        id 0aoCHA7MImrqyQYAMaHzhA
+        (envelope-from <fabien.bonnet@nova-syndicate.local>)
+        for <marine.fleury@nova-syndicate.local>; Fri, 05 Jun 2026 13:15:58 +0000
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=nova-syndicate.local;
+        s=mail; t=1780665358;
+        bh=F3iiYtX3si5fNAsi/eLPPS9rQjccTh/X7Qp8EHHyZxI=;
+        h=Date:To:From:Subject:From;
+        b=c2nuTyx7Q+xR+fTF563OsicdlSRXpYNYh8rekZJEUWy0MCmnRFrROJzROSMt/DG0t
+         owGmqMRSEL6hVNQXyeKhbYn0Rn6hMP8aM3Law9V/yhIuJtVLK6fL7I7Y/0B/YeQ/uw
+         r5Est3fmp2jBcasuDAYPte5XuTMk03zHZGS7sEE5p3a1XyDvbhX4z2qwNagUbhv83x
+         6kmuf2QrVufzyGvHsw9KomPOoV+vWc6bwfrAVubqBGfp584kLpYO2VQ9TnJOVstupC
+         y0SbxQdFOnMTMyZT7otEDhUHMSHZFBY6pju8/3matkO5vmHoIba985dC5X2LcLgqA2
+         JAVAEeM20Vpjg==
+Received: from mail01 (localhost [127.0.0.1])
+        by mail.nova-syndicate.local (Postfix) with ESMTPSA id 5B26320AED
+        for <marine.fleury@nova-syndicate.local>; Fri,  5 Jun 2026 13:15:58 +0000 (UTC)
+Date: Fri, 05 Jun 2026 13:15:58 +0000
+To: Marine Fleury <marine.fleury@nova-syndicate.local>
+From: Fabien Bonnet <fabien.bonnet@nova-syndicate.local>
+Subject: [NOVA-PROOF] Test interne 2026-06-05T13:15:58Z
+Message-Id: <20260605131558.444897@mail01>
+
+Mail de test interne Nova Syndicate. Preuve: Postfix 3.7.11 + Dovecot 2.3.19 + auth LDAPS DC01 (step-ca).
+
+--- VERIFICATION VIA DOVEADM ---
+
+$ sudo doveadm mailbox list -u marine.fleury@nova-syndicate.local
+Drafts
+Sent
+Trash
+Junk
+INBOX
+
+$ sudo doveadm fetch -u marine.fleury@nova-syndicate.local 'hdr.subject uid' mailbox INBOX all
+hdr.subject: [NOVA-PROOF] Test interne 2026-06-05T13:15:58Z
+uid: 1
+
+--- POINTS NOTABLES ---
+1. TLS 1.3 (TLS_AES_256_GCM_SHA384) sur le canal SMTP submission
+2. AUTH LOGIN avec credentials AD (LDAP bind via Dovecot SASL) -> 235 Authentication successful
+3. LMTP pour la livraison locale Postfix -> Dovecot (private/dovecot-lmtp)
+4. DKIM signe (rsa-sha256, domaine nova-syndicate.local, selecteur mail)
+5. Maildir format : /var/vmail/nova-syndicate.local/<user>/new/

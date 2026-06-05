@@ -1,0 +1,49 @@
+Nova Syndicate -- Preuve mail01 : logs /var/log/mail.log
+Extrait pertinent autour de la transaction de preuve (Queue-ID 5B26320AED)
+Date : 2026-06-05T13:15:58+00:00
+==============================================================
+
+--- EXTRAIT /var/log/mail.log ---
+
+# Tentative initiale (echec LDAP - avant correction CA cert) :
+Jun 05 13:13:06 mail postfix/smtpd[444676]: warning: dict_ldap_set_tls_options: Unable to allocate new TLS context -1: Can't contact LDAP server
+Jun 05 13:13:06 mail postfix/smtpd[444676]: warning: ldap:/etc/postfix/ldap-aliases.cf lookup error for "marine.fleury@nova-syndicate.local"
+Jun 05 13:13:06 mail postfix/smtpd[444676]: NOQUEUE: reject: RCPT from localhost[127.0.0.1]: 451 4.3.0 <marine.fleury@nova-syndicate.local>: Temporary lookup failure; from=<fabien.bonnet@nova-syndicate.local> to=<marine.fleury@nova-syndicate.local> proto=ESMTP helo=<mail01>
+
+# Correction appliquee (ldap-aliases.cf : nova-CA.crt -> ca-certificates.crt)
+# sudo sed -i 's|tls_ca_cert_file = /etc/ssl/certs/nova-CA.crt|tls_ca_cert_file = /etc/ssl/certs/ca-certificates.crt|' /etc/postfix/ldap-aliases.cf
+# sudo postfix reload
+
+# Transaction reussie :
+Jun 05 13:15:58 mail postfix/submission/smtpd[444898]: 5B26320AED: client=localhost[127.0.0.1], sasl_method=LOGIN, sasl_username=fabien.bonnet@nova-syndicate.local
+Jun 05 13:15:58 mail postfix/cleanup[444904]: 5B26320AED: message-id=<20260605131558.444897@mail01>
+Jun 05 13:15:58 mail postfix/qmgr[444888]: 5B26320AED: from=<fabien.bonnet@nova-syndicate.local>, size=723, nrcpt=1 (queue active)
+Jun 05 13:15:58 mail postfix/lmtp[444905]: 5B26320AED: to=<marine.fleury@nova-syndicate.local>, relay=mail.nova-syndicate.local[private/dovecot-lmtp], delay=0.17, delays=0.09/0/0/0.07, dsn=2.0.0, status=sent (250 2.0.0 <marine.fleury@nova-syndicate.local> 0aoCHA7MImrqyQYAMaHzhA Saved)
+Jun 05 13:15:58 mail postfix/qmgr[444888]: 5B26320AED: removed
+
+--- LECTURE DE LA TRANSACTION ---
+
+Ligne 1 : smtpd accepte le message sur le port submission (587)
+          sasl_method=LOGIN, sasl_username=fabien.bonnet@nova-syndicate.local
+          -> AUTH SASL reussie (Dovecot SASL backend -> LDAPS DC01:636)
+
+Ligne 2 : cleanup assigne le message-id
+
+Ligne 3 : qmgr met en file (queue active), 1 destinataire, 723 octets
+
+Ligne 4 : lmtp livre a marine.fleury@nova-syndicate.local
+          relay=mail.nova-syndicate.local[private/dovecot-lmtp]
+          delay total=0.17s (0.09 smtpd + 0.07 lmtp)
+          dsn=2.0.0  status=sent
+          -> livraison confirmee par Dovecot (250 2.0.0 Saved)
+
+Ligne 5 : qmgr retire le message de la file (removed) -> aucune retry necessaire
+
+--- REFERENCE PRECEDENTS TESTS (mai 2026) ---
+
+# Session T-MAIL-PROD (2026-05-18, premier envoi de validation) :
+May 18 20:09:25 mail postfix/lmtp[305333]: 93CD421361: to=<fabien.bonnet@nova-syndicate.local>, relay=mail.nova-syndicate.local[private/dovecot-lmtp], delay=0.07, delays=0.06/0/0.01/0.01, dsn=2.0.0, status=sent (250 2.0.0 <fabien.bonnet@nova-syndicate.local> yMCsJ/VxC2q2qAQAMaHzhA Saved)
+May 24 10:41:42 mail postfix/postfix-script[461528]: refreshing the Postfix mail system
+Jun 01 06:15:27 mail postfix/master[1020]: daemon started -- version 3.7.11, configuration /etc/postfix
+
+Le service tourne en continu depuis le 2026-06-01 sans interruption.
