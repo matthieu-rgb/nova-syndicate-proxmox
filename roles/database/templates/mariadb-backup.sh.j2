@@ -9,8 +9,7 @@ DUMP_FILE="${DUMP_DIR}/all-databases-${DATE}.sql.gz"
 
 # Dump complet compresse
 mariadb-dump \
-  --user=backup_nova \
-  --password="{{ vault_mariadb_backup_password }}" \
+  --defaults-extra-file=/root/.mariadb-backup.cnf \
   --all-databases \
   --single-transaction \
   --routines \
@@ -23,6 +22,7 @@ mariadb-dump \
 find "${DUMP_DIR}" -name "all-databases-*.sql.gz" -mmin +{{ db_dump_retention * 60 }} -delete
 
 # rsync vers BACKUP01
-rsync -az "${DUMP_FILE}" {{ backup_rsync_user }}@{{ backup_nas_ip }}:/srv/backups/db01/
+rsync -az -e "ssh -i /root/.ssh/id_backup -o StrictHostKeyChecking=yes" \
+  "${DUMP_FILE}" {{ backup_rsync_user }}@{{ backup_nas_ip }}:/srv/backups/db01/
 
 logger -t mariadb-backup "Dump MariaDB termine : ${DUMP_FILE}"

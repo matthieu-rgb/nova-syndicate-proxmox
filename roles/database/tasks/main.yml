@@ -94,6 +94,8 @@
     host: "localhost"
     password: "{{ vault_mariadb_backup_password }}"
     priv: "*.*:SELECT,LOCK TABLES,SHOW VIEW,RELOAD,REPLICATION CLIENT,EVENT,TRIGGER"
+    login_user: root
+    login_password: "{{ vault_mariadb_root_password }}"
     login_unix_socket: /var/run/mysqld/mysqld.sock
     state: present
   no_log: true
@@ -120,6 +122,16 @@
     mode: "0700"
   tags: [role:database, db:backup]
 
+- name: Deployer les credentials backup MariaDB
+  ansible.builtin.template:
+    src: mariadb-backup-credentials.cnf.j2
+    dest: /root/.mariadb-backup.cnf
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+  tags: [role:database, db:backup]
+
 - name: Deployer le script de dump MariaDB
   ansible.builtin.template:
     src: mariadb-backup.sh.j2
@@ -127,6 +139,7 @@
     owner: root
     group: root
     mode: "0700"
+  no_log: true
   tags: [role:database, db:backup]
 
 - name: Planifier le dump toutes les 15 minutes
