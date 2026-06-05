@@ -8,7 +8,7 @@ PermitRootLogin {{ ssh_permit_root }}
 PasswordAuthentication {{ ssh_password_auth }}
 PubkeyAuthentication yes
 MaxAuthTries {{ ssh_max_auth_tries }}
-AllowUsers debian {{ ansible_service_user }}
+AllowUsers debian {{ ansible_service_user }}{% if hardening_ssh_extra_users %} {{ hardening_ssh_extra_users | join(' ') }}{% endif %}
 
 # Session
 ClientAliveInterval {{ ssh_idle_timeout }}

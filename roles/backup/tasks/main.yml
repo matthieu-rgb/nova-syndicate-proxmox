@@ -61,6 +61,33 @@
   no_log: true
   tags: [borg, repo, init]
 
+# --- Compte rsync pour reception des dumps MariaDB de db01 ---
+- name: Creer le user rsync_nova
+  ansible.builtin.user:
+    name: rsync_nova
+    shell: /bin/bash
+    home: /home/rsync_nova
+    create_home: true
+    state: present
+  tags: [backup, db:rsync]
+
+- name: Autoriser la cle SSH de db01 pour rsync_nova
+  ansible.posix.authorized_key:
+    user: rsync_nova
+    state: present
+    key: "{{ db01_rsync_pubkey }}"
+    path: /home/rsync_nova/.ssh/authorized_keys
+  tags: [backup, db:rsync]
+
+- name: Creer le repertoire de reception des dumps MariaDB
+  ansible.builtin.file:
+    path: /srv/backups/db01
+    state: directory
+    owner: rsync_nova
+    group: rsync_nova
+    mode: "0750"
+  tags: [backup, db:rsync]
+
 - name: Verify borg repository is healthy
   ansible.builtin.command:
     cmd: >-

@@ -1,5 +1,6 @@
 ---
 hardening_extra_nft_rules:    []
+hardening_ssh_extra_users:    []
 hardening_allowed_ssh_nets:
   - "192.168.10.0/24"
   - "192.168.15.0/24"

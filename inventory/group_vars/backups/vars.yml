@@ -1,7 +1,14 @@
 ---
+# SSH users supplementaires autorises (en plus de debian + ansible)
+hardening_ssh_extra_users:
+  - rsync_nova
+
 # Hardening firewall rules
 hardening_extra_nft_rules:
   - "ip saddr {{ nova_ip_app01 }} tcp dport 9100 accept"
 
 # Reference la passphrase vault
 borg_passphrase: "{{ vault_borg_passphrase }}"
+
+# Cle publique SSH de db01 root (pour rsync des dumps MariaDB)
+db01_rsync_pubkey: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAKwV6vO/oHucZBWBg9KgDA0ftnPYzzM2N62Hlz4iWYY root@db01"

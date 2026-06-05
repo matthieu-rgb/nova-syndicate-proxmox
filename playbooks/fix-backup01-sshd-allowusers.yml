@@ -1,0 +1,11 @@
+---
+# One-shot : ajoute rsync_nova a AllowUsers sur backup01
+# Joue uniquement ssh.yml du role hardening (pas nftables, pas fail2ban)
+# Usage : ansible-playbook playbooks/fix-backup01-sshd-allowusers.yml --limit backup01
+- name: Hardening SSH uniquement (AllowUsers)
+  hosts: backups
+  become: true
+  tasks:
+    - ansible.builtin.import_role:
+        name: hardening
+        tasks_from: ssh.yml
